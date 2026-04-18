@@ -1,0 +1,206 @@
+{% extends "portal_estudiante/base_portal.html" %}
+
+{% block title %}Actualizar Datos - {{ estudiante.nombres_est }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-edit text-primary mr-3"></i>Actualizar Mis Datos
+        </h1>
+        <p class="text-gray-600">Mantén tu información de contacto actualizada</p>
+    </div>
+
+    <!-- Advertencia -->
+    <div class="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-6 mb-8">
+        <div class="flex items-start">
+            <i class="fas fa-exclamation-triangle text-yellow-600 text-3xl mr-4"></i>
+            <div>
+                <h3 class="font-bold text-yellow-800 mb-2">Importante</h3>
+                <ul class="space-y-1 text-sm text-yellow-700">
+                    <li><i class="fas fa-check mr-2"></i>Solo puedes actualizar datos de contacto (teléfonos, correos, direcciones)</li>
+                    <li><i class="fas fa-check mr-2"></i>Los cambios se guardan permanentemente y persisten entre ciclos escolares</li>
+                    <li><i class="fas fa-check mr-2"></i>Asegúrate de ingresar datos correctos</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <form method="POST" action="{{ url_for('portal_estudiante.actualizar_datos') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="version" value="{{ datos.metadatos.version }}"/>
+
+        <!-- Datos del Estudiante -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-user mr-3"></i>Mis Datos de Contacto
+                </h2>
+            </div>
+            <div class="p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                        <input type="email" name="correo_est" value="{{ datos.estudiante.correo or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Celular</label>
+                        <input type="tel" name="numero_celular_est" value="{{ datos.estudiante.celular or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                        <input type="tel" name="telefono_fijo_est" value="{{ datos.estudiante.telefono_fijo or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                        <input type="text" name="distrito_est" value="{{ datos.estudiante.distrito or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                        <input type="text" name="direccion_est" value="{{ datos.estudiante.direccion or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Referencia</label>
+                        <input type="text" name="referencia_est" value="{{ datos.estudiante.referencia or '' }}"
+                               placeholder="Ej: Cerca al parque, frente a la iglesia, etc."
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos del Padre -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-male mr-3"></i>Datos de Contacto del Padre
+                </h2>
+            </div>
+            <div class="p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                        <input type="email" name="correo_padre" value="{{ datos.padre.correo or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Celular</label>
+                        <input type="tel" name="celular_padre" value="{{ datos.padre.celular or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                        <input type="tel" name="telefono_fijo_padre" value="{{ datos.padre.telefono_fijo or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                        <input type="text" name="distrito_padre" value="{{ datos.padre.distrito or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                        <input type="text" name="direccion_padre" value="{{ datos.padre.direccion or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos de la Madre -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-pink-500 to-pink-600 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-female mr-3"></i>Datos de Contacto de la Madre
+                </h2>
+            </div>
+            <div class="p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                        <input type="email" name="correo_madre" value="{{ datos.madre.correo or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Celular</label>
+                        <input type="tel" name="celular_madre" value="{{ datos.madre.celular or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                        <input type="tel" name="telefono_fijo_madre" value="{{ datos.madre.telefono_fijo or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                        <input type="text" name="distrito_madre" value="{{ datos.madre.distrito or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                        <input type="text" name="direccion_madre" value="{{ datos.madre.direccion or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos del Apoderado -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-users mr-3"></i>Datos de Contacto del Apoderado
+                </h2>
+            </div>
+            <div class="p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                        <input type="email" name="correo_apoderado" value="{{ datos.apoderado.correo or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Celular</label>
+                        <input type="tel" name="celular_apoderado" value="{{ datos.apoderado.celular or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                        <input type="tel" name="telefono_fijo_apoderado" value="{{ datos.apoderado.telefono_fijo or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                        <input type="text" name="distrito_apoderado" value="{{ datos.apoderado.distrito or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                        <input type="text" name="direccion_apoderado" value="{{ datos.apoderado.direccion or '' }}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-blue-200">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex gap-4">
+            <button type="submit"
+                    class="flex-1 px-8 py-4 bg-gradient-to-r from-primary to-primary-dark text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-lg">
+                <i class="fas fa-save mr-2"></i>Guardar Cambios
+            </button>
+            <a href="{{ url_for('portal_estudiante.dashboard') }}"
+               class="px-8 py-4 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold rounded-xl transition-all text-lg">
+                <i class="fas fa-times mr-2"></i>Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

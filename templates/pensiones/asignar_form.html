@@ -1,0 +1,584 @@
+{% extends "base.html" %}
+
+{% block title %}Asignar Pensión - {{ estudiante.nombres_est }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .slide-down { animation: slideDown 0.4s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 slide-down">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-dollar-sign text-primary mr-3"></i>Asignar Pensión
+        </h1>
+        <p class="text-gray-600">Configure el monto de pensión mensual para el estudiante</p>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Información del Estudiante -->
+        <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden slide-down">
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-user-graduate mr-3"></i>Información del Estudiante
+                </h2>
+            </div>
+            <div class="p-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border-2 border-purple-200">
+                        <div class="flex items-center mb-3">
+                            <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3">
+                                {{ estudiante.nombres_est[0] }}{{ estudiante.apellido_paterno_est[0] }}
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 mb-1">Nombre Completo</label>
+                                <p class="text-lg font-bold text-gray-800 leading-tight">
+                                    {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}, {{ estudiante.nombres_est }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border-2 border-amber-200">
+                        <i class="fas fa-id-card text-3xl text-amber-600 mb-3"></i>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">DNI</label>
+                        <p class="text-2xl font-mono font-bold text-gray-800">{{ estudiante.dni_est or '-' }}</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200">
+                        <i class="fas fa-graduation-cap text-3xl text-green-500 mb-3"></i>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Nivel y Grado</label>
+                        <p class="text-xl font-bold text-gray-800">
+                            {{ estudiante.nivel|capitalize if estudiante.nivel else '-' }} - {{ estudiante.grado or '-' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Asignación -->
+        <form method="POST" class="slide-down" style="animation-delay: 0.1s">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden">
+                <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-money-bill-wave mr-3"></i>Configuración de Pensión
+                    </h2>
+                </div>
+                <div class="p-8">
+                    {% if pension %}
+                    <div class="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6 rounded-r-xl">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-purple-600 text-2xl mt-1 mr-3"></i>
+                            <div>
+                                <p class="font-bold text-purple-800 mb-1">Pensión Actual</p>
+                                <p class="text-purple-700 text-sm">
+                                    Este estudiante ya tiene asignado <strong>S/ {{ "%.2f"|format(pension.monto_mensual|float) }}</strong>
+                                    para el año <strong>{{ pension.anio_escolar }}</strong>.
+                                    Los cambios que realice actualizarán esta configuración.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Tipo de Pensión -->
+                    <div class="mb-8">
+                        <label class="block text-sm font-bold text-gray-700 mb-3">
+                            <i class="fas fa-tag text-purple-600 mr-2"></i>
+                            Tipo de Pensión <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex gap-4">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="tipo" value="regular" id="tipo-regular"
+                                       {% if not pension or pension.tipo == 'regular' %}checked{% endif %}
+                                       class="sr-only peer" onchange="onTipoChange()">
+                                <div class="peer-checked:border-purple-500 peer-checked:bg-purple-50 border-2 border-gray-300 rounded-xl p-4 text-center transition-all">
+                                    <i class="fas fa-school text-2xl text-purple-400 peer-checked:text-purple-600 mb-2 block"></i>
+                                    <p class="font-bold text-gray-700">Regular</p>
+                                    <p class="text-xs text-gray-500 mt-1">Usa los meses del año escolar configurados globalmente</p>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="tipo" value="academia" id="tipo-academia"
+                                       {% if pension and pension.tipo == 'academia' %}checked{% endif %}
+                                       class="sr-only peer" onchange="onTipoChange()">
+                                <div class="peer-checked:border-blue-500 peer-checked:bg-blue-50 border-2 border-gray-300 rounded-xl p-4 text-center transition-all">
+                                    <i class="fas fa-chalkboard-teacher text-2xl text-blue-400 mb-2 block"></i>
+                                    <p class="font-bold text-gray-700">Academia</p>
+                                    <p class="text-xs text-gray-500 mt-1">Meses personalizados (ej. 4 a 6 meses)</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Meses de Academia (solo visible si tipo = academia) -->
+                    <div id="seccion-meses-academia" class="mb-8 {% if not pension or pension.tipo != 'academia' %}hidden{% endif %}">
+                        <label class="block text-sm font-bold text-gray-700 mb-3">
+                            <i class="fas fa-calendar-check text-blue-600 mr-2"></i>
+                            Meses de la Academia <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-3 md:grid-cols-4 gap-3">
+                            {% for mes in todos_los_meses %}
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="meses_academia" value="{{ mes }}"
+                                       {% if mes in meses_academia_actuales %}checked{% endif %}
+                                       class="sr-only mes-academia-check peer" onchange="actualizarEjemplo()">
+                                <div class="peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700
+                                            border-2 border-gray-200 rounded-xl p-3 text-center text-sm font-semibold
+                                            text-gray-600 transition-all hover:border-blue-300 capitalize">
+                                    {{ mes }}
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            <i class="fas fa-info-circle text-blue-400 mr-1"></i>
+                            Meses seleccionados: <span id="count-meses-academia" class="font-bold text-blue-600">{{ meses_academia_actuales|length }}</span>
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Monto Mensual -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-3">
+                                <i class="fas fa-dollar-sign text-green-600 mr-2"></i>
+                                Monto Mensual (S/) <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-5 top-5 text-gray-500 font-bold text-xl">S/</span>
+                                <input type="number" name="monto_mensual" step="0.01" min="0.01" required
+                                       value="{{ pension.monto_mensual if pension else '' }}"
+                                       class="w-full pl-16 pr-6 py-4 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring focus:ring-green-200 transition-all font-bold text-2xl"
+                                       placeholder="250.00">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <i class="fas fa-lightbulb text-amber-500 mr-1"></i>
+                                Este será el monto que el estudiante debe pagar cada mes
+                            </p>
+                        </div>
+
+                        <!-- Año Escolar -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-3">
+                                <i class="fas fa-calendar-alt text-amber-600 mr-2"></i>
+                                Año Escolar <span class="text-red-500">*</span>
+                            </label>
+                            <select name="anio_escolar" required
+                                    class="w-full px-6 py-4 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all font-bold text-xl">
+                                {% set cfg_year = config.anio_escolar if config else current_year|string %}
+                                {% for year in range(cfg_year|int - 1, cfg_year|int + 3) %}
+                                <option value="{{ year }}"
+                                    {% if pension and pension.anio_escolar == year|string %}selected
+                                    {% elif not pension and year|string == cfg_year %}selected{% endif %}>
+                                    {{ year }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <i class="fas fa-info-circle text-amber-500 mr-1"></i>
+                                Año escolar para el cual aplica esta pensión
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Ejemplo de cálculo -->
+                    <div class="mt-8 p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl">
+                        <div class="flex items-start">
+                            <i class="fas fa-calculator text-3xl text-purple-600 mr-4 mt-1"></i>
+                            <div class="flex-1">
+                                <p class="font-bold text-amber-900 text-lg mb-2">Resumen de Cálculo</p>
+                                <div class="grid grid-cols-3 gap-4 text-center mt-4">
+                                    <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                                        <p class="text-xs text-amber-600 font-semibold">Monto Mensual</p>
+                                        <p class="text-lg font-bold text-amber-900" id="ejemplo-mensual">S/ 0.00</p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                                        <p class="text-xs text-amber-600 font-semibold">Meses</p>
+                                        <p class="text-lg font-bold text-amber-900" id="ejemplo-meses">—</p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-60 rounded-lg p-3">
+                                        <p class="text-xs text-amber-600 font-semibold">Total</p>
+                                        <p class="text-lg font-bold text-amber-900" id="ejemplo-total">S/ 0.00</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex justify-end gap-4">
+                <a href="{{ url_for('pensiones.asignar_lista') }}"
+                   class="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-times mr-2"></i>Cancelar
+                </a>
+                <button type="submit"
+                        class="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-save mr-2"></i>{% if pension %}Actualizar{% else %}Asignar{% endif %} Pensión
+                </button>
+            </div>
+        </form>
+
+        <!-- ====== SECCIÓN ADELANTAR CUOTAS (OPCIONAL) ====== -->
+        {% if pension and meses_pendientes %}
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden slide-down mt-6" style="animation-delay: 0.2s">
+            <!-- Cabecera colapsable -->
+            <button type="button" onclick="toggleAdelantar()"
+                    class="w-full flex items-center justify-between p-6 text-left"
+                    style="background: linear-gradient(135deg, #d97706, #b45309);">
+                <div class="flex items-center text-white">
+                    <i class="fas fa-forward text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-bold">Adelantar Cuotas (Opcional)</h2>
+                        <p class="text-amber-200 text-sm mt-1">
+                            El apoderado puede pagar uno o más meses por adelantado.
+                            Hay <strong>{{ meses_pendientes|length }}</strong> mes(es) pendiente(s).
+                        </p>
+                    </div>
+                </div>
+                <i id="adelantar-icon" class="fas fa-chevron-down text-white text-xl transition-transform duration-300"></i>
+            </button>
+
+            <!-- Contenido colapsable -->
+            <div id="adelantar-content" class="hidden">
+                <form method="POST" action="{{ url_for('pensiones.adelantar_cuotas', estudiante_id=estudiante.id) }}"
+                      id="form-adelantar">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                    <div class="p-8 space-y-6">
+                        <!-- Selección de meses -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-4">
+                                <i class="fas fa-calendar-check text-amber-600 mr-2"></i>
+                                Seleccionar Meses a Pagar
+                                <span class="text-xs font-normal text-gray-500 ml-2">— El monto puede ser parcial o el total adeudado</span>
+                            </label>
+                            <div class="space-y-3">
+                                {% for mes in meses_pendientes %}
+                                {% set saldo = saldos_por_mes.get(mes, {}) %}
+                                {% set pagado = saldo.get('pagado', 0) %}
+                                {% set restante = saldo.get('restante', pension.monto_mensual|float) %}
+                                {% set es_abono = pagado > 0 %}
+                                <div class="border-2 border-gray-200 rounded-xl overflow-hidden transition-all duration-200"
+                                     id="card-{{ mes }}">
+                                    <div class="flex items-center gap-4 p-4">
+                                        <!-- Checkbox -->
+                                        <input type="checkbox" name="meses_adelantar" value="{{ mes }}"
+                                               id="check-{{ mes }}"
+                                               class="w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0"
+                                               onchange="toggleMes('{{ mes }}', {{ restante }})">
+
+                                        <!-- Info del mes -->
+                                        <label for="check-{{ mes }}" class="flex-1 cursor-pointer">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="font-bold text-gray-800 capitalize text-base">{{ mes }}</span>
+                                                {% if es_abono %}
+                                                <span class="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">
+                                                    Abono parcial
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            {% if es_abono %}
+                                            <div class="flex gap-4 mt-1 text-xs text-gray-500">
+                                                <span class="text-green-600"><i class="fas fa-check mr-1"></i>Abonado: S/ {{ "%.2f"|format(pagado) }}</span>
+                                                <span class="text-red-600"><i class="fas fa-clock mr-1"></i>Restante: S/ {{ "%.2f"|format(restante) }}</span>
+                                            </div>
+                                            <!-- Barra de progreso -->
+                                            <div class="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                                                <div class="bg-amber-500 h-1.5 rounded-full"
+                                                     style="width: {{ ((pagado / pension.monto_mensual|float) * 100)|round(0) }}%"></div>
+                                            </div>
+                                            {% else %}
+                                            <span class="text-xs text-gray-500">Total: S/ {{ "%.2f"|format(restante) }}</span>
+                                            {% endif %}
+                                        </label>
+
+                                        <!-- Input de monto (oculto hasta marcar) -->
+                                        <div id="monto-{{ mes }}" class="hidden flex-shrink-0 text-right">
+                                            <label class="block text-xs text-gray-500 mb-1">Monto a pagar</label>
+                                            <div class="flex items-center gap-1">
+                                                <span class="text-sm font-bold text-gray-600">S/</span>
+                                                <input type="number" name="monto_mes_{{ mes }}"
+                                                       id="input-monto-{{ mes }}"
+                                                       value="{{ "%.2f"|format(restante) }}"
+                                                       min="0.01" max="{{ "%.2f"|format(restante) }}"
+                                                       step="0.01"
+                                                       data-restante="{{ restante }}"
+                                                       class="w-28 px-3 py-2 border-2 border-amber-300 rounded-lg text-right font-bold focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all"
+                                                       oninput="actualizarTotalAdelantar(); actualizarBadgeMes('{{ mes }}', parseFloat(this.value)||0, {{ restante }})">
+                                            </div>
+                                            <span id="badge-{{ mes }}"
+                                                  class="hidden text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Total calculado -->
+                        <div id="resumen-adelanto" class="hidden bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
+                            <div class="flex items-center justify-between flex-wrap gap-3">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-receipt text-amber-600 text-2xl"></i>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Meses seleccionados: <strong id="count-meses">0</strong></p>
+                                        <p class="text-lg font-bold text-gray-800">Total a pagar: <span id="total-adelanto" class="text-amber-700">S/ 0.00</span></p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-500">Se genera un recibo por cada mes</p>
+                                    <p id="aviso-abono" class="hidden text-xs text-orange-600 font-semibold mt-1">
+                                        <i class="fas fa-info-circle mr-1"></i>Contiene abono(s) parcial(es)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detalles del pago -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    <i class="fas fa-calendar-day text-amber-600 mr-2"></i>
+                                    Fecha de Pago <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" name="fecha_pago_adelanto" required
+                                       value="{{ now.strftime('%Y-%m-%d') if now else '' }}"
+                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    <i class="fas fa-credit-card text-amber-600 mr-2"></i>
+                                    Método de Pago
+                                </label>
+                                <select name="metodo_pago_adelanto"
+                                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all">
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="transferencia">Transferencia</option>
+                                    <option value="yape">Yape</option>
+                                    <option value="plin">Plin</option>
+                                    <option value="deposito">Depósito</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    <i class="fas fa-hashtag text-gray-500 mr-2"></i>
+                                    N° Operación (opcional)
+                                </label>
+                                <input type="text" name="numero_operacion_adelanto" maxlength="50"
+                                       placeholder="Ej: 123456789"
+                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    <i class="fas fa-comment text-gray-500 mr-2"></i>
+                                    Observaciones (opcional)
+                                </label>
+                                <input type="text" name="observaciones_adelanto" maxlength="200"
+                                       placeholder="Ej: Pago por adelantado solicitado por el padre"
+                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón submit -->
+                    <div class="px-8 pb-8">
+                        <button type="submit" id="btn-adelantar" disabled
+                                class="w-full px-6 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none">
+                            <i class="fas fa-forward mr-2"></i>Registrar Cuotas Adelantadas
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% elif pension and not meses_pendientes %}
+        <div class="bg-green-50 border-2 border-green-300 rounded-2xl p-6 mt-6 flex items-center gap-4">
+            <i class="fas fa-check-circle text-green-500 text-3xl"></i>
+            <div>
+                <p class="font-bold text-green-800">Todos los meses están al día</p>
+                <p class="text-sm text-green-700">Este estudiante no tiene cuotas pendientes para el año {{ config.anio_escolar if config else '' }}.</p>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function onTipoChange() {
+    const esAcademia = document.getElementById('tipo-academia').checked;
+    document.getElementById('seccion-meses-academia').classList.toggle('hidden', !esAcademia);
+    actualizarEjemplo();
+}
+
+function actualizarEjemplo() {
+    const montoInput = document.querySelector('input[name="monto_mensual"]');
+    const monto = parseFloat(montoInput ? montoInput.value : 0) || 0;
+
+    let numMeses;
+    if (document.getElementById('tipo-academia').checked) {
+        const marcados = document.querySelectorAll('.mes-academia-check:checked');
+        numMeses = marcados.length;
+        document.getElementById('count-meses-academia').textContent = numMeses;
+        document.getElementById('ejemplo-meses').textContent = numMeses > 0 ? `${numMeses} mes(es)` : '—';
+    } else {
+        {% if config and config.meses_activos %}
+        numMeses = {{ config.meses_activos.split(',')|length }};
+        {% else %}
+        numMeses = 10;
+        {% endif %}
+        document.getElementById('ejemplo-meses').textContent = `${numMeses} mes(es)`;
+    }
+
+    document.getElementById('ejemplo-mensual').textContent = `S/ ${monto.toFixed(2)}`;
+    document.getElementById('ejemplo-total').textContent = numMeses > 0
+        ? `S/ ${(monto * numMeses).toFixed(2)}`
+        : '—';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const montoInput = form.querySelector('input[name="monto_mensual"]');
+
+    montoInput.addEventListener('input', actualizarEjemplo);
+    actualizarEjemplo();
+
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+        // Validar que academia tenga al menos un mes seleccionado
+        if (document.getElementById('tipo-academia').checked) {
+            const marcados = form.querySelectorAll('.mes-academia-check:checked');
+            if (marcados.length === 0) {
+                event.preventDefault();
+                alert('Seleccione al menos un mes para la pensión de Academia.');
+            }
+        }
+    });
+});
+
+// Toggle de la sección adelantar
+function toggleAdelantar() {
+    const content = document.getElementById('adelantar-content');
+    const icon = document.getElementById('adelantar-icon');
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+    } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+    }
+}
+
+// Actualiza el badge de estado de un mes (✓ completo / ⚡ parcial)
+function actualizarBadgeMes(mes, monto, restante) {
+    const badge = document.getElementById(`badge-${mes}`);
+    if (!badge) return;
+    badge.classList.remove('hidden');
+    if (monto >= restante) {
+        badge.textContent = '✓ Pago completo';
+        badge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block bg-green-100 text-green-700';
+    } else {
+        const quedara = (restante - monto).toFixed(2);
+        badge.textContent = `⚡ Parcial · Quedará: S/ ${quedara}`;
+        badge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block bg-amber-100 text-amber-700';
+    }
+}
+
+// Mostrar/ocultar input de monto al marcar/desmarcar mes
+function toggleMes(mes, restante) {
+    const checkbox = document.getElementById(`check-${mes}`);
+    const montoDiv = document.getElementById(`monto-${mes}`);
+    const card     = document.getElementById(`card-${mes}`);
+    const input    = document.getElementById(`input-monto-${mes}`);
+    const badge    = document.getElementById(`badge-${mes}`);
+
+    if (checkbox.checked) {
+        montoDiv.classList.remove('hidden');
+        card.classList.add('border-amber-400', 'bg-amber-50');
+        card.classList.remove('border-gray-200');
+        input.value = restante.toFixed(2);
+        actualizarBadgeMes(mes, restante, restante);
+    } else {
+        montoDiv.classList.add('hidden');
+        card.classList.remove('border-amber-400', 'bg-amber-50');
+        card.classList.add('border-gray-200');
+        if (badge) badge.classList.add('hidden');
+    }
+    actualizarTotalAdelantar();
+}
+
+// Calcular total dinámico sumando los inputs de meses seleccionados
+function actualizarTotalAdelantar() {
+    const checkboxes = document.querySelectorAll('input[name="meses_adelantar"]:checked');
+    let total = 0;
+    let tieneAbonoParcial = false;
+
+    checkboxes.forEach(cb => {
+        const mes = cb.value;
+        const inputMonto = document.getElementById(`input-monto-${mes}`);
+        const maxMonto = parseFloat(inputMonto.max) || 0;
+        const monto = parseFloat(inputMonto.value) || 0;
+        total += monto;
+        if (monto < maxMonto - 0.001) tieneAbonoParcial = true;
+    });
+
+    const count = checkboxes.length;
+    const resumen = document.getElementById('resumen-adelanto');
+    const btnAdelantar = document.getElementById('btn-adelantar');
+    const avisoAbono = document.getElementById('aviso-abono');
+
+    if (count > 0) {
+        resumen.classList.remove('hidden');
+        document.getElementById('count-meses').textContent = count;
+        document.getElementById('total-adelanto').textContent = `S/ ${total.toFixed(2)}`;
+        btnAdelantar.disabled = false;
+        tieneAbonoParcial
+            ? avisoAbono.classList.remove('hidden')
+            : avisoAbono.classList.add('hidden');
+    } else {
+        resumen.classList.add('hidden');
+        btnAdelantar.disabled = true;
+        avisoAbono.classList.add('hidden');
+    }
+}
+
+// Validación antes de enviar
+document.addEventListener('DOMContentLoaded', function() {
+    const formAdelantar = document.getElementById('form-adelantar');
+    if (formAdelantar) {
+        formAdelantar.addEventListener('submit', function(e) {
+            const mesesChecked = formAdelantar.querySelectorAll('input[name="meses_adelantar"]:checked');
+            if (mesesChecked.length === 0) {
+                e.preventDefault();
+                alert('Seleccione al menos un mes.');
+                return;
+            }
+            // Validar que ningún monto sea 0 o negativo
+            let montoInvalido = false;
+            mesesChecked.forEach(cb => {
+                const input = document.getElementById(`input-monto-${cb.value}`);
+                if (!input || parseFloat(input.value) <= 0) montoInvalido = true;
+            });
+            if (montoInvalido) {
+                e.preventDefault();
+                alert('Todos los montos deben ser mayores a S/ 0.00.');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

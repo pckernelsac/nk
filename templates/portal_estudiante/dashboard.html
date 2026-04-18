@@ -1,0 +1,149 @@
+{% extends "portal_estudiante/base_portal.html" %}
+
+{% block title %}Mi Portal - {{ estudiante.nombres_est }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Bienvenida -->
+    <div class="bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl shadow-xl p-8 mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-4xl font-bold mb-2">
+                    ¡Bienvenido/a, {{ estudiante.nombres_est }}!
+                </h1>
+                <p class="text-blue-100 text-lg">
+                    <i class="fas fa-id-card mr-2"></i>DNI: {{ estudiante.dni_est }}
+                </p>
+            </div>
+            <div class="hidden md:block">
+                <i class="fas fa-user-circle text-9xl opacity-20"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del Estudiante -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="flex items-center mb-4">
+                <div class="bg-blue-100 p-3 rounded-xl mr-4">
+                    <i class="fas fa-graduation-cap text-blue-600 text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold">Nivel</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ estudiante.nivel or '-' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="flex items-center mb-4">
+                <div class="bg-green-100 p-3 rounded-xl mr-4">
+                    <i class="fas fa-layer-group text-green-600 text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold">Grado y Sección</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ estudiante.grado or '-' }} {{ estudiante.seccion or '' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="flex items-center mb-4">
+                <div class="bg-purple-100 p-3 rounded-xl mr-4">
+                    <i class="fas fa-clock text-purple-600 text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold">Turno</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ estudiante.turno or '-' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Última Actualización -->
+    {% if datos.metadatos.ultima_actualizacion %}
+    <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-6 mb-8">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-600 text-3xl mr-4"></i>
+            <div>
+                <p class="font-bold text-green-800">Última actualización de datos</p>
+                <p class="text-green-700">{{ datos.metadatos.ultima_actualizacion.strftime('%d/%m/%Y %H:%M') if datos.metadatos.ultima_actualizacion else 'Nunca' }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Datos Actuales -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Datos del Estudiante -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-user mr-3"></i>Datos del Estudiante
+                </h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold">Correo Electrónico</p>
+                    <p class="text-lg text-gray-800">{{ datos.estudiante.correo or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold">Celular</p>
+                    <p class="text-lg text-gray-800">{{ datos.estudiante.celular or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold">Teléfono Fijo</p>
+                    <p class="text-lg text-gray-800">{{ datos.estudiante.telefono_fijo or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold">Dirección</p>
+                    <p class="text-lg text-gray-800">{{ datos.estudiante.direccion or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold">Distrito</p>
+                    <p class="text-lg text-gray-800">{{ datos.estudiante.distrito or 'No registrado' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos del Apoderado -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-users mr-3"></i>Datos del Apoderado
+                </h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold">Nombre</p>
+                    <p class="text-lg text-gray-800">
+                        {{ estudiante.nombres_apoderado or 'No registrado' }}
+                        {{ estudiante.apellido_paterno_apoderado or '' }}
+                        {{ estudiante.apellido_materno_apoderado or '' }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold">Correo Electrónico</p>
+                    <p class="text-lg text-gray-800">{{ datos.apoderado.correo or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold">Celular</p>
+                    <p class="text-lg text-gray-800">{{ datos.apoderado.celular or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold">Dirección</p>
+                    <p class="text-lg text-gray-800">{{ datos.apoderado.direccion or 'No registrado' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón de Actualizar -->
+    <div class="mt-8 text-center">
+        <a href="{{ url_for('portal_estudiante.actualizar_datos') }}"
+           class="inline-block px-8 py-4 bg-gradient-to-r from-primary to-primary-dark text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-lg">
+            <i class="fas fa-edit mr-2"></i>Actualizar Mis Datos
+        </a>
+    </div>
+</div>
+{% endblock %}

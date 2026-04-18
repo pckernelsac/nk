@@ -1,0 +1,6 @@
+PassengerEnabled On
+PassengerPython /home/nkchambergoedu/virtualenv/app/3.12/bin/python
+PassengerMaxPoolSize 3
+PassengerMinInstances 1
+PassengerPoolIdleTime 300
+PassengerMaxRequestQueueSize 100

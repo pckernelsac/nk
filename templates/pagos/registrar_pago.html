@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Pago{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 pop-in">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-cash-register text-primary mr-3"></i>Registrar Pago
+        </h1>
+        <p class="text-gray-600">Registra un nuevo pago para un estudiante</p>
+    </div>
+
+    <!-- Buscador de Estudiante -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-search mr-3"></i>Buscar Estudiante
+            </h2>
+        </div>
+        <div class="p-8">
+            <div class="max-w-2xl">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fas fa-user mr-2"></i>DNI o Nombre del Estudiante
+                </label>
+                <input type="text" id="buscarEstudiante" placeholder="Buscar por DNI o nombre..."
+                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+            </div>
+            <div id="resultadosBusqueda" class="mt-6"></div>
+        </div>
+    </div>
+
+    <!-- Formulario de Pago (inicialmente oculto) -->
+    <div id="formularioPago" class="hidden">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-money-bill-wave mr-3"></i>Datos del Pago
+                </h2>
+            </div>
+            <div class="p-8">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <!-- Info del estudiante (se llena dinámicamente) -->
+                    <div id="infoEstudiante" class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-6"></div>
+
+                    <!-- Obligaciones del estudiante -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            Concepto a Pagar <span class="text-red-500">*</span>
+                        </label>
+                        <select id="selectObligacion" required
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            <option value="">Seleccione un concepto</option>
+                        </select>
+                    </div>
+
+                    <!-- Detalle de la obligación -->
+                    <div id="detalleObligacion" class="mb-6 bg-gray-50 p-6 rounded-xl hidden">
+                        <h4 class="font-bold text-gray-800 mb-4">Detalle de la Obligación:</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <span class="text-sm font-semibold text-gray-600">Monto Total:</span>
+                                <div id="montoTotal" class="text-lg font-bold text-gray-900"></div>
+                            </div>
+                            <div>
+                                <span class="text-sm font-semibold text-gray-600">Monto Pagado:</span>
+                                <div id="montoPagado" class="text-lg font-bold text-green-600"></div>
+                            </div>
+                            <div>
+                                <span class="text-sm font-semibold text-gray-600">Monto Pendiente:</span>
+                                <div id="montoPendiente" class="text-lg font-bold text-red-600"></div>
+                            </div>
+                            <div>
+                                <span class="text-sm font-semibold text-gray-600">Cuotas:</span>
+                                <div id="cuotas" class="text-lg font-bold text-gray-900"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campos del pago -->
+                    <input type="hidden" name="obligacion_id" id="obligacionId">
+                    <input type="hidden" name="version" id="version">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Monto a Pagar <span class="text-red-500">*</span>
+                            </label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-4 bg-gray-100 border-2 border-r-0 border-gray-300 rounded-l-xl text-gray-700 font-semibold">
+                                    S/
+                                </span>
+                                <input type="number" name="monto_pagado" id="montoPagar" step="0.01" min="0" required
+                                       class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-r-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            </div>
+                            <small class="text-xs text-gray-600 mt-1">Máximo: S/ <span id="maxMonto" class="font-bold">0.00</span></small>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Fecha de Pago <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="fecha_pago" required value="{{ datetime.now().strftime('%Y-%m-%d') }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Forma de Pago</label>
+                        <select name="forma_pago"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="deposito">Depósito</option>
+                            <option value="tarjeta">Tarjeta</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nombre del Apoderado</label>
+                            <input type="text" name="apoderado_nombre"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">DNI del Apoderado</label>
+                            <input type="text" name="apoderado_dni" maxlength="8"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Observaciones</label>
+                        <textarea name="observaciones" rows="2"
+                                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t-2 border-gray-100">
+                        <button type="button" onclick="location.reload()"
+                                class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200">
+                            <i class="fas fa-times mr-2"></i>Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                            <i class="fas fa-cash-register mr-2"></i>Registrar Pago
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let estudiantes = [];
+let obligacionSeleccionada = null;
+
+// Búsqueda de estudiante con debounce
+let timeoutBusqueda;
+document.getElementById('buscarEstudiante').addEventListener('input', function() {
+    clearTimeout(timeoutBusqueda);
+    const termino = this.value.trim();
+
+    if (termino.length < 2) {
+        document.getElementById('resultadosBusqueda').innerHTML = '';
+        return;
+    }
+
+    timeoutBusqueda = setTimeout(() => buscarEstudiante(termino), 300);
+});
+
+async function buscarEstudiante(termino) {
+    try {
+        const response = await fetch(`{{ url_for('pagos.api_buscar_estudiante') }}?q=${encodeURIComponent(termino)}&anio_escolar={{ anio_escolar }}`);
+        const data = await response.json();
+
+        if (!data.ok) {
+            document.getElementById('resultadosBusqueda').innerHTML = `
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+                    <p class="text-yellow-700">${data.message}</p>
+                </div>
+            `;
+            return;
+        }
+
+        estudiantes = data.estudiantes;
+
+        if (estudiantes.length === 0) {
+            document.getElementById('resultadosBusqueda').innerHTML = `
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                    <p class="text-blue-700">No se encontraron estudiantes</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="space-y-2">';
+        estudiantes.forEach(est => {
+            html += `
+                <a href="#" onclick="seleccionarEstudiante(${est.id}); return false;"
+                   class="block bg-gray-50 hover:bg-blue-50 border-2 border-gray-200 hover:border-blue-400 rounded-xl p-4 transition-all">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h6 class="font-bold text-gray-900">${est.nombre_completo}</h6>
+                            <p class="text-sm text-gray-600">${est.nivel} - ${est.grado}</p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                <i class="fas fa-file-invoice mr-1"></i>${est.obligaciones.length} obligación(es) pendiente(s)
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">${est.dni}</span>
+                        </div>
+                    </div>
+                </a>
+            `;
+        });
+        html += '</div>';
+
+        document.getElementById('resultadosBusqueda').innerHTML = html;
+
+    } catch (error) {
+        console.error(error);
+        document.getElementById('resultadosBusqueda').innerHTML = `
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                <p class="text-red-700">Error al buscar estudiantes</p>
+            </div>
+        `;
+    }
+}
+
+function seleccionarEstudiante(estudianteId) {
+    const estudiante = estudiantes.find(e => e.id === estudianteId);
+    if (!estudiante) return;
+
+    // Mostrar info del estudiante
+    document.getElementById('infoEstudiante').innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-user-graduate text-blue-600 text-2xl mr-3"></i>
+            <div>
+                <div class="font-bold text-gray-900 text-lg">${estudiante.nombre_completo}</div>
+                <div class="text-sm text-gray-600">
+                    DNI: ${estudiante.dni} | Nivel: ${estudiante.nivel} | Grado: ${estudiante.grado}
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Cargar obligaciones
+    const select = document.getElementById('selectObligacion');
+    select.innerHTML = '<option value="">Seleccione un concepto</option>';
+
+    if (estudiante.obligaciones.length === 0) {
+        select.innerHTML = '<option value="">Sin obligaciones pendientes</option>';
+        select.disabled = true;
+        return;
+    }
+
+    select.disabled = false;
+    estudiante.obligaciones.forEach(ob => {
+        const option = document.createElement('option');
+        option.value = ob.id;
+        option.textContent = `${ob.concepto} - Pendiente: S/ ${ob.monto_pendiente.toFixed(2)}`;
+        option.dataset.obligacion = JSON.stringify(ob);
+        select.appendChild(option);
+    });
+
+    // Mostrar formulario
+    document.getElementById('formularioPago').classList.remove('hidden');
+    document.getElementById('resultadosBusqueda').innerHTML = '';
+}
+
+document.getElementById('selectObligacion').addEventListener('change', function() {
+    const detalleDiv = document.getElementById('detalleObligacion');
+
+    if (!this.value) {
+        detalleDiv.classList.add('hidden');
+        return;
+    }
+
+    const ob = JSON.parse(this.selectedOptions[0].dataset.obligacion);
+    obligacionSeleccionada = ob;
+
+    // Llenar campos ocultos
+    document.getElementById('obligacionId').value = ob.id;
+    document.getElementById('version').value = ob.version;
+
+    // Mostrar detalle
+    document.getElementById('montoTotal').textContent = `S/ ${ob.monto_total.toFixed(2)}`;
+    document.getElementById('montoPagado').textContent = `S/ ${ob.monto_pagado.toFixed(2)}`;
+    document.getElementById('montoPendiente').textContent = `S/ ${ob.monto_pendiente.toFixed(2)}`;
+    document.getElementById('cuotas').textContent = `${ob.cuotas_pagadas} / ${ob.total_cuotas}`;
+
+    // Configurar monto máximo
+    document.getElementById('maxMonto').textContent = ob.monto_pendiente.toFixed(2);
+    document.getElementById('montoPagar').max = ob.monto_pendiente.toFixed(2);
+    document.getElementById('montoPagar').value = ob.monto_pendiente.toFixed(2);
+
+    detalleDiv.classList.remove('hidden');
+});
+</script>
+{% endblock %}

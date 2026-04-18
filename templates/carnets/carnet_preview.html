@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Vista Previa - Carnet {{ estudiante.nombres_est }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes slideInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide-in { animation: slideInUp 0.5s ease-out; }
+    .carnet-3d {
+        transform-style: preserve-3d;
+        transition: transform 0.6s;
+    }
+    .carnet-3d:hover {
+        transform: rotateY(5deg) rotateX(2deg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-600 to-purple-600 rounded-2xl shadow-xl p-8 mb-8 text-white animate-slide-in relative overflow-hidden">
+        <div class="absolute top-0 right-0 opacity-10 text-9xl">
+            <i class="fas fa-id-card"></i>
+        </div>
+        <div class="absolute bottom-0 left-20 opacity-10 text-7xl">
+            <i class="fas fa-user-circle"></i>
+        </div>
+        <div class="flex items-center justify-between relative z-10">
+            <div>
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-id-card text-white text-3xl mr-3 animate-pulse"></i>
+                    <h1 class="text-5xl font-bold">Vista Previa del Carnet</h1>
+                </div>
+                <div class="flex items-center text-xl opacity-90">
+                    <i class="fas fa-user text-white mr-2"></i>
+                    <p>{{ estudiante.nombres_est }} {{ estudiante.apellido_paterno_est }}</p>
+                </div>
+            </div>
+            <div class="hidden md:block">
+                <div class="bg-white bg-opacity-20 rounded-full p-6 hover:bg-opacity-30 transition-all duration-300">
+                    <i class="fas fa-id-badge text-white text-6xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Carnet Preview -->
+        <div class="animate-slide-in" style="animation-delay: 0.1s">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="p-6 text-white" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                    <h3 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-eye mr-3"></i>Vista del Carnet
+                    </h3>
+                </div>
+
+                <div class="p-8">
+                    <div class="flex justify-center items-center">
+                        <div class="carnet-3d bg-white rounded-2xl shadow-2xl p-6 border-4" style="border-color: #5F2A5D; width: 280px; height: 420px;">
+                            <!-- Logo y Título -->
+                            <div class="flex justify-between items-center mb-4 px-2">
+                                <img src="{{ url_for('static', filename='img/nk.png') }}" alt="Logo" class="h-10">
+                                <div class="text-right">
+                                    <span class="block text-xs font-bold" style="color: #5F2A5D;">CARNET</span>
+                                    <span class="block text-xs font-bold" style="color: #5F2A5D;">ESTUDIANTIL</span>
+                                </div>
+                            </div>
+
+                            <!-- Foto -->
+                            <div class="flex justify-center mb-5">
+                                <div class="w-28 h-28 border-4 rounded-full flex items-center justify-center overflow-hidden shadow-xl" style="border-color: #5F2A5D;">
+                                    {% if estudiante.foto_perfil %}
+                                    <img src="/static/{{ estudiante.foto_perfil }}" alt="Foto" class="w-full h-full object-cover">
+                                    {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-white text-3xl font-bold" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                                        {{ estudiante.nombres_est[0] }}{{ estudiante.apellido_paterno_est[0] }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Nombres -->
+                            <div class="text-center font-bold text-gray-800 mb-4 px-3">
+                                <div class="text-base leading-tight">{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}</div>
+                                <div class="text-base leading-tight mt-1">{{ estudiante.nombres_est }}</div>
+                            </div>
+
+                            <!-- Grado y Nivel -->
+                            <div class="text-center mb-4">
+                                <div class="inline-block px-5 py-2 rounded-xl text-white font-bold shadow-lg" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                                    <div class="text-lg">{{ estudiante.grado }}° - {{ estudiante.nivel }}</div>
+                                    {% if estudiante.seccion %}
+                                    <div class="text-xs opacity-90">Sección: {{ estudiante.seccion }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- QR Code -->
+                            <div class="flex justify-center mb-3">
+                                <div id="qrcode-preview"></div>
+                            </div>
+
+                            <!-- Código Estudiante -->
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-1">Código</div>
+                                <div class="font-mono font-bold text-gray-800 text-lg">{{ estudiante.codigo_estudiante or 'Sin código' }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-xl p-4">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-lightbulb text-yellow-600 text-2xl"></i>
+                            <div>
+                                <h6 class="font-bold text-gray-800 mb-1">Sugerencia</h6>
+                                <p class="text-sm text-gray-600">Este es el diseño real del carnet. Se imprime en tamaño 62mm × 90mm.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información y Acciones -->
+        <div class="space-y-6 animate-slide-in" style="animation-delay: 0.2s">
+            <!-- Datos del Estudiante -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="p-6 text-white" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                    <h3 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-user mr-3"></i>Datos del Estudiante
+                    </h3>
+                </div>
+
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div class="flex items-start pb-3 border-b">
+                            <div class="w-36 flex-shrink-0">
+                                <span class="font-bold text-gray-700">Nombres:</span>
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-gray-600">{{ estudiante.nombres_est }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start pb-3 border-b">
+                            <div class="w-36 flex-shrink-0">
+                                <span class="font-bold text-gray-700">Apellidos:</span>
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-gray-600">{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start pb-3 border-b">
+                            <div class="w-36 flex-shrink-0">
+                                <span class="font-bold text-gray-700">DNI:</span>
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-gray-600 font-mono font-bold">{{ estudiante.dni_est }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start pb-3 border-b">
+                            <div class="w-36 flex-shrink-0">
+                                <span class="font-bold text-gray-700">Grado:</span>
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-gray-600">{{ estudiante.grado }}° Grado</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start pb-3 border-b">
+                            <div class="w-36 flex-shrink-0">
+                                <span class="font-bold text-gray-700">Nivel:</span>
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-gray-600">{{ estudiante.nivel }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="w-36 flex-shrink-0">
+                                <span class="font-bold text-gray-700">Sección:</span>
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-gray-600">{{ estudiante.seccion or 'No asignada' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exportar Carnet -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="p-6 text-white" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                    <h3 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-download mr-3"></i>Exportar Carnet
+                    </h3>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <a href="{{ url_for('estudiantes.carnet_pdf', id=estudiante.id) }}"
+                       class="w-full inline-flex items-center justify-center px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg text-lg">
+                        <i class="fas fa-file-pdf mr-3 text-xl"></i>Descargar PDF
+                    </a>
+
+                    <div class="bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-4">
+                        <ul class="text-sm text-gray-600 space-y-2">
+                            <li class="flex items-start">
+                                <i class="fas fa-check mr-2 mt-1 text-purple-600"></i>
+                                <span>Formato A4 con frente y reverso (62mm × 90mm)</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check mr-2 mt-1 text-purple-600"></i>
+                                <span>Incluye código QR con el código único del estudiante</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Navegación -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex gap-3">
+                    <a href="{{ url_for('estudiantes.seleccionar_carnets') }}" class="flex-1 inline-flex items-center justify-center px-6 py-3 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                       style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                        <i class="fas fa-arrow-left mr-2"></i>Volver a Generar Carnets
+                    </a>
+                    <a href="{{ url_for('estudiantes.list') }}" class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-bold rounded-xl shadow-md hover:shadow-lg hover:bg-gray-50 transition-all duration-300">
+                        <i class="fas fa-users mr-2"></i>Ver Estudiantes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    new QRCode(document.getElementById('qrcode-preview'), {
+        text: '{{ estudiante.codigo_estudiante or "" }}',
+        width: 80,
+        height: 80,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+    });
+});
+</script>
+{% endblock %}

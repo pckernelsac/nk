@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Cursos y Materias{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.5s ease-out; }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+    .float-animation { animation: float 3s ease-in-out infinite; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 fade-in">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-book text-primary mr-3"></i>Cursos y Materias
+        </h1>
+        <p class="text-gray-600">Gestión de cursos académicos y materias del plan de estudios</p>
+    </div>
+
+    <!-- Card Principal - En Construcción -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in" style="animation-delay: 0.1s;">
+        <!-- Header del Card -->
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <div class="flex items-center justify-center">
+                <h5 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-tools mr-3"></i>Módulo en Desarrollo
+                </h5>
+            </div>
+        </div>
+
+        <!-- Contenido -->
+        <div class="p-12">
+            <div class="max-w-3xl mx-auto text-center">
+                <!-- Icono Animado -->
+                <div class="mb-8 float-animation">
+                    <i class="fas fa-graduation-cap text-primary" style="font-size: 120px; opacity: 0.2;"></i>
+                </div>
+
+                <!-- Mensaje Principal -->
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">
+                    ¡Próximamente!
+                </h2>
+                <p class="text-xl text-gray-600 mb-8">
+                    El módulo de <strong>Cursos y Materias</strong> está actualmente en desarrollo.
+                </p>
+
+                <!-- Características Planificadas -->
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 mb-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center justify-center">
+                        <i class="fas fa-lightbulb text-yellow-500 mr-3"></i>
+                        Características Planificadas
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                        <!-- Característica 1 -->
+                        <div class="bg-white rounded-xl p-6 shadow-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center">
+                                        <i class="fas fa-book-open text-white text-xl"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-bold text-gray-800 mb-2">Gestión de Cursos</h4>
+                                    <p class="text-gray-600 text-sm">Registro y administración de cursos académicos por nivel y grado.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Característica 2 -->
+                        <div class="bg-white rounded-xl p-6 shadow-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-clipboard-list text-white text-xl"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-bold text-gray-800 mb-2">Plan de Estudios</h4>
+                                    <p class="text-gray-600 text-sm">Definición de materias y contenidos por curso académico.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Característica 3 -->
+                        <div class="bg-white rounded-xl p-6 shadow-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-700 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-chalkboard-teacher text-white text-xl"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-bold text-gray-800 mb-2">Asignación de Docentes</h4>
+                                    <p class="text-gray-600 text-sm">Vinculación de docentes a cursos y materias específicas.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Característica 4 -->
+                        <div class="bg-white rounded-xl p-6 shadow-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-clock text-white text-xl"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-bold text-gray-800 mb-2">Horarios</h4>
+                                    <p class="text-gray-600 text-sm">Configuración de horarios y distribución de clases.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mensaje de Retorno -->
+                <div class="flex flex-col items-center gap-4">
+                    <p class="text-gray-600">
+                        <i class="fas fa-info-circle mr-2 text-primary"></i>
+                        Mientras tanto, puedes utilizar los demás módulos del sistema.
+                    </p>
+
+                    <div class="flex gap-4">
+                        <a href="{{ url_for('main.dashboard') }}"
+                           class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-home mr-2"></i>Ir al Dashboard
+                        </a>
+
+                        <a href="{{ url_for('estudiantes.list') }}"
+                           class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-users mr-2"></i>Ver Estudiantes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información Adicional -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <!-- Card 1 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 fade-in" style="animation-delay: 0.2s;">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-700 rounded-full flex items-center justify-center">
+                    <i class="fas fa-rocket text-white text-xl"></i>
+                </div>
+                <h3 class="ml-4 text-lg font-bold text-gray-800">En Progreso</h3>
+            </div>
+            <p class="text-gray-600 text-sm">
+                Nuestro equipo está trabajando activamente en el desarrollo de este módulo para brindarte la mejor experiencia.
+            </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 fade-in" style="animation-delay: 0.3s;">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-700 rounded-full flex items-center justify-center">
+                    <i class="fas fa-bell text-white text-xl"></i>
+                </div>
+                <h3 class="ml-4 text-lg font-bold text-gray-800">Notificaciones</h3>
+            </div>
+            <p class="text-gray-600 text-sm">
+                Te notificaremos cuando este módulo esté disponible. Mantente atento a las actualizaciones del sistema.
+            </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 fade-in" style="animation-delay: 0.4s;">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-700 rounded-full flex items-center justify-center">
+                    <i class="fas fa-comments text-white text-xl"></i>
+                </div>
+                <h3 class="ml-4 text-lg font-bold text-gray-800">Sugerencias</h3>
+            </div>
+            <p class="text-gray-600 text-sm">
+                ¿Tienes ideas o sugerencias para este módulo? Contáctanos y comparte tus propuestas de mejora.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Módulo de Cursos - En desarrollo');
+});
+</script>
+{% endblock %}

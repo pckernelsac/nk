@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}Calificar - {{ fast_test.titulo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+
+    /* Grilla de calificaciones */
+    .tabla-notas {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    .tabla-notas th, .tabla-notas td {
+        border: 1px solid #e5e7eb;
+        padding: 0;
+    }
+    .tabla-notas thead th {
+        background: #f9fafb;
+        padding: 10px 12px;
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #374151;
+        white-space: nowrap;
+    }
+    .tabla-notas thead th.col-estudiante {
+        text-align: left;
+        min-width: 220px;
+    }
+    .tabla-notas thead th.col-dni {
+        min-width: 90px;
+    }
+    .tabla-notas thead th.col-curso {
+        min-width: 130px;
+    }
+    .tabla-notas tbody tr:hover {
+        background: #faf5ff;
+    }
+    .tabla-notas tbody td {
+        vertical-align: middle;
+    }
+    .td-estudiante {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #1f2937;
+        white-space: nowrap;
+    }
+    .td-dni {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        color: #6b7280;
+        text-align: center;
+    }
+    .td-nota {
+        padding: 4px 6px;
+        text-align: center;
+    }
+    .nota-input {
+        width: 64px;
+        padding: 5px 6px;
+        border: 2px solid #d1d5db;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: border-color 0.15s;
+    }
+    .nota-input:focus {
+        border-color: #7c3aed;
+        outline: none;
+        box-shadow: 0 0 0 2px #ede9fe;
+    }
+    .nota-input.nota-alta { border-color: #10b981; color: #065f46; }
+    .nota-input.nota-media { border-color: #f59e0b; color: #92400e; }
+    .nota-input.nota-baja { border-color: #ef4444; color: #991b1b; }
+    .nota-input:disabled {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #dc2626;
+        font-weight: 700;
+        cursor: not-allowed;
+    }
+    .nsp-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        margin-top: 2px;
+        font-size: 0.68rem;
+        color: #dc2626;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+    .nsp-label input[type="checkbox"] {
+        cursor: pointer;
+        accent-color: #dc2626;
+    }
+    .nsp-display {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #dc2626;
+    }
+    /* Columna numero fijo */
+    .col-num {
+        width: 36px;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 0.78rem;
+        padding: 8px 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Breadcrumb -->
+    <nav class="mb-6" aria-label="breadcrumb">
+        <ol class="flex items-center space-x-2 text-sm text-gray-600">
+            <li><a href="{{ url_for('academico.fast_tests_lista') }}" class="hover:text-primary transition-colors">Fast Tests</a></li>
+            <li><i class="fas fa-chevron-right text-xs"></i></li>
+            <li class="text-gray-900 font-semibold">Calificar</li>
+        </ol>
+    </nav>
+
+    <!-- Header info -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 pop-in">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-1">
+                    <i class="fas fa-edit text-primary mr-2"></i>{{ fast_test.titulo }}
+                </h1>
+                <div class="flex flex-wrap gap-4 text-sm text-gray-600 mt-2">
+                    <span><i class="fas fa-school mr-1"></i><strong>Aula:</strong> {{ fast_test.aula_nombre }}</span>
+                    <span><i class="fas fa-calendar mr-1"></i><strong>Fecha:</strong> {{ fast_test.fecha_evaluacion.strftime('%d/%m/%Y') }}</span>
+                    <span><i class="fas fa-book mr-1"></i><strong>Cursos:</strong> {{ fast_tests_sesion|length }}</span>
+                    <span><i class="fas fa-users mr-1"></i><strong>Estudiantes:</strong> {{ estudiantes|length }}</span>
+                </div>
+            </div>
+            <div class="flex gap-3 items-start">
+                {% if fast_test.estado == 'abierto' %}
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                    <i class="fas fa-unlock mr-1"></i>Abierto
+                </span>
+                {% else %}
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                    <i class="fas fa-lock mr-1"></i>Cerrado
+                </span>
+                {% endif %}
+                <a href="{{ url_for('academico.fast_tests_lista') }}"
+                   class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold rounded-lg transition-all">
+                    <i class="fas fa-arrow-left mr-1"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grilla de calificaciones -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-5 text-white">
+            <h2 class="text-xl font-bold flex items-center">
+                <i class="fas fa-table mr-2"></i>Grilla de Calificaciones
+                <span class="ml-3 text-sm font-normal opacity-75">
+                    — ingresa la nota (0-20) o marca N.S.P. por cada celda
+                </span>
+            </h2>
+        </div>
+
+        {% if fast_test.estado == 'cerrado' %}
+        <div class="mx-6 mt-4 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+            <p class="text-yellow-700 font-medium">
+                <i class="fas fa-lock mr-2"></i>Este Fast Test está cerrado. Las notas son de solo lectura.
+            </p>
+        </div>
+        {% endif %}
+
+        {% if estudiantes %}
+        <form method="POST" id="formCalificar">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="overflow-x-auto p-4">
+                <table class="tabla-notas">
+                    <thead>
+                        <tr>
+                            <th class="col-num">#</th>
+                            <th class="col-estudiante">Apellidos y Nombres</th>
+                            <th class="col-dni">DNI</th>
+                            {% for ft in fast_tests_sesion %}
+                            <th class="col-curso">{{ ft.curso_nombre }}</th>
+                            {% endfor %}
+                            <th class="col-curso" style="background:#ede9fe;color:#5b21b6;">PROMEDIO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nota_ref in estudiantes %}
+                        {% set est_id = nota_ref.estudiante_id %}
+                        <tr>
+                            <td class="col-num">{{ loop.index }}</td>
+                            <td class="td-estudiante">{{ nota_ref.estudiante_nombre_completo }}</td>
+                            <td class="td-dni">{{ nota_ref.estudiante_dni or '-' }}</td>
+
+                            {% for ft in fast_tests_sesion %}
+                            {% set nota_obj = notas_map[ft.id].get(est_id) %}
+                            {% set es_nsp = nota_obj and nota_obj.observaciones == 'N.S.P.' %}
+                            <td class="td-nota">
+                                {% if fast_test.estado == 'cerrado' %}
+                                    {% if nota_obj %}
+                                        {% if es_nsp %}
+                                        <span class="nsp-display">N.S.P.</span>
+                                        {% elif nota_obj.nota is not none %}
+                                        <span class="font-bold {% if nota_obj.nota >= 14 %}text-green-600{% elif nota_obj.nota >= 11 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                            {{ nota_obj.nota|int if nota_obj.nota == nota_obj.nota|int else "%.1f"|format(nota_obj.nota) }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-gray-400">-</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-gray-300">-</span>
+                                    {% endif %}
+                                {% else %}
+                                    {# Celda editable #}
+                                    {% set ver = nota_obj.version if nota_obj else 1 %}
+                                    {% set val = nota_obj.nota if nota_obj and nota_obj.nota is not none else '' %}
+                                    <input type="hidden" name="version_{{ ft.id }}_{{ est_id }}" value="{{ ver }}">
+                                    <input type="number"
+                                           class="nota-input {% if es_nsp %}nota-nsp{% endif %}"
+                                           id="nota_{{ ft.id }}_{{ est_id }}"
+                                           name="nota_{{ ft.id }}_{{ est_id }}"
+                                           value="{{ '' if es_nsp else (val if val != '' else '') }}"
+                                           min="0" max="20" step="0.5"
+                                           placeholder="—"
+                                           {% if es_nsp %}disabled{% endif %}>
+                                    <label class="nsp-label">
+                                        <input type="checkbox"
+                                               name="nsp_{{ ft.id }}_{{ est_id }}"
+                                               value="1"
+                                               {% if es_nsp %}checked{% endif %}
+                                               onchange="toggleNsp(this, '{{ ft.id }}_{{ est_id }}')">
+                                        N.S.P.
+                                    </label>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            <td class="td-nota" style="background:#faf5ff;">
+                                <span class="promedio-cell font-bold text-lg"
+                                      id="prom_{{ est_id }}"
+                                      style="color:#5b21b6;">—</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if fast_test.estado == 'abierto' %}
+            <div class="flex justify-end gap-3 px-6 pb-6 pt-4 border-t-2 border-gray-100">
+                <button type="button" onclick="limpiarTodo()"
+                        class="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-all">
+                    <i class="fas fa-eraser mr-1"></i>Limpiar todo
+                </button>
+                <button type="submit" id="btnGuardar"
+                        class="px-7 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                    <i class="fas fa-save mr-2"></i>Guardar Notas
+                </button>
+            </div>
+            {% endif %}
+        </form>
+        {% else %}
+        <div class="p-8 text-center text-gray-500">
+            <i class="fas fa-users text-4xl mb-3 opacity-30"></i>
+            <p>No hay estudiantes registrados en este Fast Test.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleNsp(checkbox, key) {
+    const notaInput = document.getElementById('nota_' + key);
+    if (!notaInput) return;
+    if (checkbox.checked) {
+        notaInput.disabled = true;
+        notaInput.value = '';
+        notaInput.style.backgroundColor = '#fee2e2';
+        notaInput.style.borderColor = '#fca5a5';
+        notaInput.style.color = '#dc2626';
+        notaInput.placeholder = 'N.S.P.';
+    } else {
+        notaInput.disabled = false;
+        notaInput.style.backgroundColor = '';
+        notaInput.style.borderColor = '';
+        notaInput.style.color = '';
+        notaInput.placeholder = '—';
+    }
+    // Recalcular promedio del estudiante
+    const estId = key.split('_').pop();
+    calcularPromedio(estId);
+}
+
+// Colorear inputs según el valor
+function colorearNota(input) {
+    const v = parseFloat(input.value);
+    input.classList.remove('nota-alta', 'nota-media', 'nota-baja');
+    if (isNaN(v) || input.value === '') return;
+    if (v < 0) { input.value = 0; }
+    if (v > 20) { input.value = 20; }
+    const val = parseFloat(input.value);
+    if (val >= 14) input.classList.add('nota-alta');
+    else if (val >= 11) input.classList.add('nota-media');
+    else input.classList.add('nota-baja');
+}
+
+// Calcular promedio de un estudiante (por su fila)
+function calcularPromedio(estId) {
+    // Buscar todos los inputs y checkboxes NSP de esa fila por el patrón del name
+    const inputs = document.querySelectorAll(`input[name*="_${estId}"][name^="nota_"]`);
+    let suma = 0, cantidad = 0;
+    inputs.forEach(input => {
+        const nspName = input.name.replace('nota_', 'nsp_');
+        const nspChecked = document.querySelector(`input[name="${nspName}"]`)?.checked;
+        if (nspChecked) {
+            suma += 0;
+            cantidad++;
+        } else if (input.value !== '') {
+            const v = parseFloat(input.value);
+            if (!isNaN(v)) { suma += v; cantidad++; }
+        }
+    });
+    const celda = document.getElementById('prom_' + estId);
+    if (!celda) return;
+    if (cantidad === 0) {
+        celda.textContent = '—';
+        celda.style.color = '#5b21b6';
+    } else {
+        const prom = (suma / cantidad).toFixed(1);
+        celda.textContent = prom;
+        celda.style.color = parseFloat(prom) >= 14 ? '#059669'
+                          : parseFloat(prom) >= 11 ? '#d97706' : '#dc2626';
+    }
+}
+
+document.querySelectorAll('.nota-input').forEach(input => {
+    colorearNota(input);
+    // Extraer est_id del name: "nota_{ft_id}_{est_id}"
+    const parts = input.name.split('_');
+    const estId = parts[parts.length - 1];
+    input.addEventListener('input', () => { colorearNota(input); calcularPromedio(estId); });
+});
+
+// Inicializar promedios al cargar
+document.querySelectorAll('[id^="prom_"]').forEach(celda => {
+    const estId = celda.id.replace('prom_', '');
+    calcularPromedio(estId);
+});
+
+function limpiarTodo() {
+    if (!confirm('¿Limpiar todos los valores ingresados?')) return;
+    document.querySelectorAll('.nota-input:not(:disabled)').forEach(i => {
+        i.value = '';
+        i.classList.remove('nota-alta', 'nota-media', 'nota-baja');
+    });
+}
+
+document.getElementById('formCalificar')?.addEventListener('submit', function(e) {
+    const llenados = Array.from(document.querySelectorAll('.nota-input'))
+        .filter(i => i.value !== '' || (document.querySelector(`input[name="nsp_${i.name.replace('nota_','')}"]:checked`)))
+        .length;
+    const nsps = document.querySelectorAll('input[type="checkbox"][name^="nsp_"]:checked').length;
+    const total = document.querySelectorAll('.nota-input').length;
+    if (!confirm(`¿Guardar las calificaciones? (${total} celdas en total)`)) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

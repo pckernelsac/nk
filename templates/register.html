@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Sistema Escolar</title>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5F2A5D',
+                        'primary-dark': '#4a2048',
+                        'primary-light': '#8b4789',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes slideInDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .slide-in-down { animation: slideInDown 0.6s ease-out; }
+        .fade-in-up { animation: fadeInUp 0.8s ease-out; }
+        .logo-pulse { animation: pulse 2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-purple-900 flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl">
+        <!-- Logo y Título -->
+        <div class="text-center mb-8 slide-in-down">
+            <div class="inline-block bg-white rounded-full p-6 shadow-2xl mb-6 logo-pulse">
+                <img src="{{ url_for('static', filename='img/logok_bla.svg') }}" alt="Logo" class="w-24 h-24">
+            </div>
+            <h1 class="text-4xl font-bold text-white mb-2">Crear Cuenta</h1>
+            <p class="text-purple-200 text-lg">Sistema de Gestión Escolar</p>
+        </div>
+
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6 fade-in-up">
+                    {% for category, message in messages %}
+                        {% if category == 'error' or category == 'danger' %}
+                        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-4 flex items-start">
+                            <i class="fas fa-exclamation-circle text-2xl mr-3 mt-1"></i>
+                            <div>
+                                <p class="font-bold">Error</p>
+                                <p class="text-sm">{{ message }}</p>
+                            </div>
+                        </div>
+                        {% elif category == 'success' %}
+                        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg mb-4 flex items-start">
+                            <i class="fas fa-check-circle text-2xl mr-3 mt-1"></i>
+                            <div>
+                                <p class="font-bold">Éxito</p>
+                                <p class="text-sm">{{ message }}</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="bg-purple-100 border-l-4 border-purple-500 text-purple-700 p-4 rounded-lg mb-4 flex items-start">
+                            <i class="fas fa-info-circle text-2xl mr-3 mt-1"></i>
+                            <div>
+                                <p class="text-sm">{{ message }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Card de Registro -->
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden fade-in-up" style="animation-delay: 0.2s;">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-center">
+                <h2 class="text-2xl font-bold text-white flex items-center justify-center">
+                    <i class="fas fa-user-plus mr-3"></i>Registro de Usuario
+                </h2>
+            </div>
+
+            <!-- Formulario -->
+            <form method="POST" action="{{ url_for('auth.register') }}" id="registerForm" class="p-8">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Nombre Completo -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-user text-primary mr-2"></i>Nombre Completo
+                        </label>
+                        <input type="text"
+                               name="nombre"
+                               required
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all"
+                               placeholder="Ingrese su nombre completo">
+                    </div>
+
+                    <!-- Correo Electrónico -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-envelope text-primary mr-2"></i>Correo Electrónico
+                        </label>
+                        <input type="email"
+                               name="email"
+                               required
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all"
+                               placeholder="ejemplo@dominio.com">
+                    </div>
+
+                    <!-- Usuario -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-at text-primary mr-2"></i>Nombre de Usuario
+                        </label>
+                        <input type="text"
+                               name="username"
+                               required
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all"
+                               placeholder="Nombre de usuario">
+                    </div>
+
+                    <!-- Espacio vacío para alineación -->
+                    <div></div>
+
+                    <!-- Contraseña -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-lock text-primary mr-2"></i>Contraseña
+                        </label>
+                        <div class="relative">
+                            <input type="password"
+                                   name="password"
+                                   id="password"
+                                   required
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all"
+                                   placeholder="Contraseña segura">
+                            <button type="button"
+                                    class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-primary transition-colors toggle-password"
+                                    data-target="password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirmar Contraseña -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-lock text-primary mr-2"></i>Confirmar Contraseña
+                        </label>
+                        <div class="relative">
+                            <input type="password"
+                                   name="confirm_password"
+                                   id="confirm_password"
+                                   required
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all"
+                                   placeholder="Confirme su contraseña">
+                            <button type="button"
+                                    class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-primary transition-colors toggle-password"
+                                    data-target="confirm_password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Requisitos de Contraseña -->
+                <div class="mt-4 p-4 bg-purple-50 border-l-4 border-primary rounded-r-xl">
+                    <p class="text-sm font-bold text-primary mb-2">
+                        <i class="fas fa-info-circle mr-2"></i>Requisitos de Contraseña:
+                    </p>
+                    <ul class="text-xs text-gray-700 space-y-1 ml-6">
+                        <li>• Al menos 8 caracteres</li>
+                        <li>• Al menos una letra mayúscula</li>
+                        <li>• Al menos una letra minúscula</li>
+                        <li>• Al menos un número</li>
+                    </ul>
+                </div>
+
+                <!-- Botón Submit -->
+                <button type="submit"
+                        class="w-full mt-6 bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center text-lg">
+                    <i class="fas fa-user-plus mr-3"></i>Crear Cuenta
+                </button>
+
+                <!-- Enlace a Login -->
+                <div class="text-center mt-6 pt-6 border-t border-gray-200">
+                    <p class="text-gray-600 mb-3">¿Ya tienes una cuenta?</p>
+                    <a href="{{ url_for('auth.login') }}"
+                       class="inline-flex items-center px-6 py-3 bg-white hover:bg-purple-50 text-primary border-2 border-primary rounded-xl font-bold shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Iniciar Sesión
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-white text-sm">
+            <p class="opacity-80">© {{ current_year }} Sistema de Gestión Escolar</p>
+            <p class="opacity-60 mt-1">Todos los derechos reservados</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle password visibility
+            document.querySelectorAll('.toggle-password').forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    const icon = this.querySelector('i');
+
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        input.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                });
+            });
+
+            // Form validation
+            const form = document.getElementById('registerForm');
+            form.addEventListener('submit', function(event) {
+                let isValid = true;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
+
+                // Validate password length
+                if (password.length < 8) {
+                    isValid = false;
+                    alert('⚠️ La contraseña debe tener al menos 8 caracteres');
+                }
+
+                // Validate uppercase
+                if (!/[A-Z]/.test(password)) {
+                    isValid = false;
+                    alert('⚠️ La contraseña debe contener al menos una mayúscula');
+                }
+
+                // Validate lowercase
+                if (!/[a-z]/.test(password)) {
+                    isValid = false;
+                    alert('⚠️ La contraseña debe contener al menos una minúscula');
+                }
+
+                // Validate number
+                if (!/[0-9]/.test(password)) {
+                    isValid = false;
+                    alert('⚠️ La contraseña debe contener al menos un número');
+                }
+
+                // Validate password match
+                if (password !== confirmPassword) {
+                    isValid = false;
+                    alert('⚠️ Las contraseñas no coinciden');
+                }
+
+                if (!isValid) {
+                    event.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

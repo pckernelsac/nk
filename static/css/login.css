@@ -1,0 +1,220 @@
+/* Variables con el color corporativo */
+:root {
+    --primary-color: #5F2A5D;       /* Color corporativo principal */
+    --primary-dark: #4A2048;        /* Color oscuro para hover y activos */
+    --primary-light: #8B4789;       /* Color claro para variaciones */
+    --primary-bg: #F3E8F2;          /* Fondo sutil corporativo */
+    --secondary-color: #7c3b7a;     /* Versión más clara del color corporativo */
+    --text-color: #333333;
+    --error-color: #dc3545;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --white: #ffffff;
+    --gray-light: #f8f9fa;
+    --shadow: rgba(95, 42, 93, 0.2); /* Sombra basada en el color corporativo */
+    --shadow-hover: rgba(95, 42, 93, 0.3); /* Sombra más intensa para hover */
+}
+
+/* Reset y estilos base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+}
+
+.login-container {
+    background: var(--white);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px var(--shadow);
+    overflow: hidden;
+    transform: translateY(20px);
+    animation: slideUp 0.5s ease forwards;
+}
+
+.logo-container {
+    text-align: center;
+    padding: 30px 0;
+}
+
+.logo {
+    width: 180px;
+    height: 60px;
+    animation: fadeIn 1s ease;
+}
+
+.title {
+    color: var(--primary-color);
+    margin-top: 15px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.login-form {
+    padding: 20px 40px 40px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 10px;
+    color: var(--primary-color);
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 40px;
+    border: 2px solid #ddd;
+    border-radius: 25px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--shadow);
+}
+
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    cursor: pointer;
+    color: var(--primary-color);
+    transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+    color: var(--primary-dark);
+}
+
+.login-button {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.login-button:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--shadow-hover);
+}
+
+.button-icon {
+    transition: transform 0.3s ease;
+}
+
+.login-button:hover .button-icon {
+    transform: translateX(5px);
+}
+
+.register-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 14px;
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    transition: color 0.3s ease;
+}
+
+.register-link:hover {
+    color: var(--primary-light);
+}
+
+/* Alertas */
+.alert {
+    padding: 12px 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    animation: slideUp 0.3s ease;
+}
+
+.alert-error {
+    background-color: #ffeaea;
+    color: var(--error-color);
+    border: 1px solid #ffc6c6;
+}
+
+.alert-success {
+    background-color: #e8f6e8;
+    color: var(--success-color);
+    border: 1px solid #c3e6c3;
+}
+
+.alert-warning {
+    background-color: #fff8e6;
+    color: var(--warning-color);
+    border: 1px solid #ffe5b2;
+}
+
+/* Animaciones */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+
+    .login-form {
+        padding: 20px;
+    }
+
+    .title {
+        font-size: 20px;
+    }
+}

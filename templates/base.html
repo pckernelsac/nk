@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema Escolar{% endblock %}</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#5F2A5D',
+                        'primary-dark': '#4a2048',
+                        'primary-light': '#8b4789',
+                        secondary: '#F3F4F6',
+                        dark: {
+                            900: '#0a0a0f',
+                            800: '#111118',
+                            700: '#18181f',
+                            600: '#1e1e28',
+                            500: '#252530',
+                        }
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* ── Scrollbar ────────────────────────────────────────── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ── Sidebar dark scrollbar ───────────────────────────── */
+        #sidebar ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+        #sidebar ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        #sidebar ::-webkit-scrollbar-track { background: transparent; }
+
+        /* ── Alerts animation ─────────────────────────────────── */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
+
+        /* ── Sidebar sizing ───────────────────────────────────── */
+        #sidebar {
+            width: 72px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #sidebar.expanded { width: 272px; }
+        @media (max-width: 1023px) {
+            #sidebar { width: 272px !important; }
+        }
+
+        /* ── Sidebar labels visibility ────────────────────────── */
+        #sidebar .sidebar-label,
+        #sidebar .sidebar-section-label,
+        #sidebar .sidebar-footer-text {
+            opacity: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: opacity 0.15s ease 0s;
+            pointer-events: none;
+        }
+        #sidebar.expanded .sidebar-label,
+        #sidebar.expanded .sidebar-section-label,
+        #sidebar.expanded .sidebar-footer-text {
+            opacity: 1;
+            pointer-events: auto;
+            transition: opacity 0.2s ease 0.1s;
+        }
+
+        /* ── Chevron ──────────────────────────────────────────── */
+        #sidebar .icon-chevron {
+            opacity: 0;
+            transition: opacity 0.15s ease, transform 0.25s ease;
+        }
+        #sidebar.expanded .icon-chevron { opacity: 1; }
+
+        /* ── Submenu ──────────────────────────────────────────── */
+        .submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .submenu.open { max-height: 600px; }
+
+        /* ── Active states ────────────────────────────────────── */
+        .sidebar-link.active-link {
+            background: rgba(139, 71, 137, 0.15) !important;
+        }
+        .sidebar-sublink.active-sublink {
+            color: #c084fc !important;
+            background: rgba(139, 71, 137, 0.12);
+        }
+
+        /* ── Tooltip ──────────────────────────────────────────── */
+        .sidebar-tooltip {
+            position: absolute;
+            left: 64px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #1f2937;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        #sidebar:not(.expanded) .sidebar-link:hover .sidebar-tooltip { opacity: 1; }
+        #sidebar:not(.expanded) .menu-toggle:hover .sidebar-tooltip { opacity: 0; }
+
+        /* ── Flyout popover ───────────────────────────────────── */
+        .sidebar-flyout {
+            position: fixed;
+            left: 72px;
+            background: #1a1a24;
+            color: #fff;
+            border-radius: 12px;
+            padding: 6px 0;
+            min-width: 210px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.08);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            transform: translateX(-6px);
+            z-index: 200;
+        }
+        .sidebar-flyout.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+        .sidebar-flyout-title {
+            padding: 10px 14px 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255,255,255,0.35);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            margin-bottom: 4px;
+        }
+        .sidebar-flyout a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .sidebar-flyout a:hover {
+            background: rgba(139, 71, 137, 0.15);
+            color: #e9d5ff;
+        }
+        .sidebar-flyout a i { width: 16px; text-align: center; font-size: 0.7rem; opacity: 0.6; }
+        .sidebar-flyout::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: var(--arrow-top, 18px);
+            width: 12px;
+            height: 12px;
+            background: #1a1a24;
+            transform: rotate(45deg);
+            border-radius: 2px;
+            border-left: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        /* ── Pin btn ──────────────────────────────────────────── */
+        #sidebar.expanded #sidebar-pin-btn i { transform: rotate(180deg); }
+        #sidebar-pin-btn i { transition: transform 0.3s ease; }
+
+        /* ── Bottom Nav ───────────────────────────────────────── */
+        #bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
+        .bottom-nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            flex: 1; padding: 8px 4px; color: #9ca3af; font-size: 0.6rem; font-weight: 500;
+            text-decoration: none; transition: color 0.2s ease; gap: 3px; cursor: pointer;
+            border: none; background: none; position: relative;
+        }
+        .bottom-nav-item i { font-size: 1.1rem; line-height: 1; }
+        .bottom-nav-item.active,
+        .bottom-nav-item:hover { color: #5F2A5D; }
+        .bottom-nav-item.active::before {
+            content: ''; position: absolute; top: 0; width: 28px; height: 3px;
+            background: linear-gradient(90deg, #5F2A5D, #8b4789); border-radius: 0 0 4px 4px;
+        }
+        @media (max-width: 1023px) {
+            body { padding-bottom: 64px; }
+            #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; }
+        }
+
+        /* ── Header glass ─────────────────────────────────────── */
+        .header-glass {
+            background: rgba(255,255,255,0.82);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+        }
+
+        /* ── User dropdown animation ──────────────────────────── */
+        #user-menu {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        #user-menu.menu-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        #user-menu.menu-hidden {
+            opacity: 0;
+            transform: translateY(-4px) scale(0.97);
+            pointer-events: none;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <!-- Overlay para móvil -->
+    <div id="overlay" class="fixed inset-0 bg-black/50 z-30 hidden backdrop-blur-sm transition-opacity duration-300 lg:hidden" aria-hidden="true"></div>
+
+    <!-- ════════════════════════════════════════════════════════
+         SIDEBAR
+         ════════════════════════════════════════════════════════ -->
+    <aside id="sidebar" class="fixed top-0 left-0 h-full bg-dark-800 text-white z-40 transform -translate-x-full lg:translate-x-0 overflow-hidden flex flex-col border-r border-white/[0.06]">
+
+        <!-- Logo Area -->
+        <div class="h-16 flex items-center px-4 border-b border-white/[0.06] flex-shrink-0">
+            <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-lg shadow-primary/20">
+                {% if url_for %}
+                <img src="{{ url_for('static', filename='img/nk.png') }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block'" alt="Logo" class="h-6 w-6 object-contain">
+                <i class="fas fa-school hidden text-sm text-white"></i>
+                {% else %}
+                <i class="fas fa-school text-sm text-white"></i>
+                {% endif %}
+            </div>
+            <div class="sidebar-label ml-3 flex-1 min-w-0">
+                <h1 class="font-bold text-sm leading-tight truncate text-white">NKChambergo</h1>
+                <p class="text-[0.65rem] text-white/40 truncate leading-tight mt-0.5">Panel de Control</p>
+            </div>
+            <!-- Pin (desktop) -->
+            <button id="sidebar-pin-btn" class="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg hover:bg-white/[0.06] transition-colors focus:outline-none flex-shrink-0" title="Fijar menú">
+                <i class="fas fa-angles-left text-[0.65rem] text-white/30"></i>
+            </button>
+            <!-- Close (mobile) -->
+            <button id="sidebar-close" class="lg:hidden flex items-center justify-center w-7 h-7 rounded-lg hover:bg-white/[0.06] transition-colors focus:outline-none flex-shrink-0">
+                <i class="fas fa-times text-sm text-white/50"></i>
+            </button>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto overflow-x-hidden py-3 no-scrollbar">
+            <ul class="space-y-0.5 px-2">
+
+                <!-- Dashboard -->
+                <li>
+                    <a href="{{ url_for('main.dashboard') if url_for else '#' }}" class="sidebar-link flex items-center px-2 py-2 hover:bg-white/[0.05] rounded-xl transition-all duration-200 relative group/item">
+                        <div class="w-9 h-9 flex items-center justify-center flex-shrink-0 rounded-xl bg-primary border border-primary">
+                            <i class="fas fa-house text-[0.8rem] text-white"></i>
+                        </div>
+                        <span class="sidebar-label ml-3 font-medium text-[0.82rem] text-white/80">Dashboard</span>
+                        <span class="sidebar-tooltip">Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Section: Módulos -->
+                <li class="px-2 pt-5 pb-1">
+                    <span class="sidebar-section-label text-[0.6rem] font-bold text-white/20 uppercase tracking-[0.12em]">Módulos</span>
+                    <div class="sidebar-section-divider block lg:hidden w-full h-px bg-white/[0.06] mt-1.5"></div>
+                </li>
+
+                <!-- ─── Gestión Académica ──────────────────────── -->
+                <li class="menu-item">
+                    <button class="menu-toggle w-full flex items-center px-2 py-2 hover:bg-white/[0.05] rounded-xl transition-all duration-200 text-left focus:outline-none relative group/item">
+                        <div class="w-9 h-9 flex items-center justify-center flex-shrink-0 rounded-xl bg-primary border border-primary">
+                            <i class="fas fa-graduation-cap text-[0.8rem] text-white"></i>
+                        </div>
+                        <span class="sidebar-label ml-3 font-medium text-[0.82rem] text-white/80 flex-1">Gestión Académica</span>
+                        <i class="fas fa-chevron-right icon-chevron text-[0.55rem] text-white/25 mr-1 transition-transform duration-200"></i>
+                        <span class="sidebar-tooltip">Gestión Académica</span>
+                    </button>
+                    <ul class="submenu space-y-0.5 mt-0.5 pl-[1.1rem] ml-[0.85rem] border-l border-white/[0.06]">
+                        <li><a href="{{ url_for('estudiantes.list') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-list-ul w-4 text-center text-[0.65rem]"></i><span>Lista de Estudiantes</span></a></li>
+                        <li><a href="{{ url_for('estudiantes.form') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-user-plus w-4 text-center text-[0.65rem]"></i><span>Registro Estudiantes</span></a></li>
+                        <li><a href="{{ url_for('estudiantes.seleccionar_carnets') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-id-card w-4 text-center text-[0.65rem]"></i><span>Generar Carnets</span></a></li>
+                        <li><a href="{{ url_for('docentes.form') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-chalkboard-teacher w-4 text-center text-[0.65rem]"></i><span>Registro Docentes</span></a></li>
+                        <li><a href="{{ url_for('cursos.list') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-book w-4 text-center text-[0.65rem]"></i><span>Cursos y Materias</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- ─── Aulas ──────────────────────────────────── -->
+                <li class="menu-item">
+                    <button class="menu-toggle w-full flex items-center px-2 py-2 hover:bg-white/[0.05] rounded-xl transition-all duration-200 text-left focus:outline-none relative group/item">
+                        <div class="w-9 h-9 flex items-center justify-center flex-shrink-0 rounded-xl bg-primary border border-primary">
+                            <i class="fas fa-door-open text-[0.8rem] text-white"></i>
+                        </div>
+                        <span class="sidebar-label ml-3 font-medium text-[0.82rem] text-white/80 flex-1">Aulas</span>
+                        <i class="fas fa-chevron-right icon-chevron text-[0.55rem] text-white/25 mr-1 transition-transform duration-200"></i>
+                        <span class="sidebar-tooltip">Aulas</span>
+                    </button>
+                    <ul class="submenu space-y-0.5 mt-0.5 pl-[1.1rem] ml-[0.85rem] border-l border-white/[0.06]">
+                        <li><a href="{{ url_for('aulas.lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-table-cells w-4 text-center text-[0.65rem]"></i><span>Lista de Aulas</span></a></li>
+                        <li><a href="{{ url_for('aulas.crear') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-plus-circle w-4 text-center text-[0.65rem]"></i><span>Crear Aula</span></a></li>
+                        <li><a href="{{ url_for('aulas.migrar_datos') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-database w-4 text-center text-[0.65rem]"></i><span>Migrar Datos</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- ─── Asistencias ────────────────────────────── -->
+                <li class="menu-item">
+                    <button class="menu-toggle w-full flex items-center px-2 py-2 hover:bg-white/[0.05] rounded-xl transition-all duration-200 text-left focus:outline-none relative group/item">
+                        <div class="w-9 h-9 flex items-center justify-center flex-shrink-0 rounded-xl bg-primary border border-primary">
+                            <i class="fas fa-clipboard-check text-[0.8rem] text-white"></i>
+                        </div>
+                        <span class="sidebar-label ml-3 font-medium text-[0.82rem] text-white/80 flex-1">Asistencias</span>
+                        <i class="fas fa-chevron-right icon-chevron text-[0.55rem] text-white/25 mr-1 transition-transform duration-200"></i>
+                        <span class="sidebar-tooltip">Asistencias</span>
+                    </button>
+                    <ul class="submenu space-y-0.5 mt-0.5 pl-[1.1rem] ml-[0.85rem] border-l border-white/[0.06]">
+                        <li><a href="{{ url_for('asistencias.scan') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-qrcode w-4 text-center text-[0.65rem]"></i><span>Escanear QR</span></a></li>
+                        <li><a href="{{ url_for('asistencias.por_aula') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-chalkboard w-4 text-center text-[0.65rem]"></i><span>Asistencia por Aula</span></a></li>
+                        <li><a href="{{ url_for('asistencias.justificaciones_lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-file-circle-check w-4 text-center text-[0.65rem]"></i><span>Justificaciones</span></a></li>
+                        <li><a href="{{ url_for('asistencias.dashboard') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-chart-pie w-4 text-center text-[0.65rem]"></i><span>Dashboard Asistencias</span></a></li>
+                        <li><a href="{{ url_for('asistencias.reportes') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-file-export w-4 text-center text-[0.65rem]"></i><span>Exportar Reportes</span></a></li>
+                        <li><a href="{{ url_for('asistencias.reporte_mensual') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-calendar-days w-4 text-center text-[0.65rem]"></i><span>Reporte Mensual</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- ─── Sistema Académico ──────────────────────── -->
+                <li class="menu-item">
+                    <button class="menu-toggle w-full flex items-center px-2 py-2 hover:bg-white/[0.05] rounded-xl transition-all duration-200 text-left focus:outline-none relative group/item">
+                        <div class="w-9 h-9 flex items-center justify-center flex-shrink-0 rounded-xl bg-primary border border-primary">
+                            <i class="fas fa-book-open text-[0.8rem] text-white"></i>
+                        </div>
+                        <span class="sidebar-label ml-3 font-medium text-[0.82rem] text-white/80 flex-1">Sistema Académico</span>
+                        <i class="fas fa-chevron-right icon-chevron text-[0.55rem] text-white/25 mr-1 transition-transform duration-200"></i>
+                        <span class="sidebar-tooltip">Sistema Académico</span>
+                    </button>
+                    <ul class="submenu space-y-0.5 mt-0.5 pl-[1.1rem] ml-[0.85rem] border-l border-white/[0.06]">
+                        <li><a href="{{ url_for('academico.periodos_lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-calendar-alt w-4 text-center text-[0.65rem]"></i><span>Periodos Académicos</span></a></li>
+                        <li><a href="{{ url_for('academico.cursos_lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-book w-4 text-center text-[0.65rem]"></i><span>Cursos</span></a></li>
+                        <li><a href="{{ url_for('academico.fast_tests_lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-bolt w-4 text-center text-[0.65rem]"></i><span>Fast Tests</span></a></li>
+                        <li><a href="{{ url_for('academico.crear_fast_test') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-pen-to-square w-4 text-center text-[0.65rem]"></i><span>Crear Fast Test</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- ─── Pagos ──────────────────────────────────── -->
+                <li class="menu-item">
+                    <button class="menu-toggle w-full flex items-center px-2 py-2 hover:bg-white/[0.05] rounded-xl transition-all duration-200 text-left focus:outline-none relative group/item">
+                        <div class="w-9 h-9 flex items-center justify-center flex-shrink-0 rounded-xl bg-primary border border-primary">
+                            <i class="fas fa-hand-holding-dollar text-[0.8rem] text-white"></i>
+                        </div>
+                        <span class="sidebar-label ml-3 font-medium text-[0.82rem] text-white/80 flex-1">Pagos</span>
+                        <i class="fas fa-chevron-right icon-chevron text-[0.55rem] text-white/25 mr-1 transition-transform duration-200"></i>
+                        <span class="sidebar-tooltip">Pagos</span>
+                    </button>
+                    <ul class="submenu space-y-0.5 mt-0.5 pl-[1.1rem] ml-[0.85rem] border-l border-white/[0.06]">
+                        <li><a href="{{ url_for('pensiones.dashboard') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-gauge-high w-4 text-center text-[0.65rem]"></i><span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('pensiones.registrar') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-cash-register w-4 text-center text-[0.65rem]"></i><span>Registrar Pago</span></a></li>
+                        <li><a href="{{ url_for('pensiones.historial') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-clock-rotate-left w-4 text-center text-[0.65rem]"></i><span>Historial</span></a></li>
+                        <li><a href="{{ url_for('pensiones.asignar_lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-tags w-4 text-center text-[0.65rem]"></i><span>Asignar Pensiones</span></a></li>
+                        <li><a href="{{ url_for('pagos.obligaciones_lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-file-invoice-dollar w-4 text-center text-[0.65rem]"></i><span>Obligaciones</span></a></li>
+                        <li><a href="{{ url_for('pagos.conceptos_lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-layer-group w-4 text-center text-[0.65rem]"></i><span>Conceptos</span></a></li>
+                        <li><a href="{{ url_for('pensiones.configuracion') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-sliders w-4 text-center text-[0.65rem]"></i><span>Configuración</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- ─── Academia ───────────────────────────────── -->
+                <li class="menu-item">
+                    <button class="menu-toggle w-full flex items-center px-2 py-2 hover:bg-white/[0.05] rounded-xl transition-all duration-200 text-left focus:outline-none relative group/item">
+                        <div class="w-9 h-9 flex items-center justify-center flex-shrink-0 rounded-xl bg-primary border border-primary">
+                            <i class="fas fa-landmark text-[0.8rem] text-white"></i>
+                        </div>
+                        <span class="sidebar-label ml-3 font-medium text-[0.82rem] text-white/80 flex-1">Academia</span>
+                        <i class="fas fa-chevron-right icon-chevron text-[0.55rem] text-white/25 mr-1 transition-transform duration-200"></i>
+                        <span class="sidebar-tooltip">Academia</span>
+                    </button>
+                    <ul class="submenu space-y-0.5 mt-0.5 pl-[1.1rem] ml-[0.85rem] border-l border-white/[0.06]">
+                        <li><a href="/academia/" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-gauge w-4 text-center text-[0.65rem]"></i><span>Dashboard Academia</span></a></li>
+                        <li><a href="/academia/results" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-users w-4 text-center text-[0.65rem]"></i><span>Estudiantes</span></a></li>
+                        <li><a href="/academia/eta/eta_search" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-magnifying-glass-chart w-4 text-center text-[0.65rem]"></i><span>Análisis ETAs</span></a></li>
+                        <li><a href="/academia/merit_ranking" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-ranking-star w-4 text-center text-[0.65rem]"></i><span>Ranking Mérito</span></a></li>
+                        <li><a href="/academia/estudiante/login" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-user-graduate w-4 text-center text-[0.65rem]"></i><span>Portal Estudiantes</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- ─── Admin (solo administrador) ─────────────── -->
+                {% if session.get('rol') == 'administrador' %}
+                <li class="px-2 pt-5 pb-1 mt-1">
+                    <div class="flex items-center gap-2">
+                        <span class="sidebar-section-label text-[0.6rem] font-bold text-white/20 uppercase tracking-[0.12em]">Sistema</span>
+                        <div class="sidebar-section-divider flex-1 h-px bg-white/[0.04]"></div>
+                    </div>
+                </li>
+                <li class="menu-item">
+                    <button class="menu-toggle w-full flex items-center px-2 py-2 hover:bg-white/[0.05] rounded-xl transition-all duration-200 text-left focus:outline-none relative group/item">
+                        <div class="w-9 h-9 flex items-center justify-center flex-shrink-0 rounded-xl bg-primary border border-primary">
+                            <i class="fas fa-screwdriver-wrench text-[0.8rem] text-white"></i>
+                        </div>
+                        <span class="sidebar-label ml-3 font-medium text-[0.82rem] text-white/80 flex-1">Administración</span>
+                        <i class="fas fa-chevron-right icon-chevron text-[0.55rem] text-white/25 mr-1 transition-transform duration-200"></i>
+                        <span class="sidebar-tooltip">Administración</span>
+                    </button>
+                    <ul class="submenu space-y-0.5 mt-0.5 pl-[1.1rem] ml-[0.85rem] border-l border-white/[0.06]">
+                        <li><a href="{{ url_for('administracion.dashboard') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-gauge-simple-high w-4 text-center text-[0.65rem]"></i><span>Dashboard Admin</span></a></li>
+                        <li><a href="{{ url_for('administracion.usuarios_lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-users-gear w-4 text-center text-[0.65rem]"></i><span>Gestión Usuarios</span></a></li>
+                        <li><a href="{{ url_for('administracion.roles_info') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-shield-halved w-4 text-center text-[0.65rem]"></i><span>Roles y Permisos</span></a></li>
+                        <li><a href="{{ url_for('administracion.configuracion') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-gear w-4 text-center text-[0.65rem]"></i><span>Configuración Global</span></a></li>
+                        <li><a href="{{ url_for('administracion.auditoria_lista') if url_for else '#' }}" class="sidebar-sublink flex items-center gap-2.5 px-3 py-[0.45rem] text-[0.8rem] text-white/45 hover:text-white/90 hover:bg-white/[0.04] transition-all rounded-lg"><i class="fas fa-scroll w-4 text-center text-[0.65rem]"></i><span>Auditoría</span></a></li>
+                    </ul>
+                </li>
+                {% endif %}
+
+            </ul>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="px-4 py-3 border-t border-white/[0.06] flex items-center gap-2">
+            <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+                <div class="w-2 h-2 rounded-full bg-emerald-500/60 shadow-sm shadow-emerald-500/30"></div>
+            </div>
+            <p class="sidebar-footer-text text-[0.65rem] text-white/20 font-medium">v2.0.0 &middot; Online</p>
+        </div>
+    </aside>
+
+    <!-- ════════════════════════════════════════════════════════
+         MAIN CONTENT
+         ════════════════════════════════════════════════════════ -->
+    <div class="lg:ml-[72px] transition-all duration-300 ease-in-out" style="transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1);" id="main-content">
+
+        <!-- Header -->
+        <header class="header-glass border-b border-gray-200/60 h-16 fixed top-0 left-0 right-0 lg:left-[72px] z-20" style="transition: left 0.3s cubic-bezier(0.4,0,0.2,1);">
+            <div class="h-full px-4 sm:px-6 flex items-center justify-between gap-4">
+                <!-- Mobile logo -->
+                <div class="lg:hidden flex items-center gap-2.5 flex-shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-sm">
+                        <img src="{{ url_for('static', filename='img/nk.png') }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block'" alt="Logo" class="h-5 w-5 object-contain">
+                        <i class="fas fa-school hidden text-white text-xs"></i>
+                    </div>
+                    <span class="font-bold text-primary text-sm">NKChambergo</span>
+                </div>
+
+                <!-- Search bar -->
+                <div class="hidden md:flex flex-1 max-w-lg ml-2">
+                    <div class="relative w-full">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                            <i class="fas fa-search text-xs"></i>
+                        </span>
+                        <input type="text" class="w-full py-2.5 pl-10 pr-4 text-sm text-gray-700 bg-gray-100/80 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all placeholder-gray-400" placeholder="Buscar estudiante, curso o documento...">
+                    </div>
+                </div>
+
+                <!-- Right side -->
+                <div class="ml-auto flex items-center gap-2 sm:gap-3">
+
+                    <!-- Notifications -->
+                    <button class="relative w-10 h-10 flex items-center justify-center text-gray-500 hover:text-primary hover:bg-gray-100 transition-all rounded-xl focus:outline-none">
+                        <i class="far fa-bell text-lg"></i>
+                        <span class="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+                    </button>
+
+                    <!-- Divider -->
+                    <div class="h-8 w-px bg-gray-200 hidden sm:block"></div>
+
+                    <!-- User profile -->
+                    <div class="relative">
+                        <button id="user-menu-button" class="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-gray-100 transition-all focus:outline-none group">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-sm font-semibold text-gray-800 leading-none">{{ session.get('username', 'Usuario') }}</p>
+                                <p class="text-[0.65rem] text-gray-400 mt-0.5 capitalize font-medium">{{ session.get('rol', 'invitado') }}</p>
+                            </div>
+                            <div class="relative">
+                                <img src="{{ url_for('static', filename='img/default-avatar.jpg') if url_for else '' }}" alt="Avatar" class="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-100 group-hover:ring-primary/20 transition-all">
+                                <div class="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-emerald-500 border-2 border-white rounded-full"></div>
+                            </div>
+                            <i class="fas fa-chevron-down text-gray-300 text-[0.55rem] transition-transform group-hover:text-gray-500 hidden sm:block" id="user-chevron"></i>
+                        </button>
+
+                        <!-- Dropdown -->
+                        <div id="user-menu" class="menu-hidden absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 py-1.5 z-50">
+                            <div class="px-4 py-3 border-b border-gray-100 sm:hidden">
+                                <p class="text-sm font-semibold text-gray-800">{{ session.get('username', 'Usuario') }}</p>
+                                <p class="text-xs text-gray-400 capitalize">{{ session.get('rol', 'invitado') }}</p>
+                            </div>
+                            <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors rounded-lg mx-1.5">
+                                <i class="far fa-user w-4 text-center text-gray-400 text-xs"></i>
+                                <span>Mi Perfil</span>
+                            </a>
+                            <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors rounded-lg mx-1.5">
+                                <i class="fas fa-cog w-4 text-center text-gray-400 text-xs"></i>
+                                <span>Configuración</span>
+                            </a>
+                            <div class="my-1.5 border-t border-gray-100 mx-3"></div>
+                            <a href="{{ url_for('auth.logout') if url_for else '#' }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-lg mx-1.5">
+                                <i class="fas fa-arrow-right-from-bracket w-4 text-center text-xs"></i>
+                                <span>Cerrar Sesión</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="pt-20 p-4 sm:p-6 lg:p-8 min-h-screen">
+
+            <!-- Page header -->
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{% block page_title %}{% endblock %}</h2>
+                    <nav class="flex text-sm text-gray-400 mt-1" aria-label="Breadcrumb">
+                        {% block breadcrumbs %}{% endblock %}
+                    </nav>
+                </div>
+                {% block page_actions %}{% endblock %}
+            </div>
+
+            <!-- Flash messages -->
+            <div id="flash-messages" class="fixed top-20 right-4 z-50 w-full max-w-sm pointer-events-none">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="space-y-2.5 pointer-events-auto">
+                            {% for category, message in messages %}
+                                {% set bg_color = 'bg-purple-50 border-purple-200 text-purple-800' %}
+                                {% set icon = 'fa-info-circle text-purple-500' %}
+                                {% if category in ['error', 'danger'] %}
+                                    {% set bg_color = 'bg-red-50 border-red-200 text-red-800' %}
+                                    {% set icon = 'fa-exclamation-circle text-red-500' %}
+                                {% elif category == 'success' %}
+                                    {% set bg_color = 'bg-emerald-50 border-emerald-200 text-emerald-800' %}
+                                    {% set icon = 'fa-check-circle text-emerald-500' %}
+                                {% elif category == 'warning' %}
+                                    {% set bg_color = 'bg-amber-50 border-amber-200 text-amber-800' %}
+                                    {% set icon = 'fa-exclamation-triangle text-amber-500' %}
+                                {% endif %}
+                                <div class="animate-slide-in flex items-start p-4 rounded-xl border shadow-lg shadow-gray-200/30 {{ bg_color }} relative">
+                                    <i class="fas {{ icon }} mt-0.5 mr-3 text-base"></i>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium">{{ message }}</p>
+                                    </div>
+                                    <button onclick="this.parentElement.style.transition='all 0.3s ease';this.parentElement.style.opacity='0';this.parentElement.style.transform='translateX(20px)';setTimeout(()=>this.parentElement.remove(),300)" class="text-gray-400 hover:text-gray-600 focus:outline-none ml-2 -mt-0.5">
+                                        <i class="fas fa-times text-xs"></i>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Content -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 min-h-[500px]">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-gray-100 py-5 mt-auto">
+            <div class="px-4 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-3">
+                <p class="text-xs text-gray-400">&copy; {{ current_year }} NKChambergo &middot; Sistema de Gestión Escolar</p>
+                <div class="flex items-center gap-4 text-xs text-gray-400">
+                    <a href="#" class="hover:text-primary transition-colors">Soporte</a>
+                    <a href="#" class="hover:text-primary transition-colors">Privacidad</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         BOTTOM NAV (mobile)
+         ════════════════════════════════════════════════════════ -->
+    <nav id="bottom-nav" class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-gray-200/60 flex items-stretch shadow-lg shadow-gray-300/20">
+        <a href="{{ url_for('main.dashboard') if url_for else '#' }}" class="bottom-nav-item" data-path="/">
+            <i class="fas fa-house"></i><span>Inicio</span>
+        </a>
+        <a href="{{ url_for('estudiantes.list') if url_for else '#' }}" class="bottom-nav-item" data-path="/estudiantes">
+            <i class="fas fa-user-graduate"></i><span>Alumnos</span>
+        </a>
+        <a href="{{ url_for('asistencias.por_aula') if url_for else '#' }}" class="bottom-nav-item" data-path="/asistencias">
+            <i class="fas fa-clipboard-check"></i><span>Asistencia</span>
+        </a>
+        <a href="{{ url_for('pensiones.dashboard') if url_for else '#' }}" class="bottom-nav-item" data-path="/pagos">
+            <i class="fas fa-hand-holding-dollar"></i><span>Pagos</span>
+        </a>
+        <button id="bottom-nav-more" class="bottom-nav-item" aria-label="Más opciones">
+            <i class="fas fa-bars"></i><span>Menú</span>
+        </button>
+    </nav>
+
+    <!-- ════════════════════════════════════════════════════════
+         JAVASCRIPT
+         ════════════════════════════════════════════════════════ -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar        = document.getElementById('sidebar');
+            const overlay        = document.getElementById('overlay');
+            const mobileBtn      = document.getElementById('mobile-menu-button');
+            const sidebarClose   = document.getElementById('sidebar-close');
+            const pinBtn         = document.getElementById('sidebar-pin-btn');
+            const mainContent    = document.getElementById('main-content');
+            const header         = document.querySelector('header');
+            const userMenuButton = document.getElementById('user-menu-button');
+            const userMenu       = document.getElementById('user-menu');
+            const userChevron    = document.getElementById('user-chevron');
+
+            // ── Sidebar expand/collapse ─────────────────────────────────────
+            const STORAGE_KEY = 'sidebar_expanded';
+            let isExpanded = localStorage.getItem(STORAGE_KEY) !== 'false';
+
+            function applyExpanded(expanded, animate = true) {
+                if (!animate) sidebar.style.transition = 'none';
+                const isDesktop = window.innerWidth >= 1024;
+                const existingFlyout = document.querySelector('.sidebar-flyout');
+                if (existingFlyout) existingFlyout.classList.remove('visible');
+
+                if (expanded) {
+                    sidebar.classList.add('expanded');
+                    if (isDesktop) {
+                        if (mainContent) mainContent.style.marginLeft = '272px';
+                        if (header) header.style.left = '272px';
+                    }
+                } else {
+                    sidebar.classList.remove('expanded');
+                    document.querySelectorAll('.submenu.open').forEach(sm => {
+                        sm.classList.remove('open');
+                        sm.previousElementSibling?.querySelector('.icon-chevron')?.classList.remove('rotate-90');
+                    });
+                    if (isDesktop) {
+                        if (mainContent) mainContent.style.marginLeft = '72px';
+                        if (header) header.style.left = '72px';
+                    }
+                }
+                if (!animate) { sidebar.offsetHeight; sidebar.style.transition = ''; }
+                localStorage.setItem(STORAGE_KEY, expanded);
+            }
+
+            function resetMobileLayout() {
+                if (window.innerWidth < 1024) {
+                    if (mainContent) mainContent.style.marginLeft = '';
+                    if (header) header.style.left = '';
+                }
+            }
+
+            applyExpanded(isExpanded, false);
+            resetMobileLayout();
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth < 1024) resetMobileLayout();
+                else applyExpanded(isExpanded, false);
+            });
+
+            if (pinBtn) {
+                pinBtn.addEventListener('click', () => {
+                    isExpanded = !isExpanded;
+                    applyExpanded(isExpanded);
+                });
+            }
+
+            // ── Mobile sidebar ──────────────────────────────────────────────
+            function openMobile() {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('expanded');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                const moreBtn = document.getElementById('bottom-nav-more');
+                if (moreBtn) moreBtn.classList.add('active');
+            }
+            function closeMobile() {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+                const moreBtn = document.getElementById('bottom-nav-more');
+                if (moreBtn) moreBtn.classList.remove('active');
+            }
+
+            if (mobileBtn)    mobileBtn.addEventListener('click', openMobile);
+            if (sidebarClose) sidebarClose.addEventListener('click', closeMobile);
+            overlay.addEventListener('click', closeMobile);
+
+            // ── Flyout for collapsed sidebar ────────────────────────────────
+            const flyout = document.createElement('div');
+            flyout.className = 'sidebar-flyout';
+            document.body.appendChild(flyout);
+
+            let flyoutTimeout = null;
+
+            function showFlyout(menuItem) {
+                if (sidebar.classList.contains('expanded') || window.innerWidth < 1024) return;
+                const button = menuItem.querySelector('.menu-toggle');
+                const submenu = menuItem.querySelector('.submenu');
+                if (!button || !submenu) return;
+
+                const label = button.querySelector('.sidebar-label')?.textContent?.trim() || '';
+                const links = submenu.querySelectorAll('.sidebar-sublink');
+
+                let html = '<div class="sidebar-flyout-title">' + label + '</div>';
+                links.forEach(link => {
+                    const icon = link.querySelector('i')?.className || 'fas fa-circle';
+                    const text = link.querySelector('span')?.textContent?.trim() || '';
+                    const href = link.getAttribute('href') || '#';
+                    html += '<a href="' + href + '"><i class="' + icon + '"></i>' + text + '</a>';
+                });
+                flyout.innerHTML = html;
+
+                const rect = button.getBoundingClientRect();
+                let top = rect.top;
+                flyout.style.top = top + 'px';
+                flyout.style.left = '72px';
+                flyout.classList.add('visible');
+
+                requestAnimationFrame(() => {
+                    const flyoutRect = flyout.getBoundingClientRect();
+                    if (flyoutRect.bottom > window.innerHeight - 10) {
+                        top = Math.max(10, window.innerHeight - flyoutRect.height - 10);
+                        flyout.style.top = top + 'px';
+                    }
+                    const arrowTop = rect.top + rect.height / 2 - top;
+                    flyout.style.setProperty('--arrow-top', arrowTop + 'px');
+                });
+            }
+
+            function hideFlyout() { flyout.classList.remove('visible'); }
+
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('mouseenter', () => { clearTimeout(flyoutTimeout); showFlyout(item); });
+                item.addEventListener('mouseleave', () => { flyoutTimeout = setTimeout(hideFlyout, 120); });
+            });
+            flyout.addEventListener('mouseenter', () => clearTimeout(flyoutTimeout));
+            flyout.addEventListener('mouseleave', () => { flyoutTimeout = setTimeout(hideFlyout, 120); });
+
+            // ── Submenu accordion ───────────────────────────────────────────
+            document.querySelectorAll('.menu-toggle').forEach(button => {
+                button.addEventListener('click', () => {
+                    if (window.innerWidth >= 1024 && !sidebar.classList.contains('expanded')) {
+                        isExpanded = true;
+                        applyExpanded(true);
+                        hideFlyout();
+                        setTimeout(() => openSubmenu(button), 150);
+                        return;
+                    }
+                    openSubmenu(button);
+                });
+            });
+
+            function openSubmenu(button) {
+                const menuItem = button.parentElement;
+                const submenu  = menuItem.querySelector('.submenu');
+                const icon     = button.querySelector('.icon-chevron');
+                const isOpen   = submenu.classList.contains('open');
+
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    if (item !== menuItem) {
+                        const sm = item.querySelector('.submenu');
+                        const ic = item.querySelector('.icon-chevron');
+                        if (sm && sm.classList.contains('open')) {
+                            sm.classList.remove('open');
+                            if (ic) ic.classList.remove('rotate-90');
+                        }
+                    }
+                });
+
+                if (isOpen) {
+                    submenu.classList.remove('open');
+                    if (icon) icon.classList.remove('rotate-90');
+                } else {
+                    submenu.classList.add('open');
+                    if (icon) icon.classList.add('rotate-90');
+                }
+            }
+
+            // ── Active link highlighting ────────────────────────────────────
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.sidebar-sublink, .sidebar-link').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && href !== '/' && currentPath.startsWith(href)) {
+                    link.classList.add('active-sublink');
+                    const parentSubmenu = link.closest('.submenu');
+                    if (parentSubmenu) {
+                        parentSubmenu.classList.add('open');
+                        const ic = parentSubmenu.previousElementSibling?.querySelector('.icon-chevron');
+                        if (ic) ic.classList.add('rotate-90');
+                    }
+                }
+            });
+
+            // ── User menu ───────────────────────────────────────────────────
+            if (userMenuButton && userMenu) {
+                userMenuButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isHidden = userMenu.classList.contains('menu-hidden');
+                    if (isHidden) {
+                        userMenu.classList.remove('menu-hidden');
+                        userMenu.classList.add('menu-visible');
+                    } else {
+                        userMenu.classList.remove('menu-visible');
+                        userMenu.classList.add('menu-hidden');
+                    }
+                    if (userChevron) userChevron.classList.toggle('rotate-180');
+                });
+                document.addEventListener('click', (e) => {
+                    if (!userMenu.contains(e.target) && !userMenuButton.contains(e.target)) {
+                        userMenu.classList.remove('menu-visible');
+                        userMenu.classList.add('menu-hidden');
+                        if (userChevron) userChevron.classList.remove('rotate-180');
+                    }
+                });
+            }
+
+            // ── Bottom nav ──────────────────────────────────────────────────
+            const bottomNavMore = document.getElementById('bottom-nav-more');
+            if (bottomNavMore) bottomNavMore.addEventListener('click', openMobile);
+
+            const bottomNavItems = document.querySelectorAll('#bottom-nav .bottom-nav-item[data-path]');
+            const path = window.location.pathname;
+            let bestMatch = null, bestLen = 0;
+            bottomNavItems.forEach(item => {
+                const p = item.getAttribute('data-path');
+                if (p && p !== '/' && path.startsWith(p) && p.length > bestLen) { bestLen = p.length; bestMatch = item; }
+                if (p === '/' && path === '/') bestMatch = item;
+            });
+            if (bestMatch) bestMatch.classList.add('active');
+
+            // ── Auto-dismiss flash messages ─────────────────────────────────
+            setTimeout(() => {
+                const fm = document.getElementById('flash-messages');
+                if (fm) {
+                    Array.from(fm.querySelectorAll('.animate-slide-in')).forEach((el, i) => {
+                        setTimeout(() => {
+                            el.style.transition = 'all 0.4s ease';
+                            el.style.opacity = '0';
+                            el.style.transform = 'translateX(20px)';
+                            setTimeout(() => el.remove(), 400);
+                        }, i * 100);
+                    });
+                }
+            }, 4500);
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

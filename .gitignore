@@ -1,0 +1,89 @@
+# Archivo .env con credenciales sensibles
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+*.pyc
+
+# Flask
+instance/
+.webassets-cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Cursor / Claude local
+.claude/
+
+# Reportes generados (PDFs)
+reports/*.pdf
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Uploads
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.old
+
+# PDF temporales
+temp_pdfs/
+
+# Archivos comprimidos
+*.zip
+*.tar.gz
+*.rar
+
+# Documentación temporal de análisis/debugging
+ANALISIS*.md
+BUG_REPORT*.md
+CORRECCIONES*.md
+FIX_*.md
+
+# Credenciales de Firebase
+config/*.json
+!config/.gitkeep

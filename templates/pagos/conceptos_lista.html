@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Conceptos de Pago{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 pop-in flex justify-between items-center">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-file-invoice-dollar text-primary mr-3"></i>Conceptos de Pago
+            </h1>
+            <p class="text-gray-600">Gestiona los conceptos de pago por año escolar - {{ anio_escolar }}</p>
+        </div>
+        <div class="flex gap-3 items-center">
+            <!-- Selector de Año -->
+            <form method="GET" class="flex items-center">
+                <select name="anio_escolar" onchange="this.form.submit()"
+                        class="px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all font-semibold">
+                    {% for year in range(current_year - 2, current_year + 3) %}
+                    <option value="{{ year }}" {% if anio_escolar == year|string %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{{ url_for('pagos.crear_concepto', anio_escolar=anio_escolar) }}"
+               class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                <i class="fas fa-plus mr-2"></i>Nuevo Concepto
+            </a>
+        </div>
+    </div>
+
+    <!-- Lista de Conceptos -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-list-check mr-3"></i>Conceptos Registrados
+            </h2>
+        </div>
+        <div class="p-8">
+            {% if conceptos %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tipo de Pago</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Monto</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Aplicabilidad</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Cuotas</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Obligaciones</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for concepto in conceptos %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-semibold text-gray-900">{{ concepto.tipo_pago_nombre }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-lg font-bold text-green-600">S/ {{ "%.2f"|format(concepto.monto) }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex gap-2">
+                                    {% if concepto.nivel %}
+                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">{{ concepto.nivel }}</span>
+                                    {% endif %}
+                                    {% if concepto.grado %}
+                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">{{ concepto.grado }}</span>
+                                    {% endif %}
+                                    {% if not concepto.nivel and not concepto.grado %}
+                                    <span class="text-gray-400">Todos</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if concepto.permite_cuotas %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-money-bill-wave mr-1"></i>Hasta {{ concepto.numero_cuotas_max }} cuotas
+                                </span>
+                                {% else %}
+                                <span class="text-gray-400">Pago único</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
+                                    {{ concepto.obligaciones.count() }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if concepto.activo %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Activo
+                                </span>
+                                {% else %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+                                    <i class="fas fa-ban mr-1"></i>Inactivo
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 text-2xl mr-4"></i>
+                    <p class="text-blue-700 font-medium">No hay conceptos registrados para el año {{ anio_escolar }}.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

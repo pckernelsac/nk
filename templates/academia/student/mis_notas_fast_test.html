@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NK Chambergo - Mis Notas Fast Test</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #5F2A5D;
+            --primary-dark: #4a2048;
+            --primary-light: #8b4789;
+            --primary-50: #f8f0f8;
+            --primary-100: #f0ddef;
+            --primary-200: #e0bbe0;
+            --primary-accent: #7c3b7a;
+            --bg: #f7f7fa;
+            --card: #ffffff;
+            --border: #ebe5ef;
+            --text-dark: #1a1a2e;
+            --text: #4a4a5a;
+            --text-light: #8a8a9a;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+
+        /* ── Header ─────────────────────────────────── */
+        .app-header {
+            position: sticky; top: 0; z-index: 50;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .app-header-inner {
+            max-width: 1200px; margin: 0 auto;
+            padding: 0 1.25rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        }
+        .header-brand { display: flex; align-items: center; gap: 0.75rem; }
+        .header-logo {
+            width: 38px; height: 38px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(95,42,93,0.25);
+        }
+        .header-logo img { width: 24px; height: 24px; object-fit: contain; }
+        .header-title { font-weight: 700; font-size: 0.95rem; color: var(--text-dark); }
+        .header-subtitle { font-size: 0.6rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+        .header-right { display: flex; align-items: center; gap: 0.75rem; }
+        .header-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 100px;
+            background: var(--primary-50); border: 1px solid var(--primary-200);
+            font-size: 0.7rem; font-weight: 600; color: var(--primary);
+        }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 18px; border-radius: 10px; border: 1px solid var(--primary-200);
+            background: var(--primary-50); color: var(--primary);
+            font-size: 0.78rem; font-weight: 600; text-decoration: none;
+            transition: all 0.2s ease; font-family: 'Inter', sans-serif; cursor: pointer;
+        }
+        .btn-back:hover { background: var(--primary-100); border-color: var(--primary-light); }
+        .btn-logout {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 10px; border: 1px solid #fecaca;
+            background: #fef2f2; color: #dc2626;
+            font-size: 0.75rem; font-weight: 600; text-decoration: none;
+            transition: all 0.2s ease; font-family: 'Inter', sans-serif; cursor: pointer;
+        }
+        .btn-logout:hover { background: #fee2e2; border-color: #fca5a5; }
+
+        /* ── Main ────────────────────────────────────── */
+        .page-wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 3rem; flex: 1; }
+
+        .page-title-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 0.75rem; flex-wrap: wrap;
+            margin-bottom: 1.5rem; padding-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-100);
+        }
+        .page-title-left { display: flex; align-items: center; gap: 0.75rem; }
+        .page-title-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(95,42,93,0.2);
+        }
+        .page-title { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); }
+        .page-subtitle { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
+
+        /* Year selector */
+        .year-selector {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .year-selector label { font-size: 0.78rem; font-weight: 600; color: var(--text); }
+        .year-selector select {
+            padding: 8px 14px; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 0.82rem; font-family: 'Inter', sans-serif;
+            color: var(--text-dark); background: var(--card);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .year-selector select:focus {
+            outline: none; border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(95,42,93,0.1);
+        }
+
+        /* ── Cards ────────────────────────────────────── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .card-body { padding: 1.25rem 1.5rem; }
+
+        /* ── Flash ────────────────────────────────────── */
+        .flash {
+            padding: 0.85rem 1.25rem; border-radius: 10px;
+            font-size: 0.82rem; font-weight: 500;
+            margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
+            border-left: 4px solid;
+        }
+        .flash.success { background: #f0fdf4; color: #166534; border-color: #22c55e; }
+        .flash.error { background: #fef2f2; color: #991b1b; border-color: #ef4444; }
+        .flash.info { background: var(--primary-50); color: var(--primary-dark); border-color: var(--primary); }
+
+        /* ── Empty state ──────────────────────────────── */
+        .empty-state { text-align: center; padding: 3rem 1.5rem; }
+        .empty-state-icon {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: #f3f4f6; border: 2px solid #e5e7eb;
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-bottom: 1rem;
+        }
+        .empty-state-icon i { font-size: 1.5rem; color: #9ca3af; }
+        .empty-state h3 { font-size: 1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.35rem; }
+        .empty-state p { font-size: 0.82rem; color: var(--text-light); }
+
+        /* ── Student info bar ─────────────────────────── */
+        .student-info-bar {
+            display: flex; border: 1px solid var(--border); border-radius: 10px;
+            overflow: hidden; margin-bottom: 1.25rem;
+        }
+        .student-info-bar .info-cell {
+            flex: 1; padding: 0.75rem 1.25rem;
+            border-right: 1px solid var(--border);
+        }
+        .student-info-bar .info-cell:last-child { border-right: none; }
+        .info-cell-label {
+            font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--text-light);
+        }
+        .info-cell-value {
+            font-size: 0.85rem; font-weight: 700; color: var(--text-dark); margin-top: 2px;
+        }
+
+        /* Boleta header */
+        .boleta-header {
+            text-align: center; padding-bottom: 0.75rem; margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+        .boleta-header h3 {
+            font-size: 0.88rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.06em; color: var(--text-dark);
+        }
+        .boleta-header p {
+            font-size: 0.78rem; font-weight: 600; color: var(--text-light);
+            text-transform: uppercase; margin-top: 4px;
+        }
+
+        /* ── Grade table ──────────────────────────────── */
+        .grade-table { border-collapse: collapse; width: 100%; }
+        .grade-table th, .grade-table td {
+            border: 1px solid #e5e0ea;
+            padding: 8px 12px;
+            text-align: center;
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+        .grade-table th {
+            background: var(--primary-50);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            color: var(--primary-dark);
+            letter-spacing: 0.03em;
+        }
+        .grade-table td.col-curso {
+            text-align: left;
+            font-weight: 600;
+            padding-left: 14px;
+            font-size: 0.80rem;
+        }
+        .grade-table td.col-prom {
+            font-weight: 800;
+            background: var(--primary-50);
+        }
+        .grade-table tbody tr { transition: background 0.15s; }
+        .grade-table tbody tr:hover { background: #faf8fb; }
+
+        .nota-alta  { color: #059669; font-weight: 700; }
+        .nota-media { color: #d97706; font-weight: 700; }
+        .nota-baja  { color: #dc2626; font-weight: 700; }
+        .nota-nsp   { color: #dc2626; font-weight: 700; font-size: 0.72rem; }
+        .nota-vacia { color: #c4c0c8; }
+
+        /* ── Legend & print ────────────────────────────── */
+        .legend {
+            display: flex; flex-wrap: wrap; gap: 1rem;
+            font-size: 0.72rem; color: var(--text-light);
+            margin-top: 1rem; padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+        .btn-print {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 22px; border-radius: 10px; border: none;
+            background: var(--primary); color: #fff;
+            font-size: 0.82rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; font-family: 'Inter', sans-serif;
+            box-shadow: 0 2px 8px rgba(95,42,93,0.25);
+        }
+        .btn-print:hover { background: var(--primary-dark); transform: translateY(-1px); }
+
+        /* ── Footer ───────────────────────────────────── */
+        .app-footer {
+            text-align: center; padding: 1rem;
+            font-size: 0.75rem; color: var(--text-light);
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── Print ────────────────────────────────────── */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .app-header, .app-footer { display: none !important; }
+            .card { box-shadow: none !important; border: 2px solid #374151 !important; border-radius: 0 !important; }
+            .page-wrap { padding: 0; max-width: 100%; }
+            .page-title-bar { display: none !important; }
+        }
+
+        /* ── Responsive ───────────────────────────────── */
+        @media (max-width: 640px) {
+            .student-info-bar { flex-direction: column; }
+            .student-info-bar .info-cell { border-right: none; border-bottom: 1px solid var(--border); }
+            .student-info-bar .info-cell:last-child { border-bottom: none; }
+            .page-title-bar { flex-direction: column; align-items: flex-start; }
+            .header-right { flex-wrap: wrap; }
+            .header-badge { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header no-print">
+        <div class="app-header-inner">
+            <div class="header-brand">
+                <div class="header-logo">
+                    <img src="{{ url_for('academia_student_auth.static', filename='img/nk.png') }}" alt="NK">
+                </div>
+                <div>
+                    <div class="header-title">NK Chambergo</div>
+                    <div class="header-subtitle">Centro Pre Universitario</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="header-badge">
+                    <i class="fas fa-user-graduate"></i> {{ g.current_student.name }}
+                </span>
+                <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Dashboard
+                </a>
+                <a href="{{ url_for('academia_student_auth.logout') }}" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-wrap">
+        <!-- Page title -->
+        <div class="page-title-bar no-print">
+            <div class="page-title-left">
+                <div class="page-title-icon"><i class="fas fa-file-alt"></i></div>
+                <div>
+                    <div class="page-title">Mis Notas Fast Test</div>
+                    <div class="page-subtitle">
+                        DNI: {{ dni }}
+                        {% if estudiante %}
+                        &nbsp;|&nbsp; {{ estudiante.nivel }} — Programa: {{ estudiante.grado }}{{ ' ' + estudiante.seccion if estudiante.seccion else '' }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <form method="get" class="year-selector">
+                <label>Año:</label>
+                <select name="anio_escolar" onchange="this.form.submit()">
+                    {% for a in anios %}
+                    <option value="{{ a }}" {% if a == anio_escolar %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash {{ 'success' if category == 'success' else ('error' if category == 'error' else 'info') }} no-print">
+                    <i class="fas {{ 'fa-check-circle' if category == 'success' else ('fa-exclamation-circle' if category == 'error' else 'fa-info-circle') }}"></i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if not estudiante %}
+        <div class="card">
+            <div class="card-body">
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <h3>Estudiante no encontrado en el sistema</h3>
+                    <p>El DNI <strong>{{ dni }}</strong> no está registrado en el sistema principal.</p>
+                </div>
+            </div>
+        </div>
+
+        {% elif not cursos %}
+        <div class="card">
+            <div class="card-body">
+                <!-- Boleta header (printable) -->
+                <div class="boleta-header">
+                    <h3>Control de Calificaciones Fast Test — {{ anio_escolar }}</h3>
+                    <p>{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}, {{ estudiante.nombres_est }} &nbsp;|&nbsp; DNI: {{ dni }}</p>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-clipboard"></i></div>
+                    <h3>Sin notas registradas para el año {{ anio_escolar }}</h3>
+                    <p>Aún no tienes evaluaciones Fast Test registradas en este período.</p>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="card">
+            <div class="card-body">
+                <!-- Boleta header (printable) -->
+                <div class="boleta-header">
+                    <h3>Control de Calificaciones Fast Test</h3>
+                    <p>
+                        Año Escolar {{ anio_escolar }}
+                        {% if aula_nombre %}&nbsp;|&nbsp;{{ aula_nombre }}{% endif %}
+                    </p>
+                </div>
+
+                <!-- Student info -->
+                <div class="student-info-bar">
+                    <div class="info-cell" style="flex: 2;">
+                        <div class="info-cell-label">Apellidos y Nombres</div>
+                        <div class="info-cell-value">{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}, {{ estudiante.nombres_est }}</div>
+                    </div>
+                    <div class="info-cell">
+                        <div class="info-cell-label">DNI</div>
+                        <div class="info-cell-value">{{ dni }}</div>
+                    </div>
+                </div>
+
+                <!-- Grade table -->
+                <div style="overflow-x: auto; margin-bottom: 1rem;">
+                    <table class="grade-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding-left: 14px;">Asignatura</th>
+                                {% for s in sesiones %}
+                                <th>{{ s }}</th>
+                                {% endfor %}
+                                <th style="background: var(--primary-100); color: var(--primary-dark);">Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for curso in cursos %}
+                            {% set fila = grilla.get(curso, {}) %}
+                            <tr>
+                                <td class="col-curso">{{ curso }}</td>
+                                {% set ns = namespace(suma=0, count=0) %}
+                                {% for s in sesiones %}
+                                    {% set nota_obj = fila.get(s) %}
+                                    {% if nota_obj %}
+                                        {% set es_nsp = nota_obj.observaciones == 'N.S.P.' %}
+                                        {% if es_nsp %}
+                                            <td><span class="nota-nsp">N.S.P.</span></td>
+                                            {% set ns.suma = ns.suma + 0 %}
+                                            {% set ns.count = ns.count + 1 %}
+                                        {% elif nota_obj.nota is not none %}
+                                            {% set val = nota_obj.nota %}
+                                            <td class="{% if val >= 14 %}nota-alta{% elif val >= 11 %}nota-media{% else %}nota-baja{% endif %}">
+                                                {{ val|int if val == val|int else "%.1f"|format(val) }}
+                                            </td>
+                                            {% set ns.suma = ns.suma + val %}
+                                            {% set ns.count = ns.count + 1 %}
+                                        {% else %}
+                                            <td class="nota-vacia">—</td>
+                                        {% endif %}
+                                    {% else %}
+                                        <td class="nota-vacia">—</td>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if ns.count > 0 %}
+                                    {% set prom = ns.suma / ns.count %}
+                                    <td class="col-prom {% if prom >= 14 %}nota-alta{% elif prom >= 11 %}nota-media{% else %}nota-baja{% endif %}">
+                                        {{ "%.1f"|format(prom) }}
+                                    </td>
+                                {% else %}
+                                    <td class="col-prom nota-vacia">—</td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Legend -->
+                <div class="legend no-print">
+                    <span class="nota-alta">● Logro (≥ 14)</span>
+                    <span class="nota-media">● En Proceso (11–13)</span>
+                    <span class="nota-baja">● Inicio (< 11)</span>
+                    <span class="nota-nsp">● N.S.P. (No se presentó)</span>
+                </div>
+
+                <!-- Action buttons -->
+                <div style="text-align: right; margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem;" class="no-print">
+                    <a href="{{ url_for('academia_student_auth.mis_notas_fast_test_pdf', anio_escolar=anio_escolar) }}"
+                       class="btn-print" style="text-decoration: none; background: #059669;">
+                        <i class="fas fa-file-pdf"></i> Descargar PDF
+                    </a>
+                    <button onclick="window.print()" class="btn-print">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <footer class="app-footer no-print">
+        <p>Tu preparación merece lo mejor &copy; <span id="year"></span> NK Chambergo</p>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

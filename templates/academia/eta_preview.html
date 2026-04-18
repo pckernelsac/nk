@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+
+{% block title %}Vista Previa ETA - Academia{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+@media print {
+            .no-print { display: none; }
+            body { background: white; }
+        }
+</style>
+{% endblock %}
+
+{% block page_title %}Vista Previa ETA{% endblock %}
+
+{% block content %}
+        <div class="max-w-7xl mx-auto">
+            <!-- Acciones principales -->
+            <div class="mb-6 flex flex-wrap gap-4 no-print">
+                <a href="{{ url_for('academia_eta_analysis.generate_eta_pdf', student_id=student_info.student_id) }}" 
+                   class="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:ring-4 focus:outline-none focus:ring-purple-300 shadow-md transition-colors duration-200">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd"></path>
+                    </svg>
+                    Generar PDF Completo
+                </a>
+                <button onclick="window.print()" 
+                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-300 shadow-sm transition-colors duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    Imprimir Vista Previa
+                </button>
+                <a href="{{ url_for('academia_eta_analysis.eta_search') }}" 
+                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 shadow-sm transition-colors duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Volver a Búsqueda
+                </a>
+            </div>
+
+            <!-- Información del estudiante -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                <div class="bg-gradient-to-r from-purple-600 to-purple-800 px-6 py-4">
+                    <h2 class="text-2xl text-white font-bold">Reporte Consolidado de ETAs</h2>
+                    <p class="text-purple-100 text-sm">Análisis completo del rendimiento académico</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h3 class="text-sm font-medium text-gray-600 mb-1">Estudiante</h3>
+                            <p class="text-lg font-bold text-gray-900">{{ student_info.first_name }} {{ student_info.last_name }}</p>
+                            <p class="text-sm text-gray-500">Código: {{ student_info.student_id }}</p>
+                        </div>
+                        
+                        <div class="bg-purple-50 rounded-lg p-4">
+                            <h3 class="text-sm font-medium text-purple-600 mb-1">Área Académica</h3>
+                            <p class="text-lg font-bold text-purple-900">{{ student_info.academic_area_name }}</p>
+                            <p class="text-sm text-purple-600">Área {{ student_info.academic_area_id }}</p>
+                        </div>
+                        
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <h3 class="text-sm font-medium text-green-600 mb-1">Promedio General</h3>
+                            <p class="text-2xl font-bold {% if summary.average_score >= 10.5 %}text-green-700{% else %}text-red-700{% endif %}">
+                                {{ "%.3f"|format(summary.average_score) }}
+                            </p>
+                            <p class="text-sm {% if summary.average_score >= 10.5 %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if summary.average_score >= 10.5 %}Aprobatorio{% else %}Requiere mejora{% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="bg-purple-50 rounded-lg p-4">
+                            <h3 class="text-sm font-medium text-purple-600 mb-1">Tendencia</h3>
+                            <p class="text-lg font-bold 
+                                {% if summary.trend == 'mejorando' %}text-green-700
+                                {% elif summary.trend == 'declinando' %}text-red-700
+                                {% else %}text-gray-700{% endif %}">
+                                {{ summary.trend.upper() }}
+                            </p>
+                            <p class="text-sm text-purple-600">{{ summary.valid_etas }} ETAs válidas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen ejecutivo -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                <div class="bg-gray-100 px-6 py-3 border-b">
+                    <h3 class="text-lg font-bold text-gray-800">Resumen Ejecutivo</h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="text-center p-4 bg-green-50 rounded-lg">
+                            <div class="text-2xl font-bold text-green-700">{{ summary.best_eta.score|round(2) }}</div>
+                            <div class="text-sm text-green-600">Mejor ETA</div>
+                            <div class="text-xs text-gray-500">ETA {{ summary.best_eta.eta_number }}</div>
+                        </div>
+                        
+                        <div class="text-center p-4 bg-red-50 rounded-lg">
+                            <div class="text-2xl font-bold text-red-700">{{ summary.worst_eta.score|round(2) }}</div>
+                            <div class="text-sm text-red-600">Peor ETA</div>
+                            <div class="text-xs text-gray-500">ETA {{ summary.worst_eta.eta_number }}</div>
+                        </div>
+                        
+                        <div class="text-center p-4 bg-purple-50 rounded-lg">
+                            <div class="text-2xl font-bold text-purple-700">{{ summary.passing_etas_count }}</div>
+                            <div class="text-sm text-purple-600">ETAs Aprobatorias</div>
+                            <div class="text-xs text-gray-500">≥ 10.5 puntos</div>
+                        </div>
+                        
+                        <div class="text-center p-4 bg-purple-50 rounded-lg">
+                            <div class="text-2xl font-bold text-purple-700">{{ summary.passing_rate }}%</div>
+                            <div class="text-sm text-purple-600">Tasa de Éxito</div>
+                            <div class="text-xs text-gray-500">{{ summary.valid_etas }} evaluaciones</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de evolución -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                <div class="bg-gray-100 px-6 py-3 border-b">
+                    <h3 class="text-lg font-bold text-gray-800">Evolución del Rendimiento</h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="evolutionChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Detalle de ETAs -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                <div class="bg-gray-100 px-6 py-3 border-b">
+                    <h3 class="text-lg font-bold text-gray-800">Detalle de ETAs</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ETA</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Examen</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Correctas</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Conocimientos</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aptitud</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Nota Final</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for eta in etas %}
+                            {% if eta.total_questions > 0 %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                                    ETA {{ eta.eta_number if eta.eta_number else '?' }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    {{ eta.quiz_name[:40] }}{% if eta.quiz_name|length > 40 %}...{% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-center">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        {% if eta.total_correct/eta.total_questions >= 0.7 %}bg-green-100 text-green-800
+                                        {% elif eta.total_correct/eta.total_questions >= 0.5 %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ eta.total_correct }}/{{ eta.total_questions }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-center text-gray-900">
+                                    {{ "%.2f"|format(eta.conocimientos_score) }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-center text-gray-900">
+                                    {{ "%.2f"|format(eta.aptitud_score) }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-center">
+                                    <span class="font-bold 
+                                        {% if eta.nota_vigesimal >= 10.5 %}text-green-700
+                                        {% else %}text-red-700{% endif %}">
+                                        {{ "%.3f"|format(eta.nota_vigesimal) }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-center">
+                                    {% if eta.nota_vigesimal >= 10.5 %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Aprobado
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            En proceso
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Análisis por asignatura -->
+            {% if summary.subject_averages %}
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                <div class="bg-gray-100 px-6 py-3 border-b">
+                    <h3 class="text-lg font-bold text-gray-800">Promedio por Asignatura</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        {% for subject, average in summary.subject_averages.items() %}
+                        <div class="flex items-center">
+                            <div class="w-40 text-sm font-medium text-gray-700 truncate">
+                                {{ subject }}
+                            </div>
+                            <div class="flex-1 mx-4">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="h-2 rounded-full 
+                                        {% if average >= 70 %}bg-green-500
+                                        {% elif average >= 50 %}bg-yellow-500
+                                        {% else %}bg-red-500{% endif %}" 
+                                         style="width: {{ [average, 100]|min }}%"></div>
+                                </div>
+                            </div>
+                            <div class="w-16 text-sm font-medium text-gray-900 text-right">
+                                {{ "%.1f"|format(average) }}%
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Recomendaciones -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                <div class="bg-yellow-100 px-6 py-3 border-b">
+                    <h3 class="text-lg font-bold text-yellow-800">Recomendaciones</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-3">
+                        {% if summary.average_score < 10.5 %}
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-red-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Reforzar estudio general</p>
+                                <p class="text-sm text-gray-600">El promedio actual ({{ "%.2f"|format(summary.average_score) }}) está por debajo del mínimo aprobatorio (10.5).</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if summary.trend == 'declinando' %}
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-red-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8 16.8 11.4a1 1 0 01-.8 1.6H6a3 3 0 01-3-3V6z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Revisar método de estudio</p>
+                                <p class="text-sm text-gray-600">La tendencia muestra decline en el rendimiento. Considerar apoyo adicional.</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if summary.passing_rate < 50 %}
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-yellow-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Establecer plan de estudio estructurado</p>
+                                <p class="text-sm text-gray-600">Solo {{ summary.passing_rate }}% de las ETAs fueron aprobatorias.</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if summary.average_score >= 14 %}
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-green-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Mantener el excelente nivel</p>
+                                <p class="text-sm text-gray-600">El rendimiento es sobresaliente. Continuar con la preparación actual.</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+        // Configurar gráfico de evolución
+        const ctx = document.getElementById('evolutionChart').getContext('2d');
+        // Preparar datos para el gráfico
+        const etaData = [
+            {% for eta in etas %}
+            {% if eta.total_questions > 0 %}
+            {
+                eta: {{ eta.eta_number if eta.eta_number else 0 }},
+                nota: {{ eta.nota_vigesimal }},
+                quiz_name: "{{ eta.quiz_name|truncate(20, true) }}"
+            },
+            {% endif %}
+            {% endfor %}
+        ].sort((a, b) => a.eta - b.eta);
+        const labels = etaData.map(item => `ETA ${item.eta}`);
+        const notas = etaData.map(item => item.nota);
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nota Vigesimal',
+                    data: notas,
+                    borderColor: 'rgb(147, 51, 234)',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgb(147, 51, 234)',
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }, {
+                    label: 'Línea de Aprobación',
+                    data: Array(labels.length).fill(10.5),
+                    borderColor: 'rgb(239, 68, 68)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 20,
+                        title: {
+                            display: true,
+                            text: 'Nota Vigesimal'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'ETAs'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Evolución del Rendimiento por ETA'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                elements: {
+                    point: {
+                        hoverRadius: 8
+                    }
+                }
+            }
+        });
+</script>
+{% endblock %}

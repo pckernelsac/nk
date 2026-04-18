@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Aula - Sistema Escolar{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 pop-in">
+        <div class="flex items-center mb-4">
+            <a href="{{ url_for('aulas.lista') }}" class="mr-4 text-gray-600 hover:text-primary transition-colors">
+                <i class="fas fa-arrow-left text-2xl"></i>
+            </a>
+            <div>
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-plus-circle text-primary mr-3"></i>Crear Nueva Aula
+                </h1>
+                <p class="text-gray-600">Complete los datos para crear un aula</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-door-open mr-3"></i>Datos del Aula
+            </h2>
+        </div>
+
+        <form method="POST" action="{{ url_for('aulas.crear') }}" class="p-8">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Nivel -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-layer-group mr-1"></i>Nivel <span class="text-red-500">*</span>
+                    </label>
+                    <select name="nivel" id="select-nivel" required onchange="actualizarGrados()"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                        <option value="">Seleccione un nivel</option>
+                        <option value="INICIAL">Inicial</option>
+                        <option value="PRIMARIA">Primaria</option>
+                        <option value="SECUNDARIA">Secundaria</option>
+                        <option value="ACADEMIA">Academia</option>
+                    </select>
+                </div>
+
+                <!-- Grado / Programa -->
+                <div>
+                    <label id="label-grado" class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-graduation-cap mr-1"></i>Grado <span class="text-red-500">*</span>
+                    </label>
+                    <select id="select-grado" onchange="toggleGradoPersonalizado()"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                        <option value="">— Seleccione nivel primero —</option>
+                    </select>
+                    <input type="text" id="input-grado-custom" name=""
+                           class="hidden mt-2 w-full px-4 py-3 border-2 border-purple-400 rounded-xl focus:border-purple-600 focus:ring focus:ring-purple-200 transition-all"
+                           placeholder="Escribe el nombre del programa (ej: INTENSIVO, PRIMERA SELECCIÓN)">
+                    <p id="hint-grado-custom" class="hidden text-xs text-purple-600 mt-1">
+                        <i class="fas fa-pencil-alt mr-1"></i>Ingresa el nombre personalizado del programa
+                    </p>
+                    <!-- Campo oculto usado cuando se elige una opción predefinida -->
+                    <input type="hidden" id="input-grado-predefinido" name="grado" value="">
+                </div>
+
+                <!-- Sección -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-font mr-1"></i>Sección <span class="text-red-500">*</span>
+                    </label>
+                    <select name="seccion" required
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                        <option value="">Seleccione una sección</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                    </select>
+                </div>
+
+                <!-- Turno -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-clock mr-1"></i>Turno <span class="text-red-500">*</span>
+                    </label>
+                    <select name="turno" required
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                        <option value="">Seleccione un turno</option>
+                        <option value="Mañana">Mañana</option>
+                        <option value="Tarde">Tarde</option>
+                    </select>
+                </div>
+
+                <!-- Año Escolar -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-calendar mr-1"></i>Año Escolar <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="anio_escolar" value="{{ current_year }}" required
+                           pattern="[0-9]{4}"
+                           placeholder="{{ current_year }}"
+                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                    <p class="text-xs text-gray-500 mt-1">Formato: YYYY (ej: {{ current_year }})</p>
+                </div>
+
+                <!-- Capacidad Máxima -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-users mr-1"></i>Capacidad Máxima <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" name="capacidad_maxima" value="30" required min="1" max="100"
+                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                    <p class="text-xs text-gray-500 mt-1">Número máximo de estudiantes</p>
+                </div>
+            </div>
+
+            <!-- Información de Ejemplo -->
+            <div class="mt-8 p-6 bg-blue-50 border-2 border-blue-200 rounded-xl">
+                <h3 class="font-bold text-blue-800 mb-3 flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i>Información Importante
+                </h3>
+                <ul class="space-y-2 text-sm text-blue-700">
+                    <li><i class="fas fa-check mr-2"></i>El código del aula se generará automáticamente (ej: 5S-A-M, 1AC-A-T)</li>
+                    <li><i class="fas fa-check mr-2"></i>El nombre se formateará como: "5to Sec A - Mañana" / "Básico Acad A - Tarde"</li>
+                    <li><i class="fas fa-check mr-2"></i>Para Academia puedes elegir un programa predefinido o escribir uno personalizado</li>
+                    <li><i class="fas fa-check mr-2"></i>No se permiten aulas duplicadas con el mismo nivel, programa/grado, sección, turno y año</li>
+                    <li><i class="fas fa-check mr-2"></i>En Academia, el código incluye una huella del nombre del programa para evitar choques entre programas parecidos</li>
+                </ul>
+            </div>
+
+            <!-- Botones -->
+            <div class="mt-8 flex gap-4">
+                <button type="submit"
+                        class="flex-1 px-6 py-4 bg-gradient-to-r from-primary to-primary-dark text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-lg">
+                    <i class="fas fa-save mr-2"></i>Crear Aula
+                </button>
+                <a href="{{ url_for('aulas.lista') }}"
+                   class="px-6 py-4 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold rounded-xl transition-all text-lg">
+                    <i class="fas fa-times mr-2"></i>Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const gradosPorNivel = {
+    'Primaria':    ['1ro', '2do', '3ro', '4to', '5to', '6to'],
+    'Secundaria':  ['1ro', '2do', '3ro', '4to', '5to'],
+    'Academia':    ['INTENSIVO', 'PRIMERA SELECCIÓN', 'SEGUNDA SELECCIÓN', 'REPASO']
+};
+
+const selectGrado   = document.getElementById('select-grado');
+const inputCustom   = document.getElementById('input-grado-custom');
+const hintCustom    = document.getElementById('hint-grado-custom');
+const inputPredefinido = document.getElementById('input-grado-predefinido');
+const labelGrado    = document.getElementById('label-grado');
+
+function actualizarGrados() {
+    const nivel = document.getElementById('select-nivel').value;
+    const esAcademia = nivel === 'ACADEMIA';
+    const termino = esAcademia ? 'Programa' : 'Grado';
+
+    // Cambiar label
+    if (labelGrado) {
+        labelGrado.innerHTML = '<i class="fas fa-graduation-cap mr-1"></i>' + termino + ' <span class="text-red-500">*</span>';
+    }
+
+    // Reset grado
+    selectGrado.innerHTML = '<option value="">Seleccione un ' + termino.toLowerCase() + '</option>';
+    ocultarPersonalizado();
+
+    if (!nivel) return;
+
+    const grados = gradosPorNivel[nivel] || [];
+    grados.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        selectGrado.appendChild(opt);
+    });
+
+    // Opción personalizada
+    const optCustom = document.createElement('option');
+    optCustom.value = '__personalizado__';
+    optCustom.textContent = '✏️ Personalizado...';
+    selectGrado.appendChild(optCustom);
+}
+
+function toggleGradoPersonalizado() {
+    if (selectGrado.value === '__personalizado__') {
+        mostrarPersonalizado();
+    } else {
+        ocultarPersonalizado();
+        inputPredefinido.value = selectGrado.value;
+    }
+}
+
+function mostrarPersonalizado() {
+    inputCustom.classList.remove('hidden');
+    hintCustom.classList.remove('hidden');
+    inputCustom.required = true;
+    inputCustom.name = 'grado';
+    inputPredefinido.name = '';    // Desactivar el hidden para que no duplique
+    inputCustom.focus();
+}
+
+function ocultarPersonalizado() {
+    inputCustom.classList.add('hidden');
+    hintCustom.classList.add('hidden');
+    inputCustom.required = false;
+    inputCustom.name = '';
+    inputCustom.value = '';
+    inputPredefinido.name = 'grado';
+}
+
+// Validar antes de enviar
+document.querySelector('form').addEventListener('submit', function(e) {
+    const nivel = document.getElementById('select-nivel').value;
+    if (!nivel) { alert('Seleccione un nivel.'); e.preventDefault(); return; }
+
+    const esAcademia = nivel === 'ACADEMIA';
+    const termino = esAcademia ? 'programa' : 'grado';
+
+    if (selectGrado.value === '__personalizado__') {
+        if (!inputCustom.value.trim()) {
+            alert('Escribe el nombre del ' + termino + ' personalizado.');
+            inputCustom.focus();
+            e.preventDefault();
+        }
+    } else if (!selectGrado.value) {
+        alert('Seleccione un ' + termino + '.');
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

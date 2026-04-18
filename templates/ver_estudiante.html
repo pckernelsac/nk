@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle del Estudiante{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .slide-in { animation: slideIn 0.5s ease-out; }
+    .info-card {
+        transition: transform 0.2s;
+    }
+    .info-card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between slide-in">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-user-circle text-primary mr-3"></i>Detalle del Estudiante
+            </h1>
+            <p class="text-gray-600">Información completa del estudiante</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('estudiantes.list') }}"
+               class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg shadow-lg transition-all">
+                <i class="fas fa-arrow-left mr-2"></i>Volver
+            </a>
+            <a href="{{ url_for('estudiantes.editar', id=estudiante.id) }}"
+               class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow-lg transition-all">
+                <i class="fas fa-edit mr-2"></i>Editar
+            </a>
+        </div>
+    </div>
+
+    <!-- Información Principal -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 slide-in" style="animation-delay: 0.1s;">
+        <!-- Foto y Datos Principales -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 text-center info-card">
+            {% if estudiante.foto_perfil %}
+                <img src="/static/{{ estudiante.foto_perfil }}" alt="{{ estudiante.nombres_est }}"
+                     class="w-40 h-40 rounded-full mx-auto mb-4 object-cover border-4 border-primary shadow-lg">
+            {% else %}
+                <div class="w-40 h-40 bg-gradient-to-br from-primary to-primary-dark rounded-full mx-auto mb-4 flex items-center justify-center text-white text-6xl font-bold shadow-lg">
+                    {{ estudiante.nombres_est[0] }}{{ estudiante.apellido_paterno_est[0] }}
+                </div>
+            {% endif %}
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                {{ estudiante.nombres_est }}
+            </h2>
+            <h3 class="text-xl font-semibold text-gray-600 mb-4">
+                {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}
+            </h3>
+            <div class="space-y-2">
+                <div class="px-4 py-2 bg-purple-50 text-primary rounded-lg font-bold">
+                    <i class="fas fa-barcode mr-2"></i>Código: {{ estudiante.codigo_estudiante or 'No asignado' }}
+                </div>
+                <div class="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg font-bold">
+                    <i class="fas fa-id-card mr-2"></i>DNI: {{ estudiante.dni_est or 'No registrado' }}
+                </div>
+                <div class="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg font-bold">
+                    <i class="fas fa-layer-group mr-2"></i>{{ estudiante.nivel|capitalize }} - {{ estudiante.grado }}°
+                </div>
+                {% if estudiante.seccion %}
+                <div class="px-4 py-2 bg-indigo-100 text-indigo-800 rounded-lg font-bold">
+                    <i class="fas fa-door-open mr-2"></i>Sección: {{ estudiante.seccion }}
+                </div>
+                {% endif %}
+                {% if estudiante.turno %}
+                <div class="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-bold">
+                    <i class="fas fa-clock mr-2"></i>Turno: {{ estudiante.turno }}
+                </div>
+                {% endif %}
+                {% if estudiante.area_postula %}
+                <div class="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg font-bold">
+                    <i class="fas fa-bullseye mr-2"></i>Área: {{ estudiante.area_postula }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Información de Contacto -->
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-xl p-6 info-card">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-primary pb-2">
+                <i class="fas fa-address-book text-primary mr-2"></i>Información de Contacto
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-sm font-bold text-gray-600">Correo Electrónico</label>
+                    <p class="text-gray-800">{{ estudiante.correo_est or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-gray-600">Teléfono Celular</label>
+                    <p class="text-gray-800">{{ estudiante.numero_celular_est or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-gray-600">Teléfono Fijo</label>
+                    <p class="text-gray-800">{{ estudiante.telefono_fijo_est or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-gray-600">Fecha de Nacimiento</label>
+                    <p class="text-gray-800">{{ estudiante.fecha_nacimiento_est or 'No registrado' }}</p>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-sm font-bold text-gray-600">Dirección</label>
+                    <p class="text-gray-800">{{ estudiante.direccion_est or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-gray-600">Distrito</label>
+                    <p class="text-gray-800">{{ estudiante.distrito_est or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-gray-600">Provincia</label>
+                    <p class="text-gray-800">{{ estudiante.provincia_est or 'No registrado' }}</p>
+                </div>
+                {% if estudiante.referencia_est %}
+                <div class="md:col-span-2">
+                    <label class="text-sm font-bold text-gray-600">Referencia</label>
+                    <p class="text-gray-800">{{ estudiante.referencia_est }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Información Adicional -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 slide-in" style="animation-delay: 0.2s;">
+        <!-- Información Personal -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 info-card">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-primary pb-2">
+                <i class="fas fa-info-circle text-primary mr-2"></i>Información Personal
+            </h3>
+            <div class="space-y-3">
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold text-gray-600">Religión:</span>
+                    <span class="text-gray-800">{{ estudiante.religion_est or 'No registrado' }}</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold text-gray-600">Grupo Sanguíneo:</span>
+                    <span class="text-gray-800">{{ estudiante.grupo_sanguineo or 'No registrado' }}</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold text-gray-600">Tiene Hermanos:</span>
+                    <span class="text-gray-800">{{ estudiante.tiene_hermanos or 'No registrado' }}</span>
+                </div>
+                {% if estudiante.numero_hermanos %}
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold text-gray-600">Número de Hermanos:</span>
+                    <span class="text-gray-800">{{ estudiante.numero_hermanos }}</span>
+                </div>
+                {% endif %}
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold text-gray-600">Tiene Computadora:</span>
+                    <span class="text-gray-800">{{ estudiante.tiene_computadora or 'No registrado' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información Médica -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 info-card">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-red-500 pb-2">
+                <i class="fas fa-heartbeat text-red-500 mr-2"></i>Información Médica
+            </h3>
+            <div class="space-y-3">
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold text-gray-600">Es Alérgica:</span>
+                    <span class="text-gray-800">{{ estudiante.es_alergica or 'No registrado' }}</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold text-gray-600">Padece Enfermedad:</span>
+                    <span class="text-gray-800">{{ estudiante.padece_enfermedad or 'No registrado' }}</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="font-bold text-gray-600">Tiene Discapacidad:</span>
+                    <span class="text-gray-800">{{ estudiante.tiene_discapacidad or 'No registrado' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ RENDIMIENTO ACADÉMICO ============ -->
+    {% if etas_por_programa or fast_tests_por_programa %}
+    <div class="mb-6 slide-in" style="animation-delay: 0.25s;">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-4 border-primary pb-3">
+            <i class="fas fa-chart-line text-primary mr-3"></i>Rendimiento Académico por Programa
+        </h2>
+
+        {% if etas_por_programa %}
+        <!-- ETAs por Programa -->
+        {% for programa, data in etas_por_programa.items() %}
+        <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden info-card">
+            <div class="p-5 text-white" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold flex items-center">
+                        <i class="fas fa-book-open mr-3"></i>{{ programa }}
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm font-semibold">
+                            <i class="fas fa-bullseye mr-1"></i>{{ data.area }}
+                        </span>
+                        <span class="px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm font-semibold">
+                            {{ data.etas|length }} ETA{{ 's' if data.etas|length > 1 }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="p-5">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-3 text-left font-bold text-gray-700">ETA</th>
+                                <th class="px-4 py-3 text-center font-bold text-gray-700">Fecha</th>
+                                <th class="px-4 py-3 text-center font-bold text-gray-700">Puntaje</th>
+                                <th class="px-4 py-3 text-center font-bold text-gray-700">% Correcto</th>
+                                <th class="px-4 py-3 text-center font-bold text-gray-700">Nota /20</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for eta in data.etas %}
+                            {% set nota_20 = ((eta.percent_correct or 0) * 20 / 100)|round(1) %}
+                            <tr class="border-b hover:bg-purple-50 transition-colors">
+                                <td class="px-4 py-3 font-semibold text-gray-800">{{ eta.quiz_name }}</td>
+                                <td class="px-4 py-3 text-center text-gray-600">{{ eta.quiz_created or '-' }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="font-mono font-bold">{{ eta.earned_points or 0 }}</span>
+                                    <span class="text-gray-400">/ {{ eta.possible_points or 0 }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="font-bold {% if (eta.percent_correct or 0) >= 70 %}text-green-600{% elif (eta.percent_correct or 0) >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">
+                                        {{ "%.1f"|format(eta.percent_correct or 0) }}%
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="inline-block px-3 py-1 rounded-full text-sm font-bold
+                                        {% if nota_20 >= 14 %}bg-green-100 text-green-700
+                                        {% elif nota_20 >= 11 %}bg-amber-100 text-amber-700
+                                        {% else %}bg-red-100 text-red-700{% endif %}">
+                                        {{ nota_20 }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% set etas_con_nota = data.etas|selectattr('percent_correct')|list %}
+                {% if etas_con_nota|length > 0 %}
+                {% set sum_pct = etas_con_nota|map(attribute='percent_correct')|sum %}
+                {% set promedio = (sum_pct / etas_con_nota|length * 20 / 100)|round(1) %}
+                <div class="mt-4 flex justify-end">
+                    <div class="px-5 py-2 rounded-xl font-bold text-lg
+                        {% if promedio >= 14 %}bg-green-100 text-green-700
+                        {% elif promedio >= 11 %}bg-amber-100 text-amber-700
+                        {% else %}bg-red-100 text-red-700{% endif %}">
+                        <i class="fas fa-calculator mr-2"></i>Promedio: {{ promedio }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if fast_tests_por_programa %}
+        <!-- Fast Tests por Programa -->
+        {% for programa, notas in fast_tests_por_programa.items() %}
+        <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden info-card">
+            <div class="p-5 text-white" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold flex items-center">
+                        <i class="fas fa-bolt mr-3"></i>Fast Tests - {{ programa }}
+                    </h3>
+                    <span class="px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm font-semibold">
+                        {{ notas|length }} evaluaci{{ 'ones' if notas|length > 1 else 'ón' }}
+                    </span>
+                </div>
+            </div>
+            <div class="p-5">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-3 text-left font-bold text-gray-700">Evaluación</th>
+                                <th class="px-4 py-3 text-left font-bold text-gray-700">Curso</th>
+                                <th class="px-4 py-3 text-center font-bold text-gray-700">Fecha</th>
+                                <th class="px-4 py-3 text-center font-bold text-gray-700">Nota</th>
+                                <th class="px-4 py-3 text-center font-bold text-gray-700">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ft in notas %}
+                            <tr class="border-b hover:bg-blue-50 transition-colors">
+                                <td class="px-4 py-3 font-semibold text-gray-800">{{ ft.titulo }}</td>
+                                <td class="px-4 py-3 text-gray-600">{{ ft.curso }}</td>
+                                <td class="px-4 py-3 text-center text-gray-600">{{ ft.fecha.strftime('%d/%m/%Y') if ft.fecha else '-' }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    {% if ft.nota is not none %}
+                                    <span class="inline-block px-3 py-1 rounded-full text-sm font-bold
+                                        {% if ft.nota >= 14 %}bg-green-100 text-green-700
+                                        {% elif ft.nota >= 11 %}bg-amber-100 text-amber-700
+                                        {% else %}bg-red-100 text-red-700{% endif %}">
+                                        {{ "%.1f"|format(ft.nota) }} / {{ ft.nota_maxima|int }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-gray-400">N.S.P.</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    {% if ft.estado == 'cerrado' %}
+                                    <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">Cerrado</span>
+                                    {% else %}
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-semibold">Abierto</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% set notas_validas = notas|selectattr('nota', 'ne', None)|list %}
+                {% if notas_validas|length > 0 %}
+                {% set promedio_ft = (notas_validas|map(attribute='nota')|sum / notas_validas|length)|round(1) %}
+                <div class="mt-4 flex justify-end">
+                    <div class="px-5 py-2 rounded-xl font-bold text-lg
+                        {% if promedio_ft >= 14 %}bg-green-100 text-green-700
+                        {% elif promedio_ft >= 11 %}bg-amber-100 text-amber-700
+                        {% else %}bg-red-100 text-red-700{% endif %}">
+                        <i class="fas fa-calculator mr-2"></i>Promedio: {{ promedio_ft }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Información Familiar -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 slide-in" style="animation-delay: 0.3s;">
+        <!-- Padre -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 info-card">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-purple-500 pb-2">
+                <i class="fas fa-male text-purple-500 mr-2"></i>Información del Padre
+            </h3>
+            <div class="space-y-2 text-sm">
+                <div>
+                    <label class="font-bold text-gray-600">Nombre Completo:</label>
+                    <p class="text-gray-800">{{ estudiante.nombres_padre or '' }} {{ estudiante.apellido_paterno_padre or '' }} {{ estudiante.apellido_materno_padre or '' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">DNI:</label>
+                    <p class="text-gray-800">{{ estudiante.dni_padre or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">Celular:</label>
+                    <p class="text-gray-800">{{ estudiante.celular_padre or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">Correo:</label>
+                    <p class="text-gray-800">{{ estudiante.correo_padre or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">Ocupación:</label>
+                    <p class="text-gray-800">{{ estudiante.ocupacion_padre or 'No registrado' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Madre -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 info-card">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-pink-500 pb-2">
+                <i class="fas fa-female text-pink-500 mr-2"></i>Información de la Madre
+            </h3>
+            <div class="space-y-2 text-sm">
+                <div>
+                    <label class="font-bold text-gray-600">Nombre Completo:</label>
+                    <p class="text-gray-800">{{ estudiante.nombres_madre or '' }} {{ estudiante.apellido_paterno_madre or '' }} {{ estudiante.apellido_materno_madre or '' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">DNI:</label>
+                    <p class="text-gray-800">{{ estudiante.dni_madre or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">Celular:</label>
+                    <p class="text-gray-800">{{ estudiante.celular_madre or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">Correo:</label>
+                    <p class="text-gray-800">{{ estudiante.correo_madre or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">Ocupación:</label>
+                    <p class="text-gray-800">{{ estudiante.ocupacion_madre or 'No registrado' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Apoderado -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 info-card">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-green-500 pb-2">
+                <i class="fas fa-user-shield text-green-500 mr-2"></i>Información del Apoderado
+            </h3>
+            <div class="space-y-2 text-sm">
+                <div>
+                    <label class="font-bold text-gray-600">Nombre Completo:</label>
+                    <p class="text-gray-800">{{ estudiante.nombres_apoderado or '' }} {{ estudiante.apellido_paterno_apoderado or '' }} {{ estudiante.apellido_materno_apoderado or '' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">DNI:</label>
+                    <p class="text-gray-800">{{ estudiante.dni_apoderado or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">Celular:</label>
+                    <p class="text-gray-800">{{ estudiante.celular_apoderado or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">Correo:</label>
+                    <p class="text-gray-800">{{ estudiante.correo_apoderado or 'No registrado' }}</p>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">Relación:</label>
+                    <p class="text-gray-800">{{ estudiante.relacion_apoderado or 'No registrado' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Tomar Asistencia - {{ aula.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .estudiante-row {
+        transition: all 0.2s;
+    }
+    .estudiante-row:hover {
+        background-color: #f9fafb;
+    }
+    .estado-btn {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .estado-btn.active {
+        transform: scale(1.1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6 max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-start">
+        <div class="flex items-center">
+            <a href="{{ url_for('asistencias.por_aula') }}" class="mr-4 text-gray-600 hover:text-primary transition-colors">
+                <i class="fas fa-arrow-left text-2xl"></i>
+            </a>
+            <div>
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-user-check text-primary mr-3"></i>Tomar Asistencia
+                </h1>
+                <p class="text-gray-600">
+                    {{ aula.nombre }} - {{ fecha.strftime('%d/%m/%Y') }}
+                    <span class="ml-3 px-3 py-1 bg-primary text-white rounded-lg font-mono font-bold">{{ aula.codigo }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Total</p>
+                    <p class="text-4xl font-bold text-gray-800 mt-2" id="stat-total">{{ detalles|length }}</p>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-xl">
+                    <i class="fas fa-users text-gray-600 text-3xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Presentes</p>
+                    <p class="text-4xl font-bold text-green-600 mt-2" id="stat-presentes">0</p>
+                </div>
+                <div class="bg-green-100 p-4 rounded-xl">
+                    <i class="fas fa-check text-green-600 text-3xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Ausentes</p>
+                    <p class="text-4xl font-bold text-red-600 mt-2" id="stat-ausentes">0</p>
+                </div>
+                <div class="bg-red-100 p-4 rounded-xl">
+                    <i class="fas fa-times text-red-600 text-3xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Tardanzas</p>
+                    <p class="text-4xl font-bold text-yellow-600 mt-2" id="stat-tardanzas">0</p>
+                </div>
+                <div class="bg-yellow-100 p-4 rounded-xl">
+                    <i class="fas fa-clock text-yellow-600 text-3xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Estudiantes -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white flex justify-between items-center">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-clipboard-check mr-3"></i>Lista de Estudiantes
+            </h2>
+            <div class="flex gap-3">
+                <button onclick="marcarTodos('presente')" class="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg transition-colors">
+                    <i class="fas fa-check mr-2"></i>Todos Presentes
+                </button>
+                <button onclick="guardarAsistencia()" class="px-6 py-2 bg-white text-primary font-bold rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-save mr-2"></i>Guardar
+                </button>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">#</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">DNI</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Estudiante</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Estado</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Hora</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for detalle in detalles %}
+                        <tr class="estudiante-row" data-estudiante-id="{{ detalle.estudiante_id }}">
+                            <td class="px-4 py-3 text-sm text-gray-500">{{ loop.index }}</td>
+                            <td class="px-4 py-3 text-sm font-mono">{{ detalle.estudiante_dni }}</td>
+                            <td class="px-4 py-3">
+                                <div class="font-semibold text-gray-800">{{ detalle.estudiante_nombre_completo }}</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-2">
+                                    <button onclick="cambiarEstado({{ detalle.estudiante_id }}, 'presente')"
+                                            class="estado-btn px-4 py-2 rounded-lg text-sm font-medium {% if detalle.estado == 'presente' %}bg-green-500 text-white active{% else %}bg-gray-100 text-gray-700{% endif %}"
+                                            data-estado="presente">
+                                        <i class="fas fa-check"></i> P
+                                    </button>
+                                    <button onclick="cambiarEstado({{ detalle.estudiante_id }}, 'ausente')"
+                                            class="estado-btn px-4 py-2 rounded-lg text-sm font-medium {% if detalle.estado == 'ausente' %}bg-red-500 text-white active{% else %}bg-gray-100 text-gray-700{% endif %}"
+                                            data-estado="ausente">
+                                        <i class="fas fa-times"></i> A
+                                    </button>
+                                    <button onclick="cambiarEstado({{ detalle.estudiante_id }}, 'tardanza')"
+                                            class="estado-btn px-4 py-2 rounded-lg text-sm font-medium {% if detalle.estado == 'tardanza' %}bg-yellow-500 text-white active{% else %}bg-gray-100 text-gray-700{% endif %}"
+                                            data-estado="tardanza">
+                                        <i class="fas fa-clock"></i> T
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <input type="time" class="hora-input px-3 py-2 border rounded-lg text-sm {% if detalle.estado not in ['tardanza', 'presente'] %}hidden{% endif %}"
+                                       data-estudiante-id="{{ detalle.estudiante_id }}"
+                                       value="{{ detalle.hora_llegada.strftime('%H:%M') if detalle.hora_llegada else '' }}">
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if detalle.estado in ['ausente', 'tardanza'] %}
+                                <a href="{{ url_for('asistencias.crear_justificacion') }}"
+                                   class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm">
+                                    <i class="fas fa-file-medical"></i> Justificar
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const registroId = {{ registro.id }};
+const estadosActuales = {};
+
+// Inicializar estados
+{% for detalle in detalles %}
+estadosActuales[{{ detalle.estudiante_id }}] = '{{ detalle.estado }}';
+{% endfor %}
+
+// Actualizar estadísticas al cargar
+actualizarEstadisticas();
+
+function cambiarEstado(estudianteId, nuevoEstado) {
+    estadosActuales[estudianteId] = nuevoEstado;
+
+    const row = document.querySelector(`tr[data-estudiante-id="${estudianteId}"]`);
+    const botones = row.querySelectorAll('.estado-btn');
+    const horaInput = row.querySelector('.hora-input');
+
+    // Actualizar botones
+    botones.forEach(btn => {
+        const estado = btn.dataset.estado;
+        if (estado === nuevoEstado) {
+            btn.classList.add('active');
+            if (estado === 'presente') {
+                btn.classList.remove('bg-gray-100', 'text-gray-700');
+                btn.classList.add('bg-green-500', 'text-white');
+            } else if (estado === 'ausente') {
+                btn.classList.remove('bg-gray-100', 'text-gray-700');
+                btn.classList.add('bg-red-500', 'text-white');
+            } else if (estado === 'tardanza') {
+                btn.classList.remove('bg-gray-100', 'text-gray-700');
+                btn.classList.add('bg-yellow-500', 'text-white');
+            }
+        } else {
+            btn.classList.remove('active', 'bg-green-500', 'bg-red-500', 'bg-yellow-500', 'text-white');
+            btn.classList.add('bg-gray-100', 'text-gray-700');
+        }
+    });
+
+    // Mostrar/ocultar input de hora
+    if (nuevoEstado === 'tardanza' || nuevoEstado === 'presente') {
+        horaInput.classList.remove('hidden');
+        if (nuevoEstado === 'tardanza' && !horaInput.value) {
+            const now = new Date();
+            horaInput.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }
+    } else {
+        horaInput.classList.add('hidden');
+    }
+
+    actualizarEstadisticas();
+}
+
+function marcarTodos(estado) {
+    Object.keys(estadosActuales).forEach(estudianteId => {
+        cambiarEstado(parseInt(estudianteId), estado);
+    });
+}
+
+function actualizarEstadisticas() {
+    const presentes = Object.values(estadosActuales).filter(e => e === 'presente').length;
+    const ausentes = Object.values(estadosActuales).filter(e => e === 'ausente').length;
+    const tardanzas = Object.values(estadosActuales).filter(e => e === 'tardanza').length;
+
+    document.getElementById('stat-presentes').textContent = presentes;
+    document.getElementById('stat-ausentes').textContent = ausentes;
+    document.getElementById('stat-tardanzas').textContent = tardanzas;
+}
+
+async function guardarAsistencia() {
+    const asistencias = {};
+
+    Object.keys(estadosActuales).forEach(estudianteId => {
+        const estado = estadosActuales[estudianteId];
+        const horaInput = document.querySelector(`input.hora-input[data-estudiante-id="${estudianteId}"]`);
+        const hora = horaInput && !horaInput.classList.contains('hidden') ? horaInput.value : null;
+
+        asistencias[estudianteId] = {
+            estado: estado,
+            hora: hora,
+            observaciones: null
+        };
+    });
+
+    try {
+        const response = await fetch('{{ url_for("asistencias.api_registrar_asistencia") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                registro_id: registroId,
+                asistencias: asistencias
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+            alert('Asistencia guardada exitosamente');
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (error) {
+        alert('Error al guardar: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

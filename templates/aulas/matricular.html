@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Matricular Estudiantes - {{ aula.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 pop-in">
+        <div class="flex items-center mb-4">
+            <a href="{{ url_for('aulas.detalle', aula_id=aula.id) }}" class="mr-4 text-gray-600 hover:text-primary transition-colors">
+                <i class="fas fa-arrow-left text-2xl"></i>
+            </a>
+            <div>
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-user-plus text-primary mr-3"></i>Matricular Estudiantes
+                </h1>
+                <p class="text-gray-600">
+                    Aula: <strong>{{ aula.nombre }}</strong>
+                    <span class="px-3 py-1 bg-primary text-white rounded-lg font-mono font-bold ml-2">{{ aula.codigo }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del Aula -->
+    <div class="bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl shadow-xl p-6 mb-8 pop-in">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div>
+                <p class="text-sm opacity-80 mb-1">Capacidad Actual</p>
+                <p class="text-3xl font-bold">{{ aula.estudiantes_matriculados_count() }}/{{ aula.capacidad_maxima }}</p>
+            </div>
+            <div>
+                <p class="text-sm opacity-80 mb-1">Disponible</p>
+                <p class="text-3xl font-bold">{{ aula.capacidad_maxima - aula.estudiantes_matriculados_count() }}</p>
+            </div>
+            <div>
+                <p class="text-sm opacity-80 mb-1">Nivel</p>
+                <p class="text-2xl font-bold">{{ aula.nivel }}</p>
+            </div>
+            <div>
+                <p class="text-sm opacity-80 mb-1">Turno</p>
+                <p class="text-2xl font-bold">{{ aula.turno }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <form method="POST" action="{{ url_for('aulas.matricular', aula_id=aula.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <!-- Barra de búsqueda -->
+        <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden pop-in">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-search mr-3"></i>Buscar Estudiantes
+                </h2>
+            </div>
+            <div class="p-8">
+                <div class="mb-6">
+                    <input type="text" id="buscar" placeholder="Buscar por nombre o DNI..."
+                           class="w-full px-6 py-4 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all text-lg">
+                </div>
+
+                <!-- Observaciones -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-comment mr-1"></i>Observaciones (opcional)
+                    </label>
+                    <textarea name="observaciones" rows="2"
+                              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200"
+                              placeholder="Ingrese observaciones para la matrícula..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Estudiantes -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+            <div class="bg-gradient-to-r from-green-500 to-teal-600 p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center justify-between">
+                    <span><i class="fas fa-users mr-3"></i>Estudiantes Disponibles ({{ estudiantes|length }})</span>
+                    <span id="contador-seleccionados" class="text-xl">0 seleccionados</span>
+                </h2>
+            </div>
+
+            {% if estudiantes %}
+            <div class="p-6">
+                <!-- Seleccionar todos -->
+                <div class="mb-4 pb-4 border-b border-gray-200">
+                    <label class="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-3 rounded-xl transition-colors">
+                        <input type="checkbox" id="seleccionar-todos" class="w-5 h-5 text-primary rounded focus:ring-primary">
+                        <span class="font-bold text-gray-700 text-lg">Seleccionar todos</span>
+                    </label>
+                </div>
+
+                <!-- Lista de estudiantes -->
+                <div class="overflow-y-auto max-h-96 space-y-2" id="lista-estudiantes">
+                    {% for estudiante in estudiantes %}
+                    <label class="flex items-center space-x-4 cursor-pointer hover:bg-gray-50 p-4 rounded-xl transition-colors border border-gray-200 estudiante-item">
+                        <input type="checkbox" name="estudiantes" value="{{ estudiante.id }}"
+                               class="checkbox-estudiante w-5 h-5 text-primary rounded focus:ring-primary">
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold text-gray-800">{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}, {{ estudiante.nombres_est }}</p>
+                                    <p class="text-sm text-gray-500">DNI: {{ estudiante.dni_est }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium">
+                                        {{ estudiante.nivel }} - {{ estudiante.grado }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="p-12 text-center text-gray-400">
+                <i class="fas fa-user-check text-6xl mb-4"></i>
+                <p class="text-xl font-semibold">No hay estudiantes disponibles</p>
+                <p class="text-sm mt-2">Todos los estudiantes ya están matriculados en esta aula</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Botones -->
+        {% if estudiantes %}
+        <div class="mt-8 flex gap-4 pop-in">
+            <button type="submit" id="btn-matricular" disabled
+                    class="flex-1 px-8 py-4 bg-gradient-to-r from-primary to-primary-dark text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-check mr-2"></i>Matricular Seleccionados (<span id="total-seleccionados">0</span>)
+            </button>
+            <a href="{{ url_for('aulas.detalle', aula_id=aula.id) }}"
+               class="px-8 py-4 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold rounded-xl transition-all text-lg">
+                <i class="fas fa-times mr-2"></i>Cancelar
+            </a>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+// Búsqueda en tiempo real
+document.getElementById('buscar').addEventListener('input', function(e) {
+    const termino = e.target.value.toLowerCase();
+    const items = document.querySelectorAll('.estudiante-item');
+
+    items.forEach(item => {
+        const texto = item.textContent.toLowerCase();
+        if (texto.includes(termino)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+// Seleccionar todos
+document.getElementById('seleccionar-todos').addEventListener('change', function(e) {
+    const checkboxes = document.querySelectorAll('.checkbox-estudiante');
+    const visibleCheckboxes = Array.from(checkboxes).filter(cb => cb.closest('.estudiante-item').style.display !== 'none');
+
+    visibleCheckboxes.forEach(checkbox => {
+        checkbox.checked = e.target.checked;
+    });
+
+    actualizarContador();
+});
+
+// Contador de seleccionados
+const checkboxes = document.querySelectorAll('.checkbox-estudiante');
+checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', actualizarContador);
+});
+
+function actualizarContador() {
+    const seleccionados = document.querySelectorAll('.checkbox-estudiante:checked').length;
+    document.getElementById('contador-seleccionados').textContent = seleccionados + ' seleccionados';
+    document.getElementById('total-seleccionados').textContent = seleccionados;
+
+    const btnMatricular = document.getElementById('btn-matricular');
+    if (btnMatricular) {
+        btnMatricular.disabled = seleccionados === 0;
+    }
+}
+</script>
+{% endblock %}

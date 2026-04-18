@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Estado de Cuenta{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+
+    @media print {
+        .print\:hidden {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 pop-in">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-file-invoice-dollar text-primary mr-3"></i>Estado de Cuenta
+        </h1>
+        <p class="text-gray-600">Resumen completo de obligaciones y pagos</p>
+    </div>
+
+    <!-- Info del Estudiante -->
+    <div class="bg-white rounded-2xl shadow-xl p-8 mb-6 pop-in">
+        <div class="flex justify-between items-start">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-3">{{ estado.estudiante.nombre_completo }}</h2>
+                <div class="space-y-1 text-gray-700">
+                    <p><span class="font-semibold">DNI:</span> {{ estado.estudiante.dni }}</p>
+                    <p>
+                        <span class="font-semibold">Nivel:</span> {{ estado.estudiante.nivel }} &nbsp;
+                        <span class="font-semibold">Grado:</span> {{ estado.estudiante.grado }} &nbsp;
+                        <span class="font-semibold">Sección:</span> {{ estado.estudiante.seccion }}
+                    </p>
+                </div>
+            </div>
+            <div class="text-right print:hidden">
+                <p class="text-sm font-semibold text-gray-600 mb-2">Año Escolar: <span class="text-gray-900">{{ estado.anio_escolar }}</span></p>
+                <button onclick="window.print()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all">
+                    <i class="fas fa-print mr-2"></i>Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl shadow-xl p-6 text-white text-center pop-in">
+            <h5 class="text-sm uppercase font-semibold mb-2 opacity-90">Total Obligaciones</h5>
+            <h2 class="text-4xl font-bold">S/ {{ "%.2f"|format(estado.total_obligaciones) }}</h2>
+        </div>
+        <div class="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl shadow-xl p-6 text-white text-center pop-in">
+            <h5 class="text-sm uppercase font-semibold mb-2 opacity-90">Total Pagado</h5>
+            <h2 class="text-4xl font-bold">S/ {{ "%.2f"|format(estado.total_pagado) }}</h2>
+        </div>
+        <div class="bg-gradient-to-br from-red-500 to-red-700 rounded-2xl shadow-xl p-6 text-white text-center pop-in">
+            <h5 class="text-sm uppercase font-semibold mb-2 opacity-90">Saldo Pendiente</h5>
+            <h2 class="text-4xl font-bold">S/ {{ "%.2f"|format(estado.total_pendiente) }}</h2>
+        </div>
+    </div>
+
+    <!-- Detalle por Concepto -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-list-ul mr-3"></i>Detalle por Concepto
+            </h2>
+        </div>
+        <div class="p-8">
+            {% if estado.por_concepto %}
+            {% for concepto, datos in estado.por_concepto.items() %}
+            <div class="mb-8 pb-8 border-b-2 border-gray-200 last:border-b-0">
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">{{ concepto }}</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 bg-gray-50 p-4 rounded-xl">
+                    <div>
+                        <span class="text-sm font-semibold text-gray-600">Monto Total:</span>
+                        <div class="text-lg font-bold text-gray-900">S/ {{ "%.2f"|format(datos.monto_total) }}</div>
+                    </div>
+                    <div>
+                        <span class="text-sm font-semibold text-gray-600">Pagado:</span>
+                        <div class="text-lg font-bold text-green-600">S/ {{ "%.2f"|format(datos.monto_pagado) }}</div>
+                    </div>
+                    <div>
+                        <span class="text-sm font-semibold text-gray-600">Pendiente:</span>
+                        <div class="text-lg font-bold text-red-600">S/ {{ "%.2f"|format(datos.monto_pendiente) }}</div>
+                    </div>
+                    <div>
+                        <span class="text-sm font-semibold text-gray-600">Estado:</span>
+                        <div class="mt-1">
+                            {% if datos.estado == 'pagado_total' %}
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                <i class="fas fa-check-circle mr-1"></i>Pagado
+                            </span>
+                            {% elif datos.estado == 'pagado_parcial' %}
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                <i class="fas fa-hourglass-half mr-1"></i>Parcial
+                            </span>
+                            {% else %}
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                <i class="fas fa-exclamation-circle mr-1"></i>Pendiente
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if datos.total_cuotas > 1 %}
+                <p class="mb-4 text-gray-700">
+                    <i class="fas fa-money-bill-wave mr-2 text-primary"></i>
+                    <span class="font-semibold">Cuotas:</span> {{ datos.cuotas_pagadas }} / {{ datos.total_cuotas }} pagadas
+                </p>
+                {% endif %}
+
+                <!-- Pagos realizados -->
+                {% if datos.pagos %}
+                <h4 class="text-lg font-bold text-primary mb-3">
+                    <i class="fas fa-receipt mr-2"></i>Pagos Realizados:
+                </h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Recibo</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Monto</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Forma de Pago</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for pago in datos.pagos %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <a href="{{ url_for('pagos.ver_recibo', pago_id=pago.id) }}" target="_blank"
+                                       class="text-blue-600 hover:text-blue-800 font-semibold">
+                                        {{ pago.numero_recibo }}
+                                    </a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ pago.fecha.strftime('%d/%m/%Y') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-semibold text-green-600">S/ {{ "%.2f"|format(pago.monto) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700 capitalize">{{ pago.forma_pago }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-gray-500 italic">No se han registrado pagos</p>
+                {% endif %}
+
+                <!-- Botón de pago si hay saldo pendiente -->
+                {% if datos.monto_pendiente > 0 %}
+                <div class="mt-4 print:hidden">
+                    <a href="{{ url_for('pagos.registrar_pago', anio_escolar=anio_escolar) }}"
+                       class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 inline-block">
+                        <i class="fas fa-cash-register mr-2"></i>Registrar Pago
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 text-2xl mr-4"></i>
+                    <p class="text-blue-700 font-medium">No hay obligaciones de pago para este estudiante en el año {{ estado.anio_escolar }}.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Botón Volver -->
+    <div class="text-center mt-8 print:hidden">
+        <a href="{{ url_for('estudiantes.list') }}"
+           class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200 inline-block">
+            <i class="fas fa-arrow-left mr-2"></i>Volver a Estudiantes
+        </a>
+    </div>
+</div>
+{% endblock %}

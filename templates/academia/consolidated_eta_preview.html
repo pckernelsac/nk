@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+
+{% block title %}Reporte Consolidado ETAs - Academia{% endblock %}
+
+{% block extra_css %}
+<style>
+.performance-excellent { background-color: #dcfce7; color: #166534; }
+        .performance-good { background-color: #fef3c7; color: #d97706; }
+        .performance-regular { background-color: #dbeafe; color: #1d4ed8; }
+        .performance-needs-improvement { background-color: #fecaca; color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block page_title %}Reporte Consolidado ETAs{% endblock %}
+
+{% block content %}
+        <div class="max-w-7xl mx-auto">
+            <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 px-6 py-6">
+                    <h2 class="text-2xl text-white font-bold">Vista Previa - Reporte Consolidado de ETAs</h2>
+                    <p class="text-indigo-100 text-sm mt-1">Análisis Grupal de Rendimiento Académico</p>
+                </div>
+
+                <div class="p-8">
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="mb-4 p-4 rounded-md text-sm
+                                    {% if category == 'success' %} bg-green-100 text-green-800 border-l-4 border-green-500
+                                    {% elif category == 'error' %} bg-red-100 text-red-800 border-l-4 border-red-500
+                                    {% elif category == 'warning' %} bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500
+                                    {% elif category == 'info' %} bg-purple-100 text-purple-800 border-l-4 border-purple-500
+                                    {% else %} bg-gray-100 text-gray-800 border-l-4 border-gray-500 {% endif %}"
+                                     role="alert">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- Información General -->
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800">Información General del Reporte</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <p class="text-sm text-gray-600">Estudiantes Solicitados</p>
+                                <p class="text-2xl font-bold text-purple-700">{{ consolidated_data.generation_info.total_students_requested }}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <p class="text-sm text-gray-600">Estudiantes Analizados</p>
+                                <p class="text-2xl font-bold text-green-600">{{ consolidated_data.generation_info.total_students_analyzed }}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <p class="text-sm text-gray-600">Promedio Grupal</p>
+                                <p class="text-2xl font-bold {% if consolidated_data.group_statistics.group_average >= 10.5 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ "%.3f"|format(consolidated_data.group_statistics.group_average) }}
+                                </p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <p class="text-sm text-gray-600">Tasa de Éxito</p>
+                                <p class="text-2xl font-bold text-purple-600">{{ "%.1f"|format(consolidated_data.group_statistics.group_passing_rate) }}%</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm text-gray-600">
+                            <p><strong>Generado:</strong> {{ consolidated_data.generation_info.generation_date }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas Grupales -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800">Estadísticas Grupales</h3>
+                        <div class="bg-white border rounded-lg overflow-hidden">
+                            <div class="bg-purple-700 text-white p-4">
+                                <h4 class="font-bold">Resumen Ejecutivo</h4>
+                            </div>
+                            <div class="p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h5 class="font-bold text-sm mb-2">Mejor Estudiante</h5>
+                                        {% if consolidated_data.group_statistics.best_student %}
+                                        <p class="text-sm">
+                                            {{ consolidated_data.group_statistics.best_student.student.first_name }} 
+                                            {{ consolidated_data.group_statistics.best_student.student.last_name }}
+                                            <span class="font-bold text-green-600">({{ "%.3f"|format(consolidated_data.group_statistics.best_student.score) }})</span>
+                                        </p>
+                                        {% else %}
+                                        <p class="text-sm text-gray-500">N/A</p>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h5 class="font-bold text-sm mb-2">ETAs Analizadas</h5>
+                                        <p class="text-sm">{{ consolidated_data.group_statistics.total_etas_analyzed }} ETAs totales</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Distribución de Rendimiento -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800">Distribución de Rendimiento</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {% set perf_dist = consolidated_data.group_statistics.performance_distribution %}
+                            <div class="performance-excellent p-4 rounded-lg">
+                                <h4 class="font-bold text-sm">Excelente (16-20)</h4>
+                                <p class="text-2xl font-bold">{{ perf_dist.excellent.count }}</p>
+                                <p class="text-sm">{{ "%.1f"|format(perf_dist.excellent.percentage) }}%</p>
+                            </div>
+                            <div class="performance-good p-4 rounded-lg">
+                                <h4 class="font-bold text-sm">Bueno (13-16)</h4>
+                                <p class="text-2xl font-bold">{{ perf_dist.good.count }}</p>
+                                <p class="text-sm">{{ "%.1f"|format(perf_dist.good.percentage) }}%</p>
+                            </div>
+                            <div class="performance-regular p-4 rounded-lg">
+                                <h4 class="font-bold text-sm">Regular (10.5-13)</h4>
+                                <p class="text-2xl font-bold">{{ perf_dist.regular.count }}</p>
+                                <p class="text-sm">{{ "%.1f"|format(perf_dist.regular.percentage) }}%</p>
+                            </div>
+                            <div class="performance-needs-improvement p-4 rounded-lg">
+                                <h4 class="font-bold text-sm">Necesita Mejora (&lt;10.5)</h4>
+                                <p class="text-2xl font-bold">{{ perf_dist.needs_improvement.count }}</p>
+                                <p class="text-sm">{{ "%.1f"|format(perf_dist.needs_improvement.percentage) }}%</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Análisis por ETA -->
+                    {% if consolidated_data.eta_comparisons.eta_statistics %}
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800">Análisis por ETA</h3>
+                        <div class="bg-white border rounded-lg overflow-hidden">
+                            <div class="bg-gray-100 p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {% if consolidated_data.eta_comparisons.most_difficult_eta %}
+                                    <div>
+                                        <h5 class="font-bold text-sm text-red-600">ETA Más Difícil</h5>
+                                        <p class="text-sm">
+                                            ETA {{ consolidated_data.eta_comparisons.most_difficult_eta.eta_number }} 
+                                            (Promedio: {{ "%.2f"|format(consolidated_data.eta_comparisons.most_difficult_eta.average_score) }})
+                                        </p>
+                                    </div>
+                                    {% endif %}
+                                    {% if consolidated_data.eta_comparisons.easiest_eta %}
+                                    <div>
+                                        <h5 class="font-bold text-sm text-green-600">ETA Más Fácil</h5>
+                                        <p class="text-sm">
+                                            ETA {{ consolidated_data.eta_comparisons.easiest_eta.eta_number }} 
+                                            (Promedio: {{ "%.2f"|format(consolidated_data.eta_comparisons.easiest_eta.average_score) }})
+                                        </p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="py-2 px-4 text-left">ETA</th>
+                                            <th class="py-2 px-4 text-center">Estudiantes</th>
+                                            <th class="py-2 px-4 text-center">Promedio</th>
+                                            <th class="py-2 px-4 text-center">% Éxito</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for eta_num, stats in consolidated_data.eta_comparisons.eta_statistics.items() | sort %}
+                                        <tr class="border-b {% if stats.average_score >= 10.5 %}bg-green-50{% elif stats.average_score >= 7 %}bg-yellow-50{% else %}bg-red-50{% endif %}">
+                                            <td class="py-2 px-4 font-bold">ETA {{ eta_num }}</td>
+                                            <td class="py-2 px-4 text-center">{{ stats.students_count }}</td>
+                                            <td class="py-2 px-4 text-center font-bold">{{ "%.2f"|format(stats.average_score) }}</td>
+                                            <td class="py-2 px-4 text-center">{{ "%.1f"|format(stats.passing_rate) }}%</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Análisis de Tendencias -->
+                    {% if consolidated_data.trends_analysis.trend_distribution %}
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800">Tendencias Grupales</h3>
+                        <div class="bg-white border rounded-lg overflow-hidden">
+                            <div class="bg-gray-100 p-4">
+                                <h5 class="font-bold text-sm mb-2">Perspectiva Grupal: 
+                                    <span class="
+                                        {% if consolidated_data.trends_analysis.group_outlook == 'positivo' %}text-green-600
+                                        {% elif consolidated_data.trends_analysis.group_outlook == 'preocupante' %}text-red-600
+                                        {% else %}text-gray-600{% endif %}">
+                                        {{ consolidated_data.trends_analysis.group_outlook.upper() }}
+                                    </span>
+                                </h5>
+                            </div>
+                            <div class="p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {% set trends = consolidated_data.trends_analysis.trend_distribution %}
+                                    <div class="bg-green-50 p-3 rounded text-center">
+                                        <h6 class="font-bold text-green-700">Mejorando</h6>
+                                        <p class="text-xl font-bold text-green-600">{{ trends.improving.count }}</p>
+                                        <p class="text-sm text-green-600">{{ "%.1f"|format(trends.improving.percentage) }}%</p>
+                                    </div>
+                                    <div class="bg-yellow-50 p-3 rounded text-center">
+                                        <h6 class="font-bold text-yellow-700">Estable</h6>
+                                        <p class="text-xl font-bold text-yellow-600">{{ trends.stable.count }}</p>
+                                        <p class="text-sm text-yellow-600">{{ "%.1f"|format(trends.stable.percentage) }}%</p>
+                                    </div>
+                                    <div class="bg-red-50 p-3 rounded text-center">
+                                        <h6 class="font-bold text-red-700">Declinando</h6>
+                                        <p class="text-xl font-bold text-red-600">{{ trends.declining.count }}</p>
+                                        <p class="text-sm text-red-600">{{ "%.1f"|format(trends.declining.percentage) }}%</p>
+                                    </div>
+                                </div>
+                                {% if consolidated_data.trends_analysis.students_needing_support.count > 0 %}
+                                <div class="mt-4 p-3 bg-red-100 rounded-lg">
+                                    <p class="text-sm text-red-800">
+                                        <strong>Atención:</strong> {{ consolidated_data.trends_analysis.students_needing_support.count }} estudiantes 
+                                        ({{ "%.1f"|format(consolidated_data.trends_analysis.students_needing_support.percentage) }}%) requieren apoyo adicional.
+                                    </p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Ranking de Estudiantes (Top 10) -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold mb-4 text-gray-800">Ranking de Estudiantes (Top 10)</h3>
+                        <div class="bg-white border rounded-lg overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-purple-700 text-white">
+                                        <tr>
+                                            <th class="py-2 px-4 text-center">Pos</th>
+                                            <th class="py-2 px-4 text-left">Estudiante</th>
+                                            <th class="py-2 px-4 text-center">Promedio</th>
+                                            <th class="py-2 px-4 text-center">ETAs</th>
+                                            <th class="py-2 px-4 text-center">% Éxito</th>
+                                            <th class="py-2 px-4 text-center">Tendencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for student in consolidated_data.students_data | sort(attribute='summary.average_score', reverse=true) %}
+                                        {% if loop.index <= 10 %}
+                                        <tr class="border-b 
+                                            {% if loop.index <= 3 %}bg-yellow-50
+                                            {% elif student.summary.average_score >= 10.5 %}bg-green-50
+                                            {% else %}bg-red-50{% endif %}">
+                                            <td class="py-2 px-4 text-center font-bold">{{ loop.index }}</td>
+                                            <td class="py-2 px-4">
+                                                {{ student.student_info.first_name }} {{ student.student_info.last_name }}
+                                                <div class="text-xs text-gray-500">{{ student.student_info.student_id }}</div>
+                                            </td>
+                                            <td class="py-2 px-4 text-center font-bold">{{ "%.3f"|format(student.summary.average_score) }}</td>
+                                            <td class="py-2 px-4 text-center">{{ student.summary.valid_etas }}</td>
+                                            <td class="py-2 px-4 text-center">{{ "%.1f"|format(student.summary.passing_rate) }}%</td>
+                                            <td class="py-2 px-4 text-center">
+                                                <span class="px-2 py-1 rounded text-xs 
+                                                    {% if student.summary.trend == 'mejorando' %}bg-green-100 text-green-800
+                                                    {% elif student.summary.trend == 'declinando' %}bg-red-100 text-red-800
+                                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                    {{ student.summary.trend.upper() }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="flex items-center justify-between">
+                        <a href="{{ url_for('academia_eta_analysis.bulk_eta_analysis') }}" 
+                           class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 transition-colors duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Volver al Análisis Masivo
+                        </a>
+                        
+                        <a href="{{ url_for('academia_eta_analysis.generate_consolidated_pdf', student_ids=student_ids_param) }}" 
+                           class="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-purple-700 rounded-lg hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-indigo-300 shadow-md transition-colors duration-200">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Descargar PDF Consolidado
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Añadir efectos de hover suaves
+            const cards = document.querySelectorAll('.bg-white');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.transition = 'transform 0.2s ease-in-out';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+</script>
+{% endblock %}

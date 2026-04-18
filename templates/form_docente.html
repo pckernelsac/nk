@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Registro de Docente{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp 0.5s ease-out; }
+
+    .required-label::after {
+        content: ' *';
+        color: #ef4444;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 fade-in-up">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-chalkboard-teacher text-primary mr-3"></i>Registro de Docente
+        </h1>
+        <p class="text-gray-600">Complete la información personal y profesional del docente</p>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <form id="registroDocenteForm" method="POST" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <!-- Sección 1: Información Personal -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-user mr-3"></i>Información Personal del Docente
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Apellido Paterno -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Apellido Paterno</label>
+                            <input type="text" name="apellido_paterno" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Apellido Materno -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Apellido Materno</label>
+                            <input type="text" name="apellido_materno" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Nombres -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Nombres</label>
+                            <input type="text" name="nombres" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- DNI -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">DNI</label>
+                            <input type="text" name="dni" pattern="[0-9]{8}" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all dni-input">
+                        </div>
+
+                        <!-- Fecha de Nacimiento -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Género -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Género</label>
+                            <select name="genero" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="masculino">Masculino</option>
+                                <option value="femenino">Femenino</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <!-- Estado Civil -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Estado Civil</label>
+                            <select name="estado_civil" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="soltero">Soltero/a</option>
+                                <option value="casado">Casado/a</option>
+                                <option value="divorciado">Divorciado/a</option>
+                                <option value="viudo">Viudo/a</option>
+                            </select>
+                        </div>
+
+                        <!-- Correo Electrónico -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Correo Electrónico</label>
+                            <input type="email" name="correo" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Teléfono/Celular -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Teléfono/Celular</label>
+                            <input type="tel" name="telefono" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 2: Información Profesional -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.1s;">
+                <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-graduation-cap mr-3"></i>Información Profesional
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Nivel de Educación -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Nivel de Educación</label>
+                            <select name="nivel_educacion" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="tecnico">Técnico</option>
+                                <option value="bachiller">Bachiller</option>
+                                <option value="licenciado">Licenciado</option>
+                                <option value="magister">Magíster</option>
+                                <option value="doctor">Doctor</option>
+                            </select>
+                        </div>
+
+                        <!-- Título Profesional -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Título Profesional</label>
+                            <input type="text" name="titulo_profesional" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Universidad/Instituto -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Universidad/Instituto</label>
+                            <input type="text" name="institucion_educativa" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Especialidad -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Especialidad</label>
+                            <input type="text" name="especialidad" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Área de Enseñanza -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Área de Enseñanza</label>
+                            <select name="area_ensenanza" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="matematicas">Matemáticas</option>
+                                <option value="comunicacion">Comunicación</option>
+                                <option value="ciencias">Ciencias</option>
+                                <option value="historia">Historia</option>
+                                <option value="arte">Arte</option>
+                                <option value="educacion_fisica">Educación Física</option>
+                                <option value="idiomas">Idiomas</option>
+                            </select>
+                        </div>
+
+                        <!-- Años de Experiencia -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Años de Experiencia</label>
+                            <input type="number" name="anos_experiencia" min="0" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div class="mt-6 p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-r-xl">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-green-600 text-xl mr-3 mt-1"></i>
+                            <div>
+                                <p class="text-sm font-bold text-green-800 mb-1">Información Importante</p>
+                                <p class="text-sm text-green-700">
+                                    Complete todos los datos profesionales con precisión. Esta información será utilizada para la asignación de cursos y generación de documentos oficiales.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 3: Información de Contacto -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.2s;">
+                <div class="bg-gradient-to-r from-amber-500 to-amber-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-map-marker-alt mr-3"></i>Información de Contacto
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Dirección -->
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Dirección</label>
+                            <input type="text" name="direccion" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Distrito -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Distrito</label>
+                            <input type="text" name="distrito" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Provincia -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Provincia</label>
+                            <input type="text" name="provincia" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Departamento -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Departamento</label>
+                            <input type="text" name="departamento" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex justify-end gap-4 fade-in-up" style="animation-delay: 0.3s;">
+                <button type="reset" class="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-eraser mr-2"></i>Limpiar Formulario
+                </button>
+                <button type="submit" class="px-8 py-4 bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-save mr-2"></i>Registrar Docente
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registroDocenteForm');
+
+    // Validación de DNI
+    const dniInput = form.querySelector('.dni-input');
+    if (dniInput) {
+        dniInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+        });
+    }
+
+    // Validación de teléfono
+    const telefonoInputs = form.querySelectorAll('.telefono-input');
+    telefonoInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);
+        });
+    });
+
+    // Validación de fecha de nacimiento
+    const fechaNacimientoInput = form.querySelector('input[name="fecha_nacimiento"]');
+    if (fechaNacimientoInput) {
+        fechaNacimientoInput.addEventListener('change', function() {
+            const fechaIngresada = new Date(this.value);
+            const fechaActual = new Date();
+            const edadMinima = new Date(fechaActual.getFullYear() - 65, fechaActual.getMonth(), fechaActual.getDate());
+            const edadMaxima = new Date(fechaActual.getFullYear() - 22, fechaActual.getMonth(), fechaActual.getDate());
+
+            if (fechaIngresada > edadMaxima || fechaIngresada < edadMinima) {
+                this.setCustomValidity('Fecha de nacimiento fuera de rango permitido (22-65 años)');
+                this.reportValidity();
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+
+    // Validación general del formulario
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    }, false);
+});
+</script>
+{% endblock %}

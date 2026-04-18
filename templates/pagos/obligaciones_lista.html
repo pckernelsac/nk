@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Obligaciones de Pago{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 pop-in flex justify-between items-center">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-file-invoice text-primary mr-3"></i>Obligaciones de Pago
+            </h1>
+            <p class="text-gray-600">Gestiona las obligaciones de pago de los estudiantes</p>
+        </div>
+        <div>
+            <a href="{{ url_for('pagos.asignar_obligaciones', anio_escolar=anio_escolar) }}"
+               class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                <i class="fas fa-plus mr-2"></i>Asignar Obligaciones
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-filter mr-3"></i>Filtros
+            </h2>
+        </div>
+        <div class="p-8">
+            <form method="GET">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Año Escolar</label>
+                        <select name="anio_escolar"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            {% for year in range(current_year - 2, current_year + 3) %}
+                            <option value="{{ year }}" {% if anio_escolar == year|string %}selected{% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Nivel</label>
+                        <select name="nivel"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            <option value="">Todos los niveles</option>
+                            {% for nivel in niveles %}
+                            <option value="{{ nivel }}" {% if nivel_filtro == nivel %}selected{% endif %}>{{ nivel }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Concepto</label>
+                        <select name="concepto_id"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            <option value="">Todos los conceptos</option>
+                            {% for concepto in conceptos %}
+                            <option value="{{ concepto.id }}"
+                                    {% if concepto_id_filtro == concepto.id|string %}selected{% endif %}>
+                                {{ concepto.tipo_pago_nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Estado</label>
+                        <select name="estado"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            <option value="">Todos</option>
+                            <option value="pendiente" {% if estado_filtro == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                            <option value="pagado_parcial" {% if estado_filtro == 'pagado_parcial' %}selected{% endif %}>Parcial</option>
+                            <option value="pagado_total" {% if estado_filtro == 'pagado_total' %}selected{% endif %}>Pagado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">&nbsp;</label>
+                        <button type="submit"
+                                class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200">
+                            <i class="fas fa-search mr-2"></i>Filtrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Obligaciones -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-list mr-3"></i>Obligaciones Registradas
+            </h2>
+        </div>
+        <div class="p-8">
+            {% if obligaciones %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estudiante</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Concepto</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Monto Total</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Pagado</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Pendiente</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Cuotas</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for ob in obligaciones %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="font-semibold text-gray-900">{{ ob.estudiante_nombre_completo }}</div>
+                                <div class="text-xs text-gray-500">DNI: {{ ob.estudiante_dni }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-medium text-gray-700">{{ ob.concepto_nombre }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-bold text-gray-900">S/ {{ "%.2f"|format(ob.monto_total) }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-semibold text-green-600">S/ {{ "%.2f"|format(ob.monto_pagado) }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-semibold text-red-600">S/ {{ "%.2f"|format(ob.monto_pendiente) }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-gray-700">{{ ob.cuotas_pagadas }} / {{ ob.numero_cuotas }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if ob.estado == 'pagado_total' %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Pagado
+                                </span>
+                                {% elif ob.estado == 'pagado_parcial' %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-hourglass-half mr-1"></i>Parcial
+                                </span>
+                                {% else %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>Pendiente
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex gap-2">
+                                    {% if ob.estado != 'pagado_total' %}
+                                    <a href="{{ url_for('pagos.registrar_pago') }}"
+                                       class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-all"
+                                       title="Registrar Pago">
+                                        <i class="fas fa-cash-register"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{{ url_for('pagos.estado_cuenta', estudiante_id=ob.estudiante_id, anio_escolar=anio_escolar) }}"
+                                       class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-all"
+                                       title="Estado de Cuenta">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 text-2xl mr-4"></i>
+                    <p class="text-blue-700 font-medium">No hay obligaciones con los filtros aplicados.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Mi Perfil - NK Chambergo</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #5F2A5D;
+            --primary-dark: #4a2048;
+            --primary-light: #8b4789;
+            --primary-50: #f8f0f8;
+            --primary-100: #f0ddef;
+            --primary-200: #e0bbe0;
+            --primary-accent: #7c3b7a;
+            --bg: #f7f7fa;
+            --card: #ffffff;
+            --border: #ebe5ef;
+            --text-dark: #1a1a2e;
+            --text: #4a4a5a;
+            --text-light: #8a8a9a;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+
+        /* ── Header ─────────────────────────────────── */
+        .app-header {
+            position: sticky; top: 0; z-index: 50;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .app-header-inner {
+            max-width: 1200px; margin: 0 auto;
+            padding: 0 1.25rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        }
+        .header-brand { display: flex; align-items: center; gap: 0.75rem; }
+        .header-logo {
+            width: 38px; height: 38px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(95,42,93,0.25);
+        }
+        .header-logo img { width: 24px; height: 24px; object-fit: contain; }
+        .header-title { font-weight: 700; font-size: 0.95rem; color: var(--text-dark); }
+        .header-subtitle { font-size: 0.6rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 18px; border-radius: 10px; border: 1px solid var(--primary-200);
+            background: var(--primary-50); color: var(--primary);
+            font-size: 0.78rem; font-weight: 600; text-decoration: none;
+            transition: all 0.2s ease; font-family: 'Inter', sans-serif; cursor: pointer;
+        }
+        .btn-back:hover { background: var(--primary-100); border-color: var(--primary-light); }
+
+        /* ── Main ────────────────────────────────────── */
+        .page-wrap { max-width: 900px; margin: 0 auto; padding: 2rem 1.25rem 3rem; flex: 1; }
+
+        .page-title-bar {
+            display: flex; align-items: center; gap: 0.75rem;
+            margin-bottom: 1.5rem; padding-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-100);
+        }
+        .page-title-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(95,42,93,0.2);
+        }
+        .page-title { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); }
+        .page-subtitle { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
+
+        /* ── Cards ────────────────────────────────────── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .card + .card { margin-top: 1.25rem; }
+
+        .card-header {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--primary-50);
+        }
+        .card-header i { color: var(--primary); font-size: 1rem; }
+        .card-header h3 { font-size: 0.9rem; font-weight: 700; color: var(--text-dark); }
+
+        .card-body { padding: 1.25rem 1.5rem; }
+
+        /* Data grid (read only) */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .data-label {
+            display: block;
+            font-size: 0.7rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--text-light); margin-bottom: 4px;
+        }
+        .data-value {
+            font-size: 0.88rem; font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        /* ── Form fields ──────────────────────────────── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+        }
+        .form-group { }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.78rem; font-weight: 600;
+            color: var(--text); margin-bottom: 6px;
+        }
+        .form-group label i { color: var(--primary-light); font-size: 0.75rem; }
+        .form-group input {
+            width: 100%; padding: 10px 14px;
+            border: 1px solid var(--border); border-radius: 10px;
+            font-size: 0.85rem; font-family: 'Inter', sans-serif;
+            color: var(--text-dark); background: var(--card);
+            transition: all 0.2s;
+        }
+        .form-group input:focus {
+            outline: none; border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(95,42,93,0.1);
+        }
+        .form-group input::placeholder { color: #c4c4d0; }
+
+        /* Parent sections */
+        .parent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .parent-card { border-radius: 12px; padding: 1.25rem; }
+        .parent-card.father { background: #eff6ff; border: 1px solid #bfdbfe; }
+        .parent-card.mother { background: #fdf2f8; border: 1px solid #fbcfe8; }
+        .parent-card h4 { font-size: 0.82rem; font-weight: 700; margin-bottom: 1rem; }
+        .parent-card.father h4 { color: #1e3a8a; }
+        .parent-card.mother h4 { color: #9d174d; }
+        .parent-card .form-group + .form-group { margin-top: 1rem; }
+
+        /* ── Info banner ──────────────────────────────── */
+        .info-banner {
+            display: flex; align-items: flex-start; gap: 0.75rem;
+            padding: 1rem 1.25rem; border-radius: 12px;
+            background: var(--primary-50); border: 1px solid var(--primary-200);
+            margin-bottom: 1.25rem;
+        }
+        .info-banner i { color: var(--primary); font-size: 1rem; margin-top: 2px; }
+        .info-banner p { font-size: 0.8rem; color: var(--primary-dark); line-height: 1.5; }
+        .info-banner strong { font-weight: 600; }
+
+        /* ── Empty state ──────────────────────────────── */
+        .empty-state { text-align: center; padding: 3rem 1.5rem; }
+        .empty-state-icon {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #fef3c7; border: 3px solid #fde68a;
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+        .empty-state-icon i { font-size: 2rem; color: #d97706; }
+        .empty-state h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.75rem; }
+        .empty-state p { font-size: 0.85rem; color: var(--text); max-width: 540px; margin: 0 auto; line-height: 1.6; }
+
+        .info-list { list-style: none; padding: 0; margin: 1.25rem auto; max-width: 460px; text-align: left; }
+        .info-list li {
+            display: flex; align-items: flex-start; gap: 8px;
+            font-size: 0.82rem; color: var(--text); padding: 6px 0;
+        }
+        .info-list li i { margin-top: 2px; font-size: 0.82rem; }
+        .info-list li i.green { color: #16a34a; }
+        .info-list li i.red { color: #dc2626; }
+        .info-list li i.yellow { color: #d97706; }
+
+        /* ── Buttons ──────────────────────────────────── */
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 24px; border-radius: 10px; border: none;
+            background: var(--primary); color: #fff;
+            font-size: 0.82rem; font-weight: 600;
+            text-decoration: none; cursor: pointer;
+            transition: all 0.2s; font-family: 'Inter', sans-serif;
+            box-shadow: 0 2px 8px rgba(95,42,93,0.25);
+        }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(95,42,93,0.35); }
+
+        .btn-secondary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 24px; border-radius: 10px; border: 1px solid var(--border);
+            background: var(--card); color: var(--text);
+            font-size: 0.82rem; font-weight: 600;
+            text-decoration: none; cursor: pointer;
+            transition: all 0.2s; font-family: 'Inter', sans-serif;
+        }
+        .btn-secondary:hover { background: #f5f5f5; border-color: #d1d1d8; }
+
+        .actions-bar {
+            display: flex; justify-content: flex-end; gap: 0.75rem;
+            padding-top: 1.25rem; margin-top: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── Flash ────────────────────────────────────── */
+        .flash {
+            padding: 0.85rem 1.25rem; border-radius: 10px;
+            font-size: 0.82rem; font-weight: 500;
+            margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
+            border-left: 4px solid;
+        }
+        .flash.success { background: #f0fdf4; color: #166534; border-color: #22c55e; }
+        .flash.error { background: #fef2f2; color: #991b1b; border-color: #ef4444; }
+        .flash.warning { background: #fffbeb; color: #92400e; border-color: #f59e0b; }
+        .flash.info { background: var(--primary-50); color: var(--primary-dark); border-color: var(--primary); }
+
+        /* ── Last modified ────────────────────────────── */
+        .last-modified {
+            text-align: center; font-size: 0.75rem; color: var(--text-light);
+            margin-top: 1rem; padding: 0.75rem;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+        .last-modified i { margin-right: 4px; }
+
+        /* ── Responsive ───────────────────────────────── */
+        @media (max-width: 640px) {
+            .parent-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .data-grid { grid-template-columns: 1fr; }
+            .actions-bar { flex-direction: column; }
+            .actions-bar a, .actions-bar button { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="app-header-inner">
+            <div class="header-brand">
+                <div class="header-logo">
+                    <img src="{{ url_for('academia_student_auth.static', filename='img/nk.png') }}" alt="NK">
+                </div>
+                <div>
+                    <div class="header-title">NK Chambergo</div>
+                    <div class="header-subtitle">Editar Perfil</div>
+                </div>
+            </div>
+            <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </header>
+
+    <div class="page-wrap">
+        <!-- Page title -->
+        <div class="page-title-bar">
+            <div class="page-title-icon"><i class="fas fa-user-edit"></i></div>
+            <div>
+                <div class="page-title">Editar Mi Información</div>
+                <div class="page-subtitle">Actualiza tus datos de contacto</div>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash {{ category if category in ['success', 'error', 'warning'] else 'info' }}">
+                    <i class="fas {{ 'fa-check-circle' if category == 'success' else ('fa-exclamation-circle' if category == 'error' else ('fa-exclamation-triangle' if category == 'warning' else 'fa-info-circle')) }}"></i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if not estudiante %}
+        <!-- Not registered -->
+        <div class="card">
+            <div class="card-body">
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-user-clock"></i></div>
+                    <h3>Aún no estás registrado en el sistema principal</h3>
+                    <p>Tu información académica está disponible (DNI: <strong>{{ dni }}</strong>), pero tu perfil completo aún no ha sido creado en el sistema principal.</p>
+
+                    <ul class="info-list">
+                        <li><i class="fas fa-check-circle green"></i><span><strong>Puedes ver tus reportes académicos</strong> normalmente desde el dashboard</span></li>
+                        <li><i class="fas fa-times-circle red"></i><span><strong>No puedes editar tu información</strong> hasta que seas registrado por el administrador</span></li>
+                        <li><i class="fas fa-clock yellow"></i><span><strong>Esto es temporal:</strong> Una vez que completes tu inscripción formal, podrás actualizar tus datos</span></li>
+                    </ul>
+
+                    <div style="margin-top: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+                        <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-primary">
+                            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                        </a>
+                        <span style="font-size: 0.75rem; color: var(--text-light);">
+                            <i class="fas fa-question-circle" style="margin-right: 4px;"></i>Si crees que esto es un error, contacta a la administración
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Info banner -->
+        <div class="info-banner">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <p><strong>Información importante:</strong> Solo puedes editar tus datos de contacto. Si necesitas modificar otros datos, contacta a la administración.</p>
+                <p style="margin-top: 6px;"><strong>Nota:</strong> Si ves un mensaje de error sobre cambios simultáneos, significa que alguien más (o tú desde otro dispositivo) modificó estos datos recientemente. Recarga la página para ver los cambios más recientes.</p>
+            </div>
+        </div>
+
+        <!-- Contraseña del portal (formulario aparte) — al inicio -->
+        <form method="POST" action="{{ url_for('academia_student_auth.editar_perfil') }}" id="passwordForm" class="card" style="margin-top: 1.25rem;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="accion" value="cambiar_password">
+            <div class="card-header">
+                <i class="fas fa-lock"></i>
+                <h3>Contraseña del portal Academia</h3>
+            </div>
+            <div class="card-body">
+                <p style="font-size: 0.82rem; color: var(--text); margin-bottom: 1rem; line-height: 1.5;">
+                    {% if tiene_password_personalizada %}
+                    Ya definiste una contraseña personal. Para cambiarla, escribe la <strong>contraseña actual</strong> y la nueva (mínimo 8 caracteres).
+                    {% else %}
+                    Por defecto, tu contraseña es tu <strong>DNI</strong> (mismo valor que en &laquo;Student ID&raquo;). Puedes definir una contraseña segura aquí.
+                    {% endif %}
+                </p>
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label for="password_actual"><i class="fas fa-key"></i> Contraseña actual</label>
+                        <input type="password" id="password_actual" name="password_actual" autocomplete="current-password"
+                               placeholder="{% if tiene_password_personalizada %}Tu contraseña actual{% else %}Tu DNI (contraseña actual){% endif %}">
+                    </div>
+                    <div class="form-group">
+                        <label for="password_nuevo"><i class="fas fa-lock"></i> Nueva contraseña</label>
+                        <input type="password" id="password_nuevo" name="password_nuevo" autocomplete="new-password"
+                               minlength="8" placeholder="Mínimo 8 caracteres">
+                    </div>
+                    <div class="form-group">
+                        <label for="password_confirm"><i class="fas fa-lock"></i> Confirmar nueva</label>
+                        <input type="password" id="password_confirm" name="password_confirm" autocomplete="new-password"
+                               minlength="8" placeholder="Repite la nueva contraseña">
+                    </div>
+                </div>
+                <div class="actions-bar" style="border-top: 1px solid var(--border); margin-top: 1.25rem; padding-top: 1.25rem;">
+                    <button type="submit" class="btn-primary" style="width: auto;">
+                        <i class="fas fa-shield-alt"></i> Actualizar contraseña
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <form method="POST" action="{{ url_for('academia_student_auth.editar_perfil') }}" id="editForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="version" value="{{ estudiante.version }}">
+
+            <!-- Read-only student data -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-user"></i>
+                    <h3>Datos del Estudiante (Solo lectura)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="data-grid">
+                        <div>
+                            <span class="data-label">Nombre Completo</span>
+                            <span class="data-value">{{ estudiante.nombres_est }} {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}</span>
+                        </div>
+                        <div>
+                            <span class="data-label">DNI</span>
+                            <span class="data-value">{{ estudiante.dni_est }}</span>
+                        </div>
+                        <div>
+                            <span class="data-label">Nivel / Programa</span>
+                            <span class="data-value">{{ estudiante.nivel }} - {{ estudiante.grado }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editable contact data -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-phone"></i>
+                    <h3>Tus Datos de Contacto</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="correo_est"><i class="fas fa-envelope"></i> Correo Electrónico *</label>
+                            <input type="email" id="correo_est" name="correo_est"
+                                   value="{{ estudiante.correo_est or '' }}" placeholder="tu@correo.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="numero_celular_est"><i class="fas fa-mobile-alt"></i> Número de Celular *</label>
+                            <input type="tel" id="numero_celular_est" name="numero_celular_est"
+                                   value="{{ estudiante.numero_celular_est or '' }}" placeholder="999999999" maxlength="15">
+                        </div>
+                        <div class="form-group full">
+                            <label for="direccion_est"><i class="fas fa-map-marker-alt"></i> Dirección</label>
+                            <input type="text" id="direccion_est" name="direccion_est"
+                                   value="{{ estudiante.direccion_est or '' }}" placeholder="Dirección completa">
+                        </div>
+                        <div class="form-group">
+                            <label for="distrito_est">Distrito</label>
+                            <input type="text" id="distrito_est" name="distrito_est"
+                                   value="{{ estudiante.distrito_est or '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="provincia_est">Provincia</label>
+                            <input type="text" id="provincia_est" name="provincia_est"
+                                   value="{{ estudiante.provincia_est or '' }}">
+                        </div>
+                        <div class="form-group full">
+                            <label for="referencia_est">Referencia</label>
+                            <input type="text" id="referencia_est" name="referencia_est"
+                                   value="{{ estudiante.referencia_est or '' }}" placeholder="Referencias para ubicar tu domicilio">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parents contact -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-users"></i>
+                    <h3>Datos de Contacto de Padres</h3>
+                </div>
+                <div class="card-body">
+                    <div class="parent-grid">
+                        <div class="parent-card father">
+                            <h4><i class="fas fa-male" style="margin-right: 6px;"></i>Padre</h4>
+                            <div class="form-group">
+                                <label for="celular_padre">Celular</label>
+                                <input type="tel" id="celular_padre" name="celular_padre"
+                                       value="{{ estudiante.celular_padre or '' }}" maxlength="15">
+                            </div>
+                            <div class="form-group" style="margin-top: 1rem;">
+                                <label for="correo_padre">Correo</label>
+                                <input type="email" id="correo_padre" name="correo_padre"
+                                       value="{{ estudiante.correo_padre or '' }}">
+                            </div>
+                        </div>
+                        <div class="parent-card mother">
+                            <h4><i class="fas fa-female" style="margin-right: 6px;"></i>Madre</h4>
+                            <div class="form-group">
+                                <label for="celular_madre">Celular</label>
+                                <input type="tel" id="celular_madre" name="celular_madre"
+                                       value="{{ estudiante.celular_madre or '' }}" maxlength="15">
+                            </div>
+                            <div class="form-group" style="margin-top: 1rem;">
+                                <label for="correo_madre">Correo</label>
+                                <input type="email" id="correo_madre" name="correo_madre"
+                                       value="{{ estudiante.correo_madre or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card" style="margin-top: 1.25rem;">
+                <div class="card-body">
+                    <div class="actions-bar" style="border-top: none; margin-top: 0; padding-top: 0;">
+                        <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {% if estudiante and estudiante.fecha_ultima_modificacion %}
+        <div class="last-modified">
+            <i class="fas fa-clock"></i>
+            Última actualización: {{ estudiante.fecha_ultima_modificacion.strftime('%d/%m/%Y %H:%M') if estudiante.fecha_ultima_modificacion else 'No disponible' }}
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    <script>
+        let formModified = false;
+        const form = document.getElementById('editForm');
+        if (form) {
+            const inputs = form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]');
+            inputs.forEach(input => {
+                input.addEventListener('change', () => { formModified = true; });
+            });
+            window.addEventListener('beforeunload', (e) => {
+                if (formModified) { e.preventDefault(); e.returnValue = ''; }
+            });
+            form.addEventListener('submit', () => { formModified = false; });
+        }
+        const pwdForm = document.getElementById('passwordForm');
+        if (pwdForm) {
+            pwdForm.addEventListener('submit', function (e) {
+                const a = document.getElementById('password_actual');
+                const n = document.getElementById('password_nuevo');
+                const c = document.getElementById('password_confirm');
+                if (!a.value.trim() || !n.value.trim() || !c.value.trim()) {
+                    e.preventDefault();
+                    alert('Completa contraseña actual, nueva y confirmación.');
+                    return;
+                }
+                if (n.value.length < 8) {
+                    e.preventDefault();
+                    alert('La nueva contraseña debe tener al menos 8 caracteres.');
+                    return;
+                }
+                if (n.value !== c.value) {
+                    e.preventDefault();
+                    alert('La confirmación no coincide con la nueva contraseña.');
+                    return;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

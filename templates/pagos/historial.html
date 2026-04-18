@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de Pagos{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 pop-in">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-history text-primary mr-3"></i>Historial de Pagos
+        </h1>
+        <p class="text-gray-600">Consulta el historial completo de pagos registrados</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-filter mr-3"></i>Filtros
+            </h2>
+        </div>
+        <div class="p-8">
+            <form method="GET">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Año Escolar</label>
+                        <select name="anio_escolar"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            {% for year in range(current_year - 2, current_year + 3) %}
+                            <option value="{{ year }}" {% if anio_escolar == year|string %}selected{% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">DNI Estudiante</label>
+                        <input type="text" name="estudiante_dni" value="{{ estudiante_dni_filtro }}" placeholder="Buscar por DNI"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Estado</label>
+                        <select name="estado"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            <option value="">Todos</option>
+                            <option value="pagado" {% if estado_filtro == 'pagado' %}selected{% endif %}>Pagado</option>
+                            <option value="anulado" {% if estado_filtro == 'anulado' %}selected{% endif %}>Anulado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">&nbsp;</label>
+                        <button type="submit"
+                                class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200">
+                            <i class="fas fa-search mr-2"></i>Filtrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Pagos -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-receipt mr-3"></i>Pagos Registrados
+            </h2>
+        </div>
+        <div class="p-8">
+            {% if pagos %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Recibo</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estudiante</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Concepto</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Monto</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Forma</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for pago in pagos %}
+                        <tr class="hover:bg-gray-50 transition-colors {% if pago.estado == 'anulado' %}bg-gray-100{% endif %}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <code class="px-2 py-1 bg-purple-100 text-purple-800 rounded font-mono text-sm font-bold">{{ pago.numero_recibo }}</code>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ pago.fecha_pago.strftime('%d/%m/%Y') }}</td>
+                            <td class="px-6 py-4">
+                                <div class="font-semibold text-gray-900">{{ pago.estudiante_nombre_completo }}</div>
+                                <div class="text-xs text-gray-500">DNI: {{ pago.estudiante_dni }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ pago.concepto_nombre }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-bold text-green-600">S/ {{ "%.2f"|format(pago.monto_pagado) }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700 capitalize">{{ pago.forma_pago }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if pago.estado == 'pagado' %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Pagado
+                                </span>
+                                {% else %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                    <i class="fas fa-ban mr-1"></i>Anulado
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex gap-2">
+                                    <a href="{{ url_for('pagos.ver_recibo', pago_id=pago.id) }}" target="_blank"
+                                       class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-all"
+                                       title="Ver Recibo">
+                                        <i class="fas fa-receipt"></i>
+                                    </a>
+                                    {% if pago.estado == 'pagado' and session.rol == 'administrador' %}
+                                    <button type="button" onclick="anularPago({{ pago.id }})"
+                                            class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-all"
+                                            title="Anular">
+                                        <i class="fas fa-times-circle"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-sm text-gray-500 mt-4">Mostrando últimos 100 registros</p>
+            {% else %}
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 text-2xl mr-4"></i>
+                    <p class="text-blue-700 font-medium">No se encontraron pagos con los filtros aplicados.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Anular Pago -->
+<div id="modalAnular" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm" onclick="if(event.target === this) closeAnularModal()">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 pop-in" onclick="event.stopPropagation()">
+        <div class="bg-gradient-to-r from-red-600 to-red-700 p-6 rounded-t-2xl">
+            <h3 class="text-2xl font-bold text-white flex items-center justify-between">
+                <span><i class="fas fa-exclamation-triangle mr-2"></i>Anular Pago</span>
+                <button onclick="closeAnularModal()" class="text-white hover:text-gray-200 transition-colors">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </h3>
+        </div>
+        <form method="POST" id="formAnular">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="p-8">
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg mb-6">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 text-xl mt-0.5 mr-3"></i>
+                        <p class="text-sm text-yellow-700">Esta acción revertirá el pago y actualizará el saldo de la obligación.</p>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        Motivo de Anulación <span class="text-red-500">*</span>
+                    </label>
+                    <textarea name="motivo" rows="3" required
+                              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
+                              placeholder="Describa el motivo de la anulación..."></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 px-8 pb-8">
+                <button type="button" onclick="closeAnularModal()"
+                        class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                    <i class="fas fa-ban mr-2"></i>Anular Pago
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function anularPago(pagoId) {
+    const modal = document.getElementById('modalAnular');
+    const form = document.getElementById('formAnular');
+    form.action = '{{ url_for("pagos.anular_pago", pago_id=0) }}'.replace('0', pagoId);
+    modal.classList.remove('hidden');
+}
+
+function closeAnularModal() {
+    const modal = document.getElementById('modalAnular');
+    modal.classList.add('hidden');
+    document.getElementById('formAnular').reset();
+}
+
+// Cerrar modal con Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAnularModal();
+    }
+});
+</script>
+{% endblock %}

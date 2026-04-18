@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% block title %}Reportes de Asistencias · Sistema Escolar{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #5F2A5D;
+        --secondary-color: #7c3b7a;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 min-h-screen py-8">
+    <div class="container-fluid px-4 max-w-6xl mx-auto">
+
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-3 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                            <i class="fas fa-file-excel text-white text-3xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-4xl font-black text-gray-800">Exportar Reportes</h1>
+                            <p class="text-gray-600 mt-1">Genere reportes personalizados en Excel</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{{ url_for('asistencias.dashboard') }}"
+                       class="inline-flex items-center px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-bold rounded-xl shadow-md hover:shadow-lg hover:bg-gray-50 transition-all duration-300">
+                        <i class="fas fa-arrow-left mr-2"></i> Volver
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjetas de estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
+                <div class="flex items-center gap-4">
+                    <div class="p-4 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                        <i class="fas fa-clipboard-check text-white text-4xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm font-semibold uppercase tracking-wide mb-1">Total de Asistencias</p>
+                        <h3 class="text-5xl font-black" style="color: #5F2A5D;">{{ total_asistencias }}</h3>
+                        <p class="text-gray-400 text-xs mt-1">Registros en el sistema</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
+                <div class="flex items-center gap-4">
+                    <div class="p-4 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #7c3b7a, #5F2A5D);">
+                        <i class="fas fa-users text-white text-4xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm font-semibold uppercase tracking-wide mb-1">Total de Estudiantes</p>
+                        <h3 class="text-5xl font-black" style="color: #5F2A5D;">{{ total_estudiantes }}</h3>
+                        <p class="text-gray-400 text-xs mt-1">Registrados en el sistema</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de filtros -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="p-6" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                <div class="flex items-center">
+                    <i class="fas fa-filter text-2xl mr-3" style="color: #ffffff !important;"></i>
+                    <h5 class="text-2xl font-bold" style="color: #ffffff !important;">Filtros de Exportación</h5>
+                </div>
+                <p class="mt-2 text-sm" style="color: #ffffff !important;">Seleccione los criterios para generar su reporte personalizado</p>
+            </div>
+
+            <div class="p-8">
+                <form method="POST" action="{{ url_for('asistencias.reportes') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <!-- Fecha Desde -->
+                        <div>
+                            <label for="fecha_desde" class="block text-sm font-bold text-gray-700 mb-2">
+                                <i class="fas fa-calendar-alt mr-2" style="color: #5F2A5D;"></i>
+                                Fecha Desde
+                            </label>
+                            <input type="date"
+                                   class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 transition-all duration-200 font-semibold text-gray-700 focus:outline-none focus:border-primary focus:ring-4 focus:ring-purple-200"
+                                   id="fecha_desde"
+                                   name="fecha_desde">
+                        </div>
+
+                        <!-- Fecha Hasta -->
+                        <div>
+                            <label for="fecha_hasta" class="block text-sm font-bold text-gray-700 mb-2">
+                                <i class="fas fa-calendar-check mr-2" style="color: #5F2A5D;"></i>
+                                Fecha Hasta
+                            </label>
+                            <input type="date"
+                                   class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 transition-all duration-200 font-semibold text-gray-700 focus:outline-none focus:border-primary focus:ring-4 focus:ring-purple-200"
+                                   id="fecha_hasta"
+                                   name="fecha_hasta">
+                        </div>
+
+                        <!-- Tipo de Registro -->
+                        <div>
+                            <label for="tipo" class="block text-sm font-bold text-gray-700 mb-2">
+                                <i class="fas fa-filter mr-2" style="color: #5F2A5D;"></i>
+                                Tipo de Registro
+                            </label>
+                            <select class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 transition-all duration-200 font-semibold text-gray-700 bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-purple-200"
+                                    id="tipo"
+                                    name="tipo">
+                                <option value="">Todos los tipos</option>
+                                <option value="ENTRADA">Solo Entradas</option>
+                                <option value="SALIDA">Solo Salidas</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <!-- Nivel -->
+                        <div>
+                            <label for="nivel" class="block text-sm font-bold text-gray-700 mb-2">
+                                <i class="fas fa-layer-group mr-2" style="color: #5F2A5D;"></i>
+                                Nivel
+                            </label>
+                            <select class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 transition-all duration-200 font-semibold text-gray-700 bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-purple-200"
+                                    id="nivel"
+                                    name="nivel"
+                                    {% if not niveles %}disabled{% endif %}>
+                                <option value="">Todos los niveles</option>
+                                {% for n in niveles %}
+                                <option value="{{ n }}">{{ n }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if not niveles %}
+                            <p class="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                No hay aulas activas configuradas.
+                                <a href="{{ url_for('aulas.crear') }}" class="font-semibold underline">Crear un aula</a>
+                                para habilitar filtros.
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Grado / Programa -->
+                        <div>
+                            <label for="grado" class="block text-sm font-bold text-gray-700 mb-2">
+                                <i class="fas fa-graduation-cap mr-2" style="color: #5F2A5D;"></i>
+                                <span id="label-grado-text">Grado / Programa</span>
+                            </label>
+                            <select class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 transition-all duration-200 font-semibold text-gray-700 bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-purple-200"
+                                    id="grado"
+                                    name="grado">
+                                <option value="">Seleccione primero un nivel</option>
+                            </select>
+                            <p id="grado-empty-hint" class="hidden mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                No hay grados configurados para este nivel.
+                            </p>
+                        </div>
+
+                        <!-- Sección -->
+                        <div id="wrap-seccion">
+                            <label for="seccion" class="block text-sm font-bold text-gray-700 mb-2">
+                                <i class="fas fa-chalkboard mr-2" style="color: #5F2A5D;"></i>
+                                Sección
+                            </label>
+                            <select class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 transition-all duration-200 font-semibold text-gray-700 bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-purple-200"
+                                    id="seccion"
+                                    name="seccion">
+                                <option value="">Todas las secciones</option>
+                            </select>
+                            <p id="seccion-hint" class="hidden mt-2 text-xs text-gray-500">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Academia no utiliza secciones.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Información adicional -->
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 rounded-2xl p-6 mb-8" style="border-color: rgba(95, 42, 93, 0.3);">
+                        <div class="flex items-start gap-4">
+                            <div class="text-white rounded-full p-3 flex-shrink-0" style="background-color: #5F2A5D;">
+                                <i class="fas fa-info text-xl"></i>
+                            </div>
+                            <div>
+                                <h6 class="font-bold text-gray-800 mb-2">Información del Reporte</h6>
+                                <ul class="text-sm text-gray-600 space-y-2">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check mr-2 mt-1" style="color: #5F2A5D;"></i>
+                                        <span>Si no selecciona filtros, se exportarán <strong>todas las asistencias</strong> registradas</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check mr-2 mt-1" style="color: #5F2A5D;"></i>
+                                        <span>Puede filtrar por <strong>Nivel, Grado y Seccion</strong> para obtener reportes específicos</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check mr-2 mt-1" style="color: #5F2A5D;"></i>
+                                        <span>El archivo Excel incluye: <strong>ID, Nombres, Apellidos, DNI, Nivel, Grado, Tipo, Fecha y Hora</strong></span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check mr-2 mt-1" style="color: #5F2A5D;"></i>
+                                        <span>Los registros se ordenan de <strong>más reciente a más antiguo</strong></span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button type="submit"
+                                class="flex-1 inline-flex items-center justify-center px-8 py-4 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-lg"
+                                style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                            <i class="fas fa-file-excel mr-3 text-2xl"></i>
+                            Generar y Descargar Reporte Excel
+                        </button>
+
+                        <button type="reset"
+                                class="flex-none px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 font-bold rounded-xl shadow-md hover:shadow-lg hover:bg-gray-50 transition-all duration-300">
+                            <i class="fas fa-eraser mr-2"></i>
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tarjetas informativas -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4" style="border-color: #5F2A5D;">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-file-spreadsheet text-3xl" style="color: #5F2A5D;"></i>
+                    <div>
+                        <h6 class="font-bold text-gray-800 mb-1">Formato Excel</h6>
+                        <p class="text-sm text-gray-600">Archivo .xlsx compatible con Excel, Google Sheets y LibreOffice</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4" style="border-color: #7c3b7a;">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-paint-brush text-3xl" style="color: #7c3b7a;"></i>
+                    <div>
+                        <h6 class="font-bold text-gray-800 mb-1">Diseño Profesional</h6>
+                        <p class="text-sm text-gray-600">Encabezados con estilo y columnas ajustadas automáticamente</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4" style="border-color: #5F2A5D;">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-download text-3xl" style="color: #5F2A5D;"></i>
+                    <div>
+                        <h6 class="font-bold text-gray-800 mb-1">Descarga Inmediata</h6>
+                        <p class="text-sm text-gray-600">El archivo se descarga automáticamente al generar el reporte</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Datos dinámicos de filtros provenientes de aulas activas (no de estudiantes)
+const GRADOS_POR_NIVEL = {{ grados_por_nivel | tojson }};
+const SECCIONES_POR_NIVEL_GRADO = {{ secciones_por_nivel_grado | tojson }};
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Fechas por defecto: últimos 7 días
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha_hasta').value = today;
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    document.getElementById('fecha_desde').value = weekAgo.toISOString().split('T')[0];
+
+    const selNivel = document.getElementById('nivel');
+    const selGrado = document.getElementById('grado');
+    const selSeccion = document.getElementById('seccion');
+    const wrapSeccion = document.getElementById('wrap-seccion');
+    const hintGradoEmpty = document.getElementById('grado-empty-hint');
+    const hintSeccion = document.getElementById('seccion-hint');
+    const labelGrado = document.getElementById('label-grado-text');
+
+    function clearOptions(sel, placeholder) {
+        sel.innerHTML = '';
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = placeholder;
+        sel.appendChild(opt);
+    }
+
+    function poblarGrados() {
+        const nivel = (selNivel.value || '').toUpperCase();
+        const esAcademia = nivel === 'ACADEMIA';
+        labelGrado.textContent = esAcademia ? 'Programa' : 'Grado';
+
+        if (!nivel) {
+            clearOptions(selGrado, 'Seleccione primero un nivel');
+            selGrado.disabled = true;
+            hintGradoEmpty.classList.add('hidden');
+            return;
+        }
+
+        const grados = GRADOS_POR_NIVEL[nivel] || [];
+        clearOptions(selGrado, esAcademia ? 'Todos los programas' : 'Todos los grados');
+
+        if (grados.length === 0) {
+            selGrado.disabled = true;
+            hintGradoEmpty.classList.remove('hidden');
+            hintGradoEmpty.querySelector('i').nextSibling.textContent =
+                ' No hay ' + (esAcademia ? 'programas' : 'grados') + ' configurados para este nivel.';
+        } else {
+            selGrado.disabled = false;
+            hintGradoEmpty.classList.add('hidden');
+            grados.forEach(function (g) {
+                const opt = document.createElement('option');
+                opt.value = g;
+                opt.textContent = g;
+                selGrado.appendChild(opt);
+            });
+        }
+    }
+
+    function poblarSecciones() {
+        const nivel = (selNivel.value || '').toUpperCase();
+        const grado = selGrado.value || '';
+
+        // Academia no usa sección
+        if (nivel === 'ACADEMIA') {
+            wrapSeccion.classList.add('opacity-50');
+            clearOptions(selSeccion, 'No aplica');
+            selSeccion.disabled = true;
+            hintSeccion.classList.remove('hidden');
+            return;
+        }
+
+        wrapSeccion.classList.remove('opacity-50');
+        hintSeccion.classList.add('hidden');
+
+        if (!nivel || !grado) {
+            clearOptions(selSeccion, 'Todas las secciones');
+            selSeccion.disabled = false;
+            return;
+        }
+
+        const key = nivel + '|' + grado;
+        const secs = SECCIONES_POR_NIVEL_GRADO[key] || [];
+        clearOptions(selSeccion, 'Todas las secciones');
+        selSeccion.disabled = false;
+        secs.forEach(function (s) {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            selSeccion.appendChild(opt);
+        });
+    }
+
+    selNivel.addEventListener('change', function () {
+        poblarGrados();
+        poblarSecciones();
+    });
+    selGrado.addEventListener('change', poblarSecciones);
+
+    poblarGrados();
+    poblarSecciones();
+});
+</script>
+{% endblock %}

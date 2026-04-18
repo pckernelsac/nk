@@ -1,0 +1,599 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema Académico{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInRight {
+        from { opacity: 0; transform: translateX(-30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .fade-in-up { animation: fadeInUp 0.6s ease-out; }
+    .slide-in-right { animation: slideInRight 0.6s ease-out; }
+    .scale-in { animation: scaleIn 0.5s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Sección de Bienvenida -->
+    <div class="bg-gradient-to-r from-primary to-primary-dark rounded-2xl shadow-xl p-8 mb-8 text-white fade-in-up relative overflow-hidden">
+        <!-- Iconos decorativos de fondo -->
+        <div class="absolute top-0 right-0 opacity-10 text-9xl">
+            <i class="fas fa-book-open"></i>
+        </div>
+        <div class="absolute bottom-0 left-20 opacity-10 text-7xl">
+            <i class="fas fa-award"></i>
+        </div>
+
+        <div class="flex items-center justify-between relative z-10">
+            <div>
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-sparkles text-3xl mr-3 animate-pulse"></i>
+                    <h1 class="text-5xl font-bold">¡Bienvenido al Sistema Académico!</h1>
+                </div>
+                <div class="flex items-center text-xl opacity-90">
+                    <i class="fas fa-user-circle mr-2"></i>
+                    <p>{{ session.get('username', 'Usuario') }}</p>
+                    <span class="mx-3">|</span>
+                    <i class="fas fa-chart-line mr-2"></i>
+                    <p>Panel de Control</p>
+                </div>
+            </div>
+            <div class="hidden md:block">
+                <div class="bg-white bg-opacity-20 rounded-full p-6 hover:bg-opacity-30 transition-all duration-300">
+                    <i class="fas fa-graduation-cap text-6xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Card 1: Estudiantes -->
+        <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 scale-in relative overflow-hidden">
+            <div class="absolute -right-6 -top-6 opacity-10">
+                <i class="fas fa-users text-8xl"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-user-graduate text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm opacity-80 flex items-center justify-end mb-1">
+                            <i class="fas fa-chart-line text-xs mr-1"></i> Total
+                        </p>
+                        <p class="text-5xl font-bold">{{ "{:,}".format(total_estudiantes) }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white border-opacity-30 pt-3">
+                    <p class="text-sm font-medium">Estudiantes Registrados</p>
+                    <span class="bg-white bg-opacity-20 rounded-full px-2 py-1 text-xs font-bold">
+                        {% if crecimiento_estudiantes >= 0 %}
+                        <i class="fas fa-arrow-up mr-1"></i> +{{ crecimiento_estudiantes }}%
+                        {% else %}
+                        <i class="fas fa-arrow-down mr-1"></i> {{ crecimiento_estudiantes }}%
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Docentes -->
+        <div class="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 scale-in relative overflow-hidden" style="animation-delay: 0.1s;">
+            <div class="absolute -right-6 -top-6 opacity-10">
+                <i class="fas fa-user-tie text-8xl"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-chalkboard-teacher text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm opacity-80 flex items-center justify-end mb-1">
+                            <i class="fas fa-check-circle text-xs mr-1"></i> Total
+                        </p>
+                        <p class="text-5xl font-bold">{{ total_docentes }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white border-opacity-30 pt-3">
+                    <p class="text-sm font-medium">Docentes Registrados</p>
+                    <span class="bg-white bg-opacity-20 rounded-full px-2 py-1 text-xs font-bold">
+                        <i class="fas fa-chalkboard-teacher mr-1"></i> Activos
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Cursos -->
+        <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 scale-in relative overflow-hidden" style="animation-delay: 0.2s;">
+            <div class="absolute -right-6 -top-6 opacity-10">
+                <i class="fas fa-book-open text-8xl"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-book text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm opacity-80 flex items-center justify-end mb-1">
+                            <i class="fas fa-layer-group text-xs mr-1"></i> Total
+                        </p>
+                        <p class="text-5xl font-bold">{{ total_grados }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white border-opacity-30 pt-3">
+                    <p class="text-sm font-medium">Grados Activos</p>
+                    <span class="bg-white bg-opacity-20 rounded-full px-2 py-1 text-xs font-bold">
+                        <i class="fas fa-certificate mr-1"></i> Año {{ hoy.year }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Pensiones -->
+        <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 scale-in relative overflow-hidden" style="animation-delay: 0.3s;">
+            <div class="absolute -right-6 -top-6 opacity-10">
+                <i class="fas fa-money-bill-wave text-8xl"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-dollar-sign text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm opacity-80 flex items-center justify-end mb-1">
+                            <i class="fas fa-calendar-check text-xs mr-1"></i> Este Mes
+                        </p>
+                        <p class="text-5xl font-bold">{{ porcentaje_pagos }}%</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white border-opacity-30 pt-3">
+                    <p class="text-sm font-medium">Pagos Completados</p>
+                    <span class="bg-white bg-opacity-20 rounded-full px-2 py-1 text-xs font-bold">
+                        <i class="fas fa-check-double mr-1"></i> S/ {{ "{:,.0f}".format(monto_recaudado_mes) }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nuevos Modulos (FASES 1-5) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Card: Aulas y Matriculas -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 scale-in relative overflow-hidden">
+            <div class="absolute -right-6 -top-6 opacity-10">
+                <i class="fas fa-door-open text-8xl"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-school text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm opacity-80 flex items-center justify-end mb-1">
+                            <i class="fas fa-door-open text-xs mr-1"></i> Aulas
+                        </p>
+                        <p class="text-5xl font-bold">{{ total_aulas }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white border-opacity-30 pt-3">
+                    <p class="text-sm font-medium">Matriculas Activas</p>
+                    <span class="bg-white bg-opacity-20 rounded-full px-2 py-1 text-xs font-bold">
+                        <i class="fas fa-users mr-1"></i> {{ total_matriculas }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Fast Tests -->
+        <div class="bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 scale-in relative overflow-hidden" style="animation-delay: 0.1s;">
+            <div class="absolute -right-6 -top-6 opacity-10">
+                <i class="fas fa-tasks text-8xl"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-clipboard-list text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm opacity-80 flex items-center justify-end mb-1">
+                            <i class="fas fa-chart-bar text-xs mr-1"></i> Promedio
+                        </p>
+                        <p class="text-5xl font-bold">{{ "%.1f"|format(promedio_notas) }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white border-opacity-30 pt-3">
+                    <p class="text-sm font-medium">Fast Tests</p>
+                    <span class="bg-white bg-opacity-20 rounded-full px-2 py-1 text-xs font-bold">
+                        <i class="fas fa-folder-open mr-1"></i> {{ fast_tests_abiertos }}/{{ total_fast_tests }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Otros Pagos -->
+        <div class="bg-gradient-to-br from-teal-500 to-teal-700 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 scale-in relative overflow-hidden" style="animation-delay: 0.2s;">
+            <div class="absolute -right-6 -top-6 opacity-10">
+                <i class="fas fa-receipt text-8xl"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-money-check-alt text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm opacity-80 flex items-center justify-end mb-1">
+                            <i class="fas fa-coins text-xs mr-1"></i> Este Mes
+                        </p>
+                        <p class="text-4xl font-bold">S/ {{ "{:,.0f}".format(monto_pagos_generales) }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white border-opacity-30 pt-3">
+                    <p class="text-sm font-medium">Otros Pagos</p>
+                    <span class="bg-white bg-opacity-20 rounded-full px-2 py-1 text-xs font-bold">
+                        <i class="fas fa-hourglass-half mr-1"></i> {{ obligaciones_pendientes }} Pend.
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Sistema Integrado -->
+        <div class="bg-gradient-to-br from-pink-500 to-pink-700 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 scale-in relative overflow-hidden" style="animation-delay: 0.3s;">
+            <div class="absolute -right-6 -top-6 opacity-10">
+                <i class="fas fa-cogs text-8xl"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-check-double text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm opacity-80 flex items-center justify-end mb-1">
+                            <i class="fas fa-layer-group text-xs mr-1"></i> Estado
+                        </p>
+                        <p class="text-3xl font-bold">100%</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white border-opacity-30 pt-3">
+                    <p class="text-sm font-medium">Sistema Integrado</p>
+                    <span class="bg-white bg-opacity-20 rounded-full px-2 py-1 text-xs font-bold">
+                        <i class="fas fa-rocket mr-1"></i> Operativo
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen Rápido -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <!-- Info Card 1 -->
+        <div class="bg-white rounded-xl shadow-lg p-4 border-l-4 border-purple-500 hover:shadow-xl transition-all duration-300 fade-in-up">
+            <div class="flex items-center">
+                <div class="bg-purple-100 rounded-full p-3 mr-3">
+                    <i class="fas fa-calendar-day text-purple-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-semibold uppercase">Hoy</p>
+                    <p class="text-lg font-bold text-gray-800">{{ hoy.strftime('%d %b %Y') }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Card 2 -->
+        <div class="bg-white rounded-xl shadow-lg p-4 border-l-4 border-green-500 hover:shadow-xl transition-all duration-300 fade-in-up" style="animation-delay: 0.05s;">
+            <div class="flex items-center">
+                <div class="bg-green-100 rounded-full p-3 mr-3">
+                    <i class="fas fa-user-check text-green-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-semibold uppercase">Asistencia</p>
+                    <p class="text-lg font-bold text-gray-800">{{ porcentaje_asistencia }}%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Card 3 -->
+        <div class="bg-white rounded-xl shadow-lg p-4 border-l-4 border-purple-500 hover:shadow-xl transition-all duration-300 fade-in-up" style="animation-delay: 0.1s;">
+            <div class="flex items-center">
+                <div class="bg-purple-100 rounded-full p-3 mr-3">
+                    <i class="fas fa-trophy text-purple-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-semibold uppercase">Promedio</p>
+                    <p class="text-lg font-bold text-gray-800">{{ "%.1f"|format(promedio_notas) }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Card 4 -->
+        <div class="bg-white rounded-xl shadow-lg p-4 border-l-4 border-amber-500 hover:shadow-xl transition-all duration-300 fade-in-up" style="animation-delay: 0.15s;">
+            <div class="flex items-center">
+                <div class="bg-amber-100 rounded-full p-3 mr-3">
+                    <i class="fas fa-bell text-amber-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-semibold uppercase">Alertas</p>
+                    <p class="text-lg font-bold text-gray-800">{{ total_alertas }} pendiente{{ 's' if total_alertas != 1 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Gráfico de Rendimiento -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 slide-in-right">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <div class="bg-gradient-to-r from-primary to-primary-dark rounded-full p-3 mr-3">
+                        <i class="fas fa-chart-line text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h5 class="text-xl font-bold text-gray-800">Distribución por Grado</h5>
+                        <p class="text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>Estudiantes por grado
+                        </p>
+                    </div>
+                </div>
+                <div class="{% if crecimiento_estudiantes >= 0 %}bg-green-100{% else %}bg-red-100{% endif %} rounded-full px-3 py-1">
+                    <span class="{% if crecimiento_estudiantes >= 0 %}text-green-700{% else %}text-red-700{% endif %} font-bold text-sm">
+                        {% if crecimiento_estudiantes >= 0 %}
+                        <i class="fas fa-arrow-up mr-1"></i>+{{ crecimiento_estudiantes }}%
+                        {% else %}
+                        <i class="fas fa-arrow-down mr-1"></i>{{ crecimiento_estudiantes }}%
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <canvas id="performanceChart" height="100"></canvas>
+        </div>
+
+        <!-- Gráfico de Distribución -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 slide-in-right" style="animation-delay: 0.1s;">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-full p-3 mr-3">
+                        <i class="fas fa-chart-pie text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h5 class="text-xl font-bold text-gray-800">Distribución por Nivel</h5>
+                        <p class="text-xs text-gray-500">
+                            <i class="fas fa-users mr-1"></i>Total: {{ "{:,}".format(total_estudiantes) }} estudiantes
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-purple-100 rounded-full px-3 py-1">
+                    <span class="text-purple-700 font-bold text-sm">
+                        <i class="fas fa-layer-group mr-1"></i>{{ niveles|length }} nivel{% if niveles|length != 1 %}es{% endif %}
+                    </span>
+                </div>
+            </div>
+            <canvas id="distributionChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in-up" style="animation-delay: 0.3s;">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white relative overflow-hidden">
+            <div class="absolute right-0 top-0 opacity-20 text-8xl">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <h2 class="text-2xl font-bold flex items-center relative z-10">
+                <i class="fas fa-bolt mr-3 animate-pulse"></i>Acciones Rápidas
+                <span class="ml-3 bg-white bg-opacity-20 rounded-full px-3 py-1 text-sm">
+                    <i class="fas fa-fire mr-1"></i>6 acciones
+                </span>
+            </h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Acción 1 -->
+                <a href="{{ url_for('estudiantes.form') }}" class="group relative flex items-center p-6 bg-gradient-to-br from-purple-50 to-purple-50 border-2 border-purple-200 rounded-xl hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-5 text-7xl group-hover:opacity-10 transition-opacity">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full p-4 mr-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-user-plus text-white text-2xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h6 class="text-lg font-bold text-gray-900 mb-1 flex items-center">
+                            Nuevo Estudiante
+                            <i class="fas fa-arrow-right ml-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </h6>
+                        <small class="text-gray-600 flex items-center">
+                            <i class="fas fa-pen mr-1"></i>Registrar en el sistema
+                        </small>
+                    </div>
+                </a>
+
+                <!-- Acción 2 -->
+                <a href="{{ url_for('pensiones.registrar') }}" class="group relative flex items-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-5 text-7xl group-hover:opacity-10 transition-opacity">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-full p-4 mr-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-cash-register text-white text-2xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h6 class="text-lg font-bold text-gray-900 mb-1 flex items-center">
+                            Registrar Pago
+                            <i class="fas fa-arrow-right ml-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </h6>
+                        <small class="text-gray-600 flex items-center">
+                            <i class="fas fa-money-bill-wave mr-1"></i>Pensiones escolares
+                        </small>
+                    </div>
+                </a>
+
+                <!-- Acción 3 -->
+                <a href="#" class="group relative flex items-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-5 text-7xl group-hover:opacity-10 transition-opacity">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full p-4 mr-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-file-alt text-white text-2xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h6 class="text-lg font-bold text-gray-900 mb-1 flex items-center">
+                            Generar Reporte
+                            <i class="fas fa-arrow-right ml-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </h6>
+                        <small class="text-gray-600 flex items-center">
+                            <i class="fas fa-file-pdf mr-1"></i>Reportes académicos
+                        </small>
+                    </div>
+                </a>
+
+                <!-- Acción 4 -->
+                <a href="{{ url_for('estudiantes.list') }}" class="group relative flex items-center p-6 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-5 text-7xl group-hover:opacity-10 transition-opacity">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="bg-gradient-to-br from-amber-500 to-orange-500 rounded-full p-4 mr-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-users text-white text-2xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h6 class="text-lg font-bold text-gray-900 mb-1 flex items-center">
+                            Ver Estudiantes
+                            <i class="fas fa-arrow-right ml-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </h6>
+                        <small class="text-gray-600 flex items-center">
+                            <i class="fas fa-list mr-1"></i>Lista completa
+                        </small>
+                    </div>
+                </a>
+
+                <!-- Acción 5 -->
+                <a href="{{ url_for('pensiones.dashboard') }}" class="group relative flex items-center p-6 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-5 text-7xl group-hover:opacity-10 transition-opacity">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <div class="bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full p-4 mr-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-dollar-sign text-white text-2xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h6 class="text-lg font-bold text-gray-900 mb-1 flex items-center">
+                            Dashboard Pensiones
+                            <i class="fas fa-arrow-right ml-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </h6>
+                        <small class="text-gray-600 flex items-center">
+                            <i class="fas fa-chart-pie mr-1"></i>Panel de control
+                        </small>
+                    </div>
+                </a>
+
+                <!-- Acción 6 -->
+                <a href="{{ url_for('pensiones.configuracion') }}" class="group relative flex items-center p-6 bg-gradient-to-br from-rose-50 to-red-50 border-2 border-rose-200 rounded-xl hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-5 text-7xl group-hover:opacity-10 transition-opacity">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="bg-gradient-to-br from-rose-500 to-red-600 rounded-full p-4 mr-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-cog text-white text-2xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h6 class="text-lg font-bold text-gray-900 mb-1 flex items-center">
+                            Configuración
+                            <i class="fas fa-arrow-right ml-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </h6>
+                        <small class="text-gray-600 flex items-center">
+                            <i class="fas fa-wrench mr-1"></i>Ajustes del sistema
+                        </small>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de Distribución por Grado
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    new Chart(performanceCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ grados|tojson }},
+            datasets: [{
+                label: 'Cantidad de Estudiantes',
+                data: {{ cantidades_grado|tojson }},
+                backgroundColor: 'rgba(95, 42, 93, 0.8)',
+                borderColor: '#5F2A5D',
+                borderWidth: 2,
+                borderRadius: 8,
+                hoverBackgroundColor: 'rgba(95, 42, 93, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: { size: 12, weight: 'bold' },
+                        color: '#333'
+                    }
+                },
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: { font: { size: 11 } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 } }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Distribución por Nivel
+    const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+    new Chart(distributionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ niveles|tojson }},
+            datasets: [{
+                data: {{ cantidades_nivel|tojson }},
+                backgroundColor: ['#5F2A5D', '#7c3b7a', '#9c4b9a', '#bc5bba', '#dc6bda'],
+                borderWidth: 3,
+                borderColor: '#fff',
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: { size: 12, weight: 'bold' },
+                        color: '#333'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

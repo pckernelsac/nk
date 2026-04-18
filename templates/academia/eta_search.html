@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}Analisis ETAs - Academia{% endblock %}
+
+{% block page_title %}Analisis de ETAs{% endblock %}
+
+{% block content %}
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-purple-600 to-purple-800 px-6 py-6">
+                    <h2 class="text-2xl text-white font-bold">Análisis Consolidado de ETAs</h2>
+                    <p class="text-purple-100 text-sm mt-1">Resumen completo de evaluaciones por estudiante</p>
+                </div>
+
+                <div class="p-8">
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="mb-4 p-4 rounded-md text-sm
+                                    {% if category == 'success' %} bg-green-100 text-green-800 border-l-4 border-green-500
+                                    {% elif category == 'error' %} bg-red-100 text-red-800 border-l-4 border-red-500
+                                    {% elif category == 'warning' %} bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500
+                                    {% else %} bg-purple-100 text-purple-800 border-l-4 border-purple-500 {% endif %}"
+                                     role="alert">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- Información del servicio -->
+                    <div class="bg-purple-50 rounded-lg p-5 mb-8 text-sm text-purple-800 border-l-4 border-purple-500 shadow-md">
+                        <p class="font-bold mb-2">¿Qué es el Análisis de ETAs?</p>
+                        <p class="mb-2">El análisis consolidado de ETAs te permite ver el progreso completo de un estudiante a través de todas sus evaluaciones.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 mr-2 bg-purple-200 rounded-full"></span>
+                                <span><b>Evolución temporal</b> de rendimiento</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 mr-2 bg-green-200 rounded-full"></span>
+                                <span><b>Análisis por asignatura</b> detallado</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 mr-2 bg-purple-200 rounded-full"></span>
+                                <span><b>Tendencias</b> de mejora o declive</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 mr-2 bg-yellow-200 rounded-full"></span>
+                                <span><b>Recomendaciones</b> personalizadas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Buscador -->
+                    <div class="mb-8">
+                        <form method="GET" action="{{ url_for('academia_eta_analysis.eta_search') }}" class="flex gap-4">
+                            <div class="flex-1 relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                                <input type="search" name="search" value="{{ search_term }}" 
+                                       class="block w-full p-3 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-purple-500 focus:border-purple-500 shadow-sm" 
+                                       placeholder="Buscar por código de estudiante, nombre o apellido...">
+                            </div>
+                            <button type="submit" 
+                                    class="px-6 py-3 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:ring-4 focus:outline-none focus:ring-purple-300 shadow-md transition-colors duration-200">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                Buscar
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Acciones adicionales -->
+                    <div class="mb-6 flex flex-wrap gap-4">
+                        <a href="{{ url_for('academia_eta_analysis.bulk_eta_analysis') }}" 
+                           class="inline-flex items-center px-4 py-2 text-sm font-medium text-purple-700 bg-purple-100 border border-purple-300 rounded-lg hover:bg-purple-200 focus:ring-4 focus:outline-none focus:ring-purple-300 transition-colors duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h2a2 2 0 002-2z"></path>
+                            </svg>
+                            Análisis Masivo
+                        </a>
+                        <button onclick="window.history.back()" 
+                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 transition-colors duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Volver
+                        </button>
+                    </div>
+
+                    <!-- Resultados -->
+                    {% if search_term %}
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600">
+                            {% if students %}
+                                Mostrando {{ students|length }} resultado(s) para "<strong>{{ search_term }}</strong>"
+                            {% else %}
+                                No se encontraron resultados para "<strong>{{ search_term }}</strong>"
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Tabla de estudiantes -->
+                    {% if students %}
+                    <div class="overflow-x-auto bg-white rounded-lg shadow-lg">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-white uppercase bg-purple-800">
+                                <tr>
+                                    <th class="py-3 px-4">Código</th>
+                                    <th class="py-3 px-4">Estudiante</th>
+                                    <th class="py-3 px-4">Área Académica</th>
+                                    <th class="py-3 px-4">Total ETAs</th>
+                                    <th class="py-3 px-4">Estado</th>
+                                    <th class="py-3 px-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr class="bg-white border-b hover:bg-gray-50 transition-colors duration-200">
+                                    <td class="py-3 px-4 font-medium text-gray-900">{{ student.student_id }}</td>
+                                    <td class="py-3 px-4">
+                                        <div>
+                                            <div class="font-medium text-gray-900">{{ student.first_name }} {{ student.last_name }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="inline-flex items-center">
+                                            <span class="inline-block w-3 h-3 mr-2 rounded-full
+                                                {% if student.academic_area_id == 1 %}bg-red-400
+                                                {% elif student.academic_area_id == 2 %}bg-purple-400
+                                                {% elif student.academic_area_id == 3 %}bg-green-400
+                                                {% elif student.academic_area_id == 4 %}bg-yellow-400
+                                                {% elif student.academic_area_id == 5 %}bg-purple-400
+                                                {% else %}bg-gray-400{% endif %}">
+                                            </span>
+                                            <span class="text-xs">{{ student.academic_area_name }}</span>
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                            {{ student.total_etas }} ETAs
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if student.total_etas >= 3 %}
+                                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Suficientes datos</span>
+                                        {% elif student.total_etas >= 1 %}
+                                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Datos limitados</span>
+                                        {% else %}
+                                            <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Sin datos</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex space-x-2">
+                                            <a href="{{ url_for('academia_eta_analysis.eta_preview', student_id=student.student_id) }}" 
+                                               class="text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-md text-xs px-3 py-1.5 text-center inline-flex items-center shadow-sm transition-colors duration-200">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                </svg>
+                                                Ver Análisis
+                                            </a>
+                                            {% if student.total_etas > 0 %}
+                                            <a href="{{ url_for('academia_eta_analysis.generate_eta_pdf', student_id=student.student_id) }}" 
+                                               class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-md text-xs px-3 py-1.5 text-center inline-flex items-center shadow-sm transition-colors duration-200">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                PDF
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                        {% if not search_term %}
+                        <div class="text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">Buscar estudiantes</h3>
+                            <p class="mt-1 text-sm text-gray-500">Ingresa un término de búsqueda para encontrar estudiantes y analizar sus ETAs.</p>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.463-.64-6.31-1.76M6 21.5l3.5-3.5m0 0L6 14l3.5 3.5zM17.5 14l-3.5 3.5L17.5 21"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No se encontraron estudiantes</h3>
+                            <p class="mt-1 text-sm text-gray-500">Intenta con un término de búsqueda diferente.</p>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+{% endblock %}

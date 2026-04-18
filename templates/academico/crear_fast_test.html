@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Fast Test{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+
+    .curso-checkbox:checked + label {
+        background-color: #5F2A5D;
+        color: white;
+        border-color: #5F2A5D;
+    }
+    .curso-item input:checked ~ label .curso-check {
+        display: inline-block;
+    }
+    .curso-item label {
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Breadcrumb -->
+    <nav class="mb-6" aria-label="breadcrumb">
+        <ol class="flex items-center space-x-2 text-sm text-gray-600">
+            <li><a href="{{ url_for('academico.fast_tests_lista') }}" class="hover:text-primary transition-colors">Fast Tests</a></li>
+            <li><i class="fas fa-chevron-right text-xs"></i></li>
+            <li class="text-gray-900 font-semibold">Crear</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="mb-8 pop-in">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-plus-circle text-primary mr-3"></i>Crear Fast Test
+        </h1>
+        <p class="text-gray-600">Crea una nueva evaluación rápida — se genera un Fast Test por cada curso seleccionado</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Formulario -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+                <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-clipboard-list mr-3"></i>Datos del Fast Test
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <form method="POST" id="formCrear">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="anio_escolar" value="{{ anio_escolar }}">
+
+                        <!-- Aula -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Aula <span class="text-red-500">*</span>
+                            </label>
+                            <select name="aula_id" required id="aulaSelect"
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccione un aula</option>
+                                {% for aula in aulas %}
+                                <option value="{{ aula.id }}" data-estudiantes="{{ aula.matriculas.filter_by(estado='activo').count() }}">
+                                    {{ aula.nombre }} ({{ aula.matriculas.filter_by(estado='activo').count() }} estudiantes)
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">
+                                El Fast Test se creará para todos los estudiantes matriculados en esta aula.
+                            </p>
+                        </div>
+
+                        <!-- Cursos (checkboxes multi-selección) -->
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-bold text-gray-700">
+                                    Cursos <span class="text-red-500">*</span>
+                                </label>
+                                <div class="flex gap-3 text-xs">
+                                    <button type="button" onclick="seleccionarTodos(true)"
+                                            class="text-primary hover:underline font-medium">Seleccionar todos</button>
+                                    <span class="text-gray-300">|</span>
+                                    <button type="button" onclick="seleccionarTodos(false)"
+                                            class="text-gray-500 hover:underline">Limpiar</button>
+                                </div>
+                            </div>
+
+                            {% if cursos %}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 border-2 border-gray-200 rounded-xl" id="cursosGrid">
+                                {% for curso in cursos %}
+                                <div class="curso-item flex items-center gap-2">
+                                    <input type="checkbox" name="curso_ids" value="{{ curso.id }}"
+                                           id="curso_{{ curso.id }}"
+                                           class="w-4 h-4 accent-primary cursor-pointer">
+                                    <label for="curso_{{ curso.id }}"
+                                           class="text-sm text-gray-700 cursor-pointer select-none hover:text-primary transition-colors flex-1 py-1">
+                                        {{ curso.nombre }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Se creará un Fast Test independiente por cada curso marcado.
+                            </p>
+                            {% else %}
+                            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                No hay cursos registrados.
+                                <a href="{{ url_for('academico.cursos_lista') }}" class="underline font-medium">Crear cursos</a>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Sesión -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Sesión <span class="text-red-500">*</span>
+                            </label>
+                            <select name="titulo" required
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccione la sesión</option>
+                                {% for n in range(1, 19) %}
+                                <option value="S{{ n }}">S{{ n }} — Semana {{ n }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Identifica el número de semana del examen.</p>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
+                            <textarea name="descripcion" rows="2" placeholder="Detalles adicionales (opcional)"
+                                      class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"></textarea>
+                        </div>
+
+                        <!-- Fecha de Evaluación -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Fecha de Evaluación <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="fecha_evaluacion" required
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-4 border-t-2 border-gray-100">
+                            <a href="{{ url_for('academico.fast_tests_lista') }}"
+                               class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200">
+                                <i class="fas fa-times mr-2"></i>Cancelar
+                            </a>
+                            <button type="submit" id="btnCrear"
+                                    class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                                <i class="fas fa-check-circle mr-2"></i>Crear Fast Test
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Información -->
+        <div class="lg:col-span-1">
+            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-xl p-6 border-2 border-blue-200 pop-in">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>Información
+                </h3>
+                <p class="text-gray-700 mb-4 font-semibold">Al crear el Fast Test:</p>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                        <span>Se crea un Fast Test por cada curso seleccionado</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                        <span>Se generan automáticamente registros de notas para todos los estudiantes del aula</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                        <span>Podrá ingresar las calificaciones inmediatamente</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                        <span>El Fast Test queda "Abierto" hasta que lo cierre manualmente</span>
+                    </li>
+                </ul>
+
+                <!-- Contador de seleccionados -->
+                <div class="mt-6 p-3 bg-white rounded-xl border border-purple-200">
+                    <p class="text-sm text-gray-600">Cursos seleccionados:</p>
+                    <p class="text-2xl font-bold text-primary" id="countCursos">0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Actualizar contador de cursos seleccionados
+    function actualizarContador() {
+        const checked = document.querySelectorAll('input[name="curso_ids"]:checked').length;
+        document.getElementById('countCursos').textContent = checked;
+    }
+
+    document.querySelectorAll('input[name="curso_ids"]').forEach(cb => {
+        cb.addEventListener('change', actualizarContador);
+    });
+
+    function seleccionarTodos(val) {
+        document.querySelectorAll('input[name="curso_ids"]').forEach(cb => cb.checked = val);
+        actualizarContador();
+    }
+
+    // Validar que al menos un curso esté seleccionado
+    document.getElementById('formCrear').addEventListener('submit', function(e) {
+        const checked = document.querySelectorAll('input[name="curso_ids"]:checked').length;
+        if (checked === 0) {
+            e.preventDefault();
+            alert('Seleccione al menos un curso.');
+        }
+    });
+</script>
+{% endblock %}

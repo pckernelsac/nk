@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración de Pensiones{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInScale {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .fade-scale { animation: fadeInScale 0.4s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 fade-scale">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-cog text-primary mr-3"></i>Configuración de Pensiones
+        </h1>
+        <p class="text-gray-600">Configure los parámetros del sistema de pensiones</p>
+    </div>
+
+    <div class="max-w-5xl mx-auto">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <!-- Datos de la Institución -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-scale">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-school mr-3"></i>Datos de la Institución
+                    </h2>
+                    <p class="text-sm opacity-90 mt-1">Esta información aparecerá en los recibos de pago</p>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Nombre de la Institución <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="nombre_institucion" required
+                                   value="{{ config.nombre_institucion if config else '' }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
+                                   placeholder="Ej: I.E. San Martín de Porres">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                RUC
+                            </label>
+                            <input type="text" name="ruc_institucion" pattern="[0-9]{11}" maxlength="11"
+                                   value="{{ config.ruc_institucion if config else '' }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
+                                   placeholder="11 dígitos">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Teléfono
+                            </label>
+                            <input type="tel" name="telefono_institucion"
+                                   value="{{ config.telefono_institucion if config else '' }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
+                                   placeholder="(01) 123-4567">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Dirección
+                            </label>
+                            <input type="text" name="direccion_institucion"
+                                   value="{{ config.direccion_institucion if config else '' }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
+                                   placeholder="Av. Principal 123, Distrito, Ciudad">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Año Escolar -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-scale" style="animation-delay: 0.1s">
+                <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-calendar-alt mr-3"></i>Año Escolar y Meses Activos
+                    </h2>
+                    <p class="text-sm opacity-90 mt-1">Configure el período académico para las pensiones</p>
+                </div>
+                <div class="p-8">
+                    <div class="mb-6">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            Año Escolar <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="anio_escolar" required pattern="[0-9]{4}" maxlength="4"
+                               value="{{ config.anio_escolar if config else current_year }}"
+                               class="w-full max-w-xs px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring focus:ring-green-200 transition-all text-lg font-bold"
+                               placeholder="{{ current_year }}">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-3">
+                            Meses Activos para Pensiones <span class="text-red-500">*</span>
+                        </label>
+                        <p class="text-sm text-gray-600 mb-4">Seleccione los meses en los que se cobrarán pensiones</p>
+
+                        {% set meses_dict = {
+                            'enero': 'Enero', 'febrero': 'Febrero', 'marzo': 'Marzo',
+                            'abril': 'Abril', 'mayo': 'Mayo', 'junio': 'Junio',
+                            'julio': 'Julio', 'agosto': 'Agosto', 'septiembre': 'Septiembre',
+                            'octubre': 'Octubre', 'noviembre': 'Noviembre', 'diciembre': 'Diciembre'
+                        } %}
+                        {% set meses_activos = config.meses_activos.split(',') if config else ['marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'] %}
+
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {% for mes_key, mes_label in meses_dict.items() %}
+                            <label class="flex items-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl cursor-pointer hover:bg-green-100 transition-all">
+                                <input type="checkbox" name="meses_activos" value="{{ mes_key }}"
+                                       {% if mes_key in meses_activos %}checked{% endif %}
+                                       class="w-5 h-5 text-green-600 rounded focus:ring-green-500 focus:ring-2">
+                                <span class="ml-3 font-semibold text-gray-700">{{ mes_label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Numeración de Recibos -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-scale" style="animation-delay: 0.2s">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-receipt mr-3"></i>Numeración de Recibos
+                    </h2>
+                    <p class="text-sm opacity-90 mt-1">Configure la serie y correlativo de los recibos</p>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Serie de Recibo <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="serie_recibo" required maxlength="10"
+                                   value="{{ config.serie_recibo if config else '001' }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all font-mono text-lg"
+                                   placeholder="001">
+                            <p class="text-xs text-gray-500 mt-2">Formato: 001, A01, BOL, etc.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Número Correlativo Actual <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" name="numero_correlativo" required min="1"
+                                   value="{{ config.numero_correlativo if config else '1' }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all text-lg font-bold"
+                                   placeholder="1">
+                            <p class="text-xs text-gray-500 mt-2">
+                                El próximo recibo será:
+                                <span class="font-mono font-bold text-purple-600">
+                                    {{ config.serie_recibo if config else '001' }}-{{ '%07d'|format((config.numero_correlativo if config else 1)|int) }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-purple-50 border-l-4 border-purple-500 rounded-r-xl">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-purple-600 mt-1 mr-3"></i>
+                            <div>
+                                <p class="font-semibold text-purple-800 mb-1">Importante</p>
+                                <p class="text-sm text-purple-700">Los recibos se numeran automáticamente de forma correlativa. Solo modifique estos valores si necesita reiniciar o ajustar la numeración.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex justify-end gap-4 fade-scale" style="animation-delay: 0.3s">
+                <a href="{{ url_for('pensiones.dashboard') }}"
+                   class="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-times mr-2"></i>Cancelar
+                </a>
+                <button type="submit"
+                        class="px-8 py-4 bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-save mr-2"></i>Guardar Configuración
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const rucInput = form.querySelector('input[name="ruc_institucion"]');
+    const anioInput = form.querySelector('input[name="anio_escolar"]');
+
+    // Validación de RUC
+    if (rucInput) {
+        rucInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+        });
+    }
+
+    // Validación de año
+    anioInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);
+    });
+
+    // Validación de meses al enviar
+    form.addEventListener('submit', function(event) {
+        const mesesChecked = form.querySelectorAll('input[name="meses_activos"]:checked');
+        if (mesesChecked.length === 0) {
+            event.preventDefault();
+            alert('⚠️ Debe seleccionar al menos un mes activo para las pensiones');
+            return;
+        }
+
+        if (!form.checkValidity()) {
+            event.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

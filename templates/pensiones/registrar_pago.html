@@ -1,0 +1,762 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Pago{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    .tab-active {
+        border-bottom: 3px solid;
+        font-weight: 700;
+        opacity: 1;
+    }
+    .tab-inactive {
+        border-bottom: 3px solid transparent;
+        opacity: 0.6;
+    }
+    .tab-inactive:hover { opacity: 0.85; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-cash-register text-primary mr-3"></i>Registrar Pago
+        </h1>
+        <p class="text-gray-600">Busque al estudiante para registrar pensiones u otros pagos</p>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Buscar Estudiante -->
+        <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden">
+            <div class="bg-gradient-to-r from-primary to-primary-light p-6 text-white">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-search mr-3"></i>Buscar Estudiante
+                </h2>
+            </div>
+            <div class="p-8">
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">DNI o Nombre del Estudiante</label>
+                        <input type="text" id="buscar-estudiante"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 transition-all"
+                               placeholder="Ingrese DNI o nombre completo...">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="button" id="btn-buscar"
+                                class="px-8 py-3 bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                            <i class="fas fa-search mr-2"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+                <div id="mensaje-busqueda" class="mt-4"></div>
+            </div>
+        </div>
+
+        <!-- Panel del estudiante (oculto hasta buscar) -->
+        <div id="panel-estudiante" class="hidden fade-in">
+            <!-- Info estudiante + apoderado compacta -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-5 text-white">
+                    <h2 class="text-xl font-bold flex items-center">
+                        <i class="fas fa-user-graduate mr-3"></i>Datos del Estudiante y Apoderado
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                        <div class="bg-purple-50 rounded-xl p-3 border border-purple-200">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Estudiante</label>
+                            <p id="estudiante_nombre" class="text-sm font-bold text-gray-800 truncate">-</p>
+                        </div>
+                        <div class="bg-purple-50 rounded-xl p-3 border border-purple-200">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">DNI</label>
+                            <p id="estudiante_dni" class="text-sm font-bold text-gray-800">-</p>
+                        </div>
+                        <div class="bg-purple-50 rounded-xl p-3 border border-purple-200">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Nivel / Grado</label>
+                            <p id="estudiante_nivel_grado" class="text-sm font-bold text-gray-800">-</p>
+                        </div>
+                        <div class="bg-green-50 rounded-xl p-3 border border-green-200">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Apoderado</label>
+                            <p id="apoderado_nombre" class="text-sm font-bold text-gray-800 truncate">-</p>
+                        </div>
+                        <div class="bg-green-50 rounded-xl p-3 border border-green-200">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">DNI Apod.</label>
+                            <p id="apoderado_dni" class="text-sm font-bold text-gray-800">-</p>
+                        </div>
+                        <div class="bg-green-50 rounded-xl p-3 border border-green-200">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Relacion</label>
+                            <p id="apoderado_relacion" class="text-sm font-bold text-gray-800">-</p>
+                        </div>
+                        <div class="bg-green-50 rounded-xl p-3 border border-green-200">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Telefono</label>
+                            <p id="apoderado_telefono" class="text-sm font-bold text-gray-800">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS: Pensiones / Otros Pagos -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="flex border-b-2 border-gray-100">
+                    <button type="button" id="tab-pensiones"
+                            class="flex-1 flex items-center justify-center gap-2 px-6 py-4 text-lg transition-all tab-active border-purple-600 text-purple-700"
+                            onclick="switchPayTab('pensiones')">
+                        <i class="fas fa-hand-holding-dollar"></i>
+                        <span>Pensiones</span>
+                        <span id="badge-pensiones" class="hidden ml-2 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button type="button" id="tab-otros"
+                            class="flex-1 flex items-center justify-center gap-2 px-6 py-4 text-lg transition-all tab-inactive text-orange-600"
+                            onclick="switchPayTab('otros')">
+                        <i class="fas fa-receipt"></i>
+                        <span>Otros Pagos</span>
+                        <span id="badge-otros" class="hidden ml-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                </div>
+
+                <!-- ======= TAB PENSIONES ======= -->
+                <div id="content-pensiones" class="p-6">
+                    <div id="sin-pension-msg" class="hidden text-center py-8">
+                        <i class="fas fa-info-circle text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500 mb-4">Este estudiante no tiene pension asignada.</p>
+                        <a id="link-asignar-pension" href="#"
+                           class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                            <i class="fas fa-dollar-sign mr-2"></i>Asignar Pension
+                        </a>
+                    </div>
+
+                    <div id="pension-content" class="hidden">
+                        <!-- Pago mes individual -->
+                        <form id="form-pago" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" id="estudiante_id" name="estudiante_id">
+                            <input type="hidden" id="pension_id" name="pension_id">
+
+                            <h3 class="text-lg font-bold text-gray-700 mb-4">
+                                <i class="fas fa-calendar-day text-purple-500 mr-2"></i>Pagar mes individual
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Mes <span class="text-red-500">*</span></label>
+                                    <select name="mes_pago" id="mes_pago" required
+                                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                        <option value="">Seleccione un mes...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Monto (S/) <span class="text-red-500">*</span></label>
+                                    <div class="relative">
+                                        <span class="absolute left-4 top-3 text-gray-500 font-bold">S/</span>
+                                        <input type="number" name="monto_pagado" id="monto_pagado" step="0.01" min="0.01" readonly required
+                                               class="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50 font-bold text-lg">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha <span class="text-red-500">*</span></label>
+                                    <input type="date" name="fecha_pago" required value="{{ now.strftime('%Y-%m-%d') }}"
+                                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Metodo <span class="text-red-500">*</span></label>
+                                    <select name="metodo_pago" required
+                                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                        <option value="efectivo" selected>Efectivo</option>
+                                        <option value="transferencia">Transferencia</option>
+                                        <option value="yape">Yape</option>
+                                        <option value="plin">Plin</option>
+                                        <option value="tarjeta">Tarjeta</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">N. Operacion</label>
+                                    <input type="text" name="numero_operacion" placeholder="Opcional"
+                                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Observaciones</label>
+                                    <input type="text" name="observaciones" placeholder="Opcional"
+                                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit"
+                                        class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                                    <i class="fas fa-save mr-2"></i>Registrar Pago
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Separador -->
+                        <hr class="my-6 border-gray-200">
+
+                        <!-- Adelantar cuotas -->
+                        <div>
+                            <div class="flex items-center justify-between cursor-pointer select-none mb-4" id="toggle-adelanto">
+                                <h3 class="text-lg font-bold text-gray-700">
+                                    <i class="fas fa-calendar-plus text-blue-500 mr-2"></i>Adelantar Cuotas
+                                    <span id="count-meses-adelanto" class="ml-2 bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                                </h3>
+                                <i class="fas fa-chevron-down text-gray-400 transition-transform duration-300" id="icon-adelanto"></i>
+                            </div>
+
+                            <div id="contenido-adelanto" class="hidden">
+                                <form id="form-adelanto" method="POST"
+                                      action="{{ url_for('pensiones.adelantar_desde_registro') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <input type="hidden" id="adelanto_estudiante_id" name="estudiante_id">
+
+                                    <div id="meses-adelanto-checkboxes" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4"></div>
+
+                                    <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="font-semibold text-gray-700">Total a adelantar:</p>
+                                                <p id="detalle-meses-adelanto" class="text-xs text-gray-500 mt-1"></p>
+                                            </div>
+                                            <span id="total-adelanto" class="text-2xl font-bold text-blue-600">S/ 0.00</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha <span class="text-red-500">*</span></label>
+                                            <input type="date" name="fecha_pago_adelanto" required value="{{ now.strftime('%Y-%m-%d') }}"
+                                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Metodo <span class="text-red-500">*</span></label>
+                                            <select name="metodo_pago_adelanto" required
+                                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                                                <option value="efectivo">Efectivo</option>
+                                                <option value="transferencia">Transferencia</option>
+                                                <option value="yape">Yape</option>
+                                                <option value="plin">Plin</option>
+                                                <option value="tarjeta">Tarjeta</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">N. Operacion</label>
+                                            <input type="text" name="numero_operacion_adelanto" placeholder="Opcional"
+                                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all">
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end">
+                                        <button type="submit" id="btn-registrar-adelanto" disabled
+                                                class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                                            <i class="fas fa-calendar-check mr-2"></i>Registrar Adelanto
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======= TAB OTROS PAGOS ======= -->
+                <div id="content-otros" class="hidden p-6">
+                    <div id="sin-obligaciones-msg" class="hidden text-center py-8">
+                        <i class="fas fa-check-circle text-4xl text-green-300 mb-3"></i>
+                        <p class="text-gray-500">No hay obligaciones pendientes para este estudiante.</p>
+                    </div>
+
+                    <form id="form-otros-pagos" method="POST"
+                          action="{{ url_for('pensiones.registrar_otros_pagos') }}" class="hidden">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">
+                            <i class="fas fa-receipt text-orange-500 mr-2"></i>Obligaciones Pendientes
+                        </h3>
+
+                        <div id="otros-pagos-checkboxes-wrap" class="space-y-3 mb-4"></div>
+
+                        <div class="bg-orange-50 border-2 border-orange-200 rounded-xl p-4 mb-4">
+                            <div class="flex items-center justify-between">
+                                <p class="font-semibold text-gray-700">Total a pagar:</p>
+                                <span id="total-otros-pagos" class="text-2xl font-bold text-orange-600">S/ 0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha <span class="text-red-500">*</span></label>
+                                <input type="date" name="fecha_pago_otros" required value="{{ now.strftime('%Y-%m-%d') }}"
+                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-orange-500 focus:ring focus:ring-orange-200 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Metodo <span class="text-red-500">*</span></label>
+                                <select name="forma_pago_otros" required
+                                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-orange-500 focus:ring focus:ring-orange-200 transition-all">
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="transferencia">Transferencia</option>
+                                    <option value="yape">Yape</option>
+                                    <option value="plin">Plin</option>
+                                    <option value="tarjeta">Tarjeta</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">N. Operacion</label>
+                                <input type="text" name="numero_operacion_otros" placeholder="Opcional"
+                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-orange-500 focus:ring focus:ring-orange-200 transition-all">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" id="btn-registrar-otros-pagos" disabled
+                                    class="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fas fa-receipt mr-2"></i>Registrar Otros Pagos
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const buscarInput     = document.getElementById('buscar-estudiante');
+    const btnBuscar       = document.getElementById('btn-buscar');
+    const panelEstudiante = document.getElementById('panel-estudiante');
+    const mensajeBusqueda = document.getElementById('mensaje-busqueda');
+
+    // ── Tab switching ────────────────────────────────────────────────
+    window.switchPayTab = function(tab) {
+        const tabPensiones = document.getElementById('tab-pensiones');
+        const tabOtros     = document.getElementById('tab-otros');
+        const contentPens  = document.getElementById('content-pensiones');
+        const contentOtros = document.getElementById('content-otros');
+
+        if (tab === 'pensiones') {
+            tabPensiones.className = tabPensiones.className.replace('tab-inactive', 'tab-active').replace('text-orange-600', 'border-purple-600 text-purple-700');
+            tabOtros.className     = tabOtros.className.replace('tab-active', 'tab-inactive').replace('border-purple-600 text-purple-700', 'text-orange-600');
+            contentPens.classList.remove('hidden');
+            contentOtros.classList.add('hidden');
+        } else {
+            tabOtros.className     = tabOtros.className.replace('tab-inactive', 'tab-active').replace('text-orange-600', 'border-orange-500 text-orange-700');
+            tabPensiones.className = tabPensiones.className.replace('tab-active', 'tab-inactive').replace('border-purple-600 text-purple-700', 'text-purple-600');
+            contentOtros.classList.remove('hidden');
+            contentPens.classList.add('hidden');
+        }
+    };
+
+    // ── Adelantar cuotas ─────────────────────────────────────────────
+    const toggleAdelanto    = document.getElementById('toggle-adelanto');
+    const contenidoAdelanto = document.getElementById('contenido-adelanto');
+    const iconAdelanto      = document.getElementById('icon-adelanto');
+    const countMeses        = document.getElementById('count-meses-adelanto');
+    const checkboxesWrap    = document.getElementById('meses-adelanto-checkboxes');
+    const totalAdelanto     = document.getElementById('total-adelanto');
+    const detalleMeses      = document.getElementById('detalle-meses-adelanto');
+    const btnAdelanto       = document.getElementById('btn-registrar-adelanto');
+
+    toggleAdelanto.addEventListener('click', function () {
+        const abierto = !contenidoAdelanto.classList.contains('hidden');
+        contenidoAdelanto.classList.toggle('hidden', abierto);
+        iconAdelanto.style.transform = abierto ? 'rotate(0deg)' : 'rotate(180deg)';
+    });
+
+    function actualizarTotal() {
+        const marcados = checkboxesWrap.querySelectorAll('.mes-adelanto-check:checked');
+        let total = 0;
+        const nombres = [];
+        marcados.forEach(chk => {
+            const inp = checkboxesWrap.querySelector(`input[name="monto_mes_${chk.value}"]`);
+            total += inp ? (parseFloat(inp.value) || 0) : 0;
+            nombres.push(chk.value.charAt(0).toUpperCase() + chk.value.slice(1));
+        });
+        totalAdelanto.textContent = `S/ ${total.toFixed(2)}`;
+        if (marcados.length > 0) {
+            detalleMeses.textContent = `${marcados.length} mes(es): ${nombres.join(', ')}`;
+            btnAdelanto.disabled = false;
+        } else {
+            detalleMeses.textContent = '';
+            btnAdelanto.disabled = true;
+        }
+    }
+
+    function actualizarBadge(mes, monto, restante) {
+        const badge = checkboxesWrap.querySelector(`.badge-mes-${mes}`);
+        if (!badge) return;
+        if (monto >= restante) {
+            badge.textContent = 'Pago completo';
+            badge.className = `badge-mes-${mes} text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700`;
+        } else {
+            badge.textContent = `Parcial: S/ ${(restante - monto).toFixed(2)} restante`;
+            badge.className = `badge-mes-${mes} text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700`;
+        }
+    }
+
+    function poblarMesesAdelanto(mesesPendientes, monto, saldos) {
+        countMeses.textContent = mesesPendientes.length;
+        checkboxesWrap.innerHTML = '';
+
+        mesesPendientes.forEach(mes => {
+            const label    = mes.charAt(0).toUpperCase() + mes.slice(1);
+            const saldo    = saldos[mes] || { monto_mensual: monto, pagado: 0, restante: monto };
+            const restante = saldo.restante;
+            const pagado   = saldo.pagado;
+
+            const card = document.createElement('div');
+            card.id        = `card-mes-${mes}`;
+            card.className = 'border-2 border-gray-200 rounded-xl p-3 transition-all';
+            card.innerHTML = `
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" name="meses_adelantar" value="${mes}"
+                           class="mes-adelanto-check w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0">
+                    <span class="font-semibold text-gray-800 capitalize flex-1">${label}</span>
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs font-medium text-gray-500">S/</span>
+                        <input type="number" name="monto_mes_${mes}" value="${restante.toFixed(2)}"
+                               min="0.01" max="${restante.toFixed(2)}" step="0.01" disabled
+                               class="monto-mes-input w-24 px-2 py-1 border-2 border-gray-200 rounded-lg text-sm font-bold text-right bg-gray-100 cursor-not-allowed transition-all"
+                               data-restante="${restante}" data-mes="${mes}">
+                    </div>
+                </label>
+                <div class="flex items-center justify-between mt-1 pl-7">
+                    <span class="text-xs text-gray-400">
+                        Mensualidad: S/ ${monto.toFixed(2)}${pagado > 0 ? ` | Abonado: S/ ${pagado.toFixed(2)}` : ''} | Restante: S/ ${restante.toFixed(2)}
+                    </span>
+                    <span class="badge-mes-${mes} text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">-</span>
+                </div>`;
+            checkboxesWrap.appendChild(card);
+        });
+
+        checkboxesWrap.querySelectorAll('.mes-adelanto-check').forEach(chk => {
+            chk.addEventListener('change', function () {
+                const mes  = this.value;
+                const inp  = checkboxesWrap.querySelector(`input[name="monto_mes_${mes}"]`);
+                const card = document.getElementById(`card-mes-${mes}`);
+                const rest = parseFloat(inp.dataset.restante);
+                if (this.checked) {
+                    inp.disabled = false;
+                    inp.classList.replace('bg-gray-100', 'bg-white');
+                    inp.classList.replace('cursor-not-allowed', 'cursor-text');
+                    inp.classList.replace('border-gray-200', 'border-blue-400');
+                    card.classList.replace('border-gray-200', 'border-blue-400');
+                    card.classList.add('bg-blue-50');
+                    actualizarBadge(mes, parseFloat(inp.value) || 0, rest);
+                } else {
+                    inp.disabled = true;
+                    inp.classList.replace('bg-white', 'bg-gray-100');
+                    inp.classList.replace('cursor-text', 'cursor-not-allowed');
+                    inp.classList.replace('border-blue-400', 'border-gray-200');
+                    card.classList.replace('border-blue-400', 'border-gray-200');
+                    card.classList.remove('bg-blue-50');
+                    const badge = checkboxesWrap.querySelector(`.badge-mes-${mes}`);
+                    if (badge) { badge.textContent = '-'; badge.className = `badge-mes-${mes} text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400`; }
+                }
+                actualizarTotal();
+            });
+        });
+
+        checkboxesWrap.querySelectorAll('.monto-mes-input').forEach(inp => {
+            inp.addEventListener('input', function () {
+                const rest = parseFloat(this.dataset.restante);
+                let val = parseFloat(this.value);
+                if (isNaN(val) || val < 0.01) val = 0.01;
+                if (val > rest) { val = rest; this.value = rest.toFixed(2); }
+                actualizarBadge(this.dataset.mes, val, rest);
+                actualizarTotal();
+            });
+        });
+
+        actualizarTotal();
+    }
+
+    // ── Otros Pagos ──────────────────────────────────────────────────
+    const otrosPagosWrap = document.getElementById('otros-pagos-checkboxes-wrap');
+
+    function recalcularTotalOtrosPagos() {
+        const marcados = otrosPagosWrap.querySelectorAll('.ob-check:checked');
+        let total = 0;
+        marcados.forEach(chk => {
+            const inp = otrosPagosWrap.querySelector(`input[name="monto_ob_${chk.value}"]`);
+            total += inp ? (parseFloat(inp.value) || 0) : 0;
+        });
+        const totalEl = document.getElementById('total-otros-pagos');
+        if (totalEl) totalEl.textContent = `S/ ${total.toFixed(2)}`;
+        const btn = document.getElementById('btn-registrar-otros-pagos');
+        if (btn) btn.disabled = marcados.length === 0;
+    }
+
+    function poblarOtrosPagos(obligaciones) {
+        const badgeOtros     = document.getElementById('badge-otros');
+        const sinMsg         = document.getElementById('sin-obligaciones-msg');
+        const formOtros      = document.getElementById('form-otros-pagos');
+
+        if (obligaciones.length === 0) {
+            sinMsg.classList.remove('hidden');
+            formOtros.classList.add('hidden');
+            badgeOtros.classList.add('hidden');
+            return;
+        }
+
+        sinMsg.classList.add('hidden');
+        formOtros.classList.remove('hidden');
+        badgeOtros.textContent = obligaciones.length;
+        badgeOtros.classList.remove('hidden');
+        otrosPagosWrap.innerHTML = '';
+
+        obligaciones.forEach(ob => {
+            const cuotaInfo = ob.total_cuotas > 1 ? ` | Cuota ${ob.cuotas_pagadas + 1}/${ob.total_cuotas}` : '';
+            const card = document.createElement('div');
+            card.id = `card-ob-${ob.id}`;
+            card.className = 'border-2 border-gray-200 rounded-xl p-3 transition-all';
+            card.innerHTML = `
+                <input type="hidden" name="version_ob_${ob.id}" value="${ob.version}">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" name="obligacion_ids[]" value="${ob.id}"
+                           class="ob-check w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-400 flex-shrink-0">
+                    <span class="font-semibold text-gray-800 flex-1">${ob.concepto}${cuotaInfo}</span>
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs font-medium text-gray-500">S/</span>
+                        <input type="number" name="monto_ob_${ob.id}" value="${ob.monto_pendiente.toFixed(2)}"
+                               min="0.01" max="${ob.monto_pendiente.toFixed(2)}" step="0.01" disabled
+                               class="ob-monto-input w-24 px-2 py-1 border-2 border-gray-200 rounded-lg text-sm font-bold text-right bg-gray-100 cursor-not-allowed transition-all"
+                               data-pendiente="${ob.monto_pendiente}" data-ob-id="${ob.id}">
+                    </div>
+                </label>
+                <div class="mt-1 pl-7">
+                    <span class="text-xs text-gray-400">
+                        Total: S/ ${ob.monto_total.toFixed(2)}${ob.monto_pagado > 0 ? ` | Pagado: S/ ${ob.monto_pagado.toFixed(2)}` : ''} | Pendiente: S/ ${ob.monto_pendiente.toFixed(2)}
+                    </span>
+                </div>`;
+            otrosPagosWrap.appendChild(card);
+        });
+
+        otrosPagosWrap.querySelectorAll('.ob-check').forEach(chk => {
+            chk.addEventListener('change', function () {
+                const obId = this.value;
+                const inp  = otrosPagosWrap.querySelector(`input[name="monto_ob_${obId}"]`);
+                const card = document.getElementById(`card-ob-${obId}`);
+                if (this.checked) {
+                    inp.disabled = false;
+                    inp.classList.replace('bg-gray-100', 'bg-white');
+                    inp.classList.replace('cursor-not-allowed', 'cursor-text');
+                    inp.classList.replace('border-gray-200', 'border-orange-400');
+                    card.classList.replace('border-gray-200', 'border-orange-400');
+                    card.classList.add('bg-orange-50');
+                } else {
+                    inp.disabled = true;
+                    inp.classList.replace('bg-white', 'bg-gray-100');
+                    inp.classList.replace('cursor-text', 'cursor-not-allowed');
+                    inp.classList.replace('border-orange-400', 'border-gray-200');
+                    card.classList.replace('border-orange-400', 'border-gray-200');
+                    card.classList.remove('bg-orange-50');
+                }
+                recalcularTotalOtrosPagos();
+            });
+        });
+
+        otrosPagosWrap.querySelectorAll('.ob-monto-input').forEach(inp => {
+            inp.addEventListener('input', function () {
+                const pendiente = parseFloat(this.dataset.pendiente);
+                let val = parseFloat(this.value);
+                if (isNaN(val) || val < 0.01) val = 0.01;
+                if (val > pendiente) { val = pendiente; this.value = pendiente.toFixed(2); }
+                recalcularTotalOtrosPagos();
+            });
+        });
+    }
+
+    // ── Buscar estudiante ────────────────────────────────────────────
+    function buscarEstudiante() {
+        const termino = buscarInput.value.trim();
+
+        if (termino.length < 3) {
+            mensajeBusqueda.innerHTML = `
+                <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 rounded-xl fade-in">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-2xl mr-3"></i>
+                        <p class="font-bold">Ingrese al menos 3 caracteres (DNI o nombre)</p>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        mensajeBusqueda.innerHTML = `
+            <div class="bg-purple-100 border-l-4 border-purple-500 text-purple-700 p-4 rounded-xl fade-in">
+                <div class="flex items-center">
+                    <i class="fas fa-spinner fa-spin text-2xl mr-3"></i>
+                    <p class="font-bold">Buscando estudiante...</p>
+                </div>
+            </div>`;
+
+        panelEstudiante.classList.add('hidden');
+
+        fetch('{{ url_for("pensiones.buscar_estudiante") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+            body: JSON.stringify({ termino: termino })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                mensajeBusqueda.innerHTML = `
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-xl fade-in">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle text-2xl mr-3"></i>
+                            <p class="font-bold">Estudiante encontrado - seleccione tipo de pago</p>
+                        </div>
+                    </div>`;
+
+                // Llenar datos del estudiante
+                document.getElementById('estudiante_id').value              = data.estudiante.id;
+                document.getElementById('pension_id').value                 = data.pension ? data.pension.id : '';
+                document.getElementById('estudiante_nombre').textContent    = data.estudiante.nombre_completo;
+                document.getElementById('estudiante_dni').textContent       = data.estudiante.dni || '-';
+                document.getElementById('estudiante_nivel_grado').textContent = data.estudiante.nivel_grado;
+                document.getElementById('apoderado_nombre').textContent    = data.apoderado.nombre;
+                document.getElementById('apoderado_dni').textContent       = data.apoderado.dni || '-';
+                document.getElementById('apoderado_relacion').textContent  = data.apoderado.relacion;
+                document.getElementById('apoderado_telefono').textContent  = data.apoderado.telefono || '-';
+
+                // Tab pensiones
+                const sinPensionMsg  = document.getElementById('sin-pension-msg');
+                const pensionContent = document.getElementById('pension-content');
+                const badgePensiones = document.getElementById('badge-pensiones');
+
+                if (data.pension && data.meses_pendientes && data.meses_pendientes.length > 0) {
+                    sinPensionMsg.classList.add('hidden');
+                    pensionContent.classList.remove('hidden');
+                    badgePensiones.textContent = data.meses_pendientes.length;
+                    badgePensiones.classList.remove('hidden');
+
+                    document.getElementById('monto_pagado').value = data.pension.monto.toFixed(2);
+
+                    const selectMes = document.getElementById('mes_pago');
+                    selectMes.innerHTML = '<option value="">Seleccione un mes...</option>';
+                    data.meses_pendientes.forEach(mes => {
+                        const opt = document.createElement('option');
+                        opt.value = mes;
+                        opt.text  = mes.charAt(0).toUpperCase() + mes.slice(1);
+                        selectMes.add(opt);
+                    });
+
+                    // Adelantar
+                    document.getElementById('adelanto_estudiante_id').value = data.estudiante.id;
+                    poblarMesesAdelanto(data.meses_pendientes, data.pension.monto, data.saldos_por_mes || {});
+                    contenidoAdelanto.classList.add('hidden');
+                    iconAdelanto.style.transform = 'rotate(0deg)';
+                } else {
+                    pensionContent.classList.add('hidden');
+                    badgePensiones.classList.add('hidden');
+
+                    if (!data.pension) {
+                        sinPensionMsg.classList.remove('hidden');
+                        document.getElementById('link-asignar-pension').href =
+                            `{{ url_for('pensiones.asignar_form', estudiante_id=0) }}`.replace('/0', `/${data.estudiante.id}`);
+                    } else {
+                        // Pension existe pero todos los meses pagados
+                        sinPensionMsg.classList.remove('hidden');
+                        sinPensionMsg.querySelector('p').textContent = 'Todos los meses estan pagados.';
+                        sinPensionMsg.querySelector('a').classList.add('hidden');
+                    }
+                }
+
+                // Tab otros pagos
+                poblarOtrosPagos(data.obligaciones || []);
+
+                panelEstudiante.classList.remove('hidden');
+                panelEstudiante.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                // Si no tiene pension pero si otros pagos, ir a tab otros
+                if (!data.pension && data.obligaciones && data.obligaciones.length > 0) {
+                    switchPayTab('otros');
+                } else {
+                    switchPayTab('pensiones');
+                }
+
+            } else if (data.sin_pension) {
+                // Estudiante encontrado pero sin pension - aun asi mostrar info y obligaciones
+                const est = data.estudiante;
+                const apo = data.apoderado;
+
+                mensajeBusqueda.innerHTML = `
+                    <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 rounded-xl fade-in">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-2xl mr-3"></i>
+                            <div>
+                                <p class="font-bold">Estudiante encontrado - sin pensión asignada</p>
+                                <p class="text-sm">Puede registrar otros pagos o asignar una pensión primero.</p>
+                            </div>
+                        </div>
+                    </div>`;
+
+                document.getElementById('estudiante_id').value              = est.id;
+                document.getElementById('estudiante_nombre').textContent    = est.nombre_completo;
+                document.getElementById('estudiante_dni').textContent       = est.dni || '-';
+                document.getElementById('estudiante_nivel_grado').textContent = est.nivel_grado || '-';
+                document.getElementById('apoderado_nombre').textContent    = apo.nombre || '-';
+                document.getElementById('apoderado_dni').textContent       = apo.dni || '-';
+                document.getElementById('apoderado_relacion').textContent  = apo.relacion || '-';
+                document.getElementById('apoderado_telefono').textContent  = apo.telefono || '-';
+
+                document.getElementById('sin-pension-msg').classList.remove('hidden');
+                document.getElementById('pension-content').classList.add('hidden');
+                document.getElementById('badge-pensiones').classList.add('hidden');
+                document.getElementById('link-asignar-pension').href =
+                    `{{ url_for('pensiones.asignar_form', estudiante_id=0) }}`.replace('/0', `/${est.id}`);
+
+                poblarOtrosPagos(data.obligaciones || []);
+
+                panelEstudiante.classList.remove('hidden');
+                panelEstudiante.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                if (data.obligaciones && data.obligaciones.length > 0) {
+                    switchPayTab('otros');
+                } else {
+                    switchPayTab('pensiones');
+                }
+            } else {
+                mensajeBusqueda.innerHTML = `
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-xl fade-in">
+                        <div class="flex items-center">
+                            <i class="fas fa-times-circle text-2xl mr-3"></i>
+                            <div>
+                                <p class="font-bold">No se encontro el estudiante</p>
+                                <p class="text-sm">${data.message}</p>
+                            </div>
+                        </div>
+                    </div>`;
+                panelEstudiante.classList.add('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mensajeBusqueda.innerHTML = `
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-xl fade-in">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-2xl mr-3"></i>
+                        <p class="font-bold">Error al buscar. Intente nuevamente.</p>
+                    </div>
+                </div>`;
+            panelEstudiante.classList.add('hidden');
+        });
+    }
+
+    btnBuscar.addEventListener('click', buscarEstudiante);
+    buscarInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); buscarEstudiante(); }
+    });
+
+    // Auto-buscar si viene con parametro dni en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const dniParam = urlParams.get('dni');
+    if (dniParam) {
+        buscarInput.value = dniParam;
+        buscarEstudiante();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Asistencias - NK Chambergo</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #5F2A5D;
+            --primary-dark: #4a2048;
+            --primary-light: #8b4789;
+            --primary-50: #f8f0f8;
+            --primary-100: #f0ddef;
+            --primary-200: #e0bbe0;
+            --primary-accent: #7c3b7a;
+            --bg: #f7f7fa;
+            --card: #ffffff;
+            --border: #ebe5ef;
+            --text-dark: #1a1a2e;
+            --text: #4a4a5a;
+            --text-light: #8a8a9a;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+
+        /* ── Header ─────────────────────────────────── */
+        .app-header {
+            position: sticky; top: 0; z-index: 50;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .app-header-inner {
+            max-width: 1200px; margin: 0 auto;
+            padding: 0 1.25rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        }
+        .header-brand { display: flex; align-items: center; gap: 0.75rem; }
+        .header-logo {
+            width: 38px; height: 38px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(95,42,93,0.25);
+        }
+        .header-logo img { width: 24px; height: 24px; object-fit: contain; }
+        .header-title { font-weight: 700; font-size: 0.95rem; color: var(--text-dark); }
+        .header-subtitle { font-size: 0.6rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 18px; border-radius: 10px; border: 1px solid var(--primary-200);
+            background: var(--primary-50); color: var(--primary);
+            font-size: 0.78rem; font-weight: 600; text-decoration: none;
+            transition: all 0.2s ease; font-family: 'Inter', sans-serif; cursor: pointer;
+        }
+        .btn-back:hover { background: var(--primary-100); border-color: var(--primary-light); }
+
+        /* ── Main ────────────────────────────────────── */
+        .page-wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 3rem; flex: 1; }
+
+        .page-title-bar {
+            display: flex; align-items: center; gap: 0.75rem;
+            margin-bottom: 1.5rem; padding-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-100);
+        }
+        .page-title-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(95,42,93,0.2);
+        }
+        .page-title { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); }
+        .page-subtitle { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
+
+        /* ── Cards ────────────────────────────────────── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .card + .card { margin-top: 1.25rem; }
+        .card-body { padding: 1.25rem 1.5rem; }
+
+        /* ── Flash ────────────────────────────────────── */
+        .flash {
+            padding: 0.85rem 1.25rem; border-radius: 10px;
+            font-size: 0.82rem; font-weight: 500;
+            margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
+            border-left: 4px solid;
+        }
+        .flash.success { background: #f0fdf4; color: #166534; border-color: #22c55e; }
+        .flash.error { background: #fef2f2; color: #991b1b; border-color: #ef4444; }
+        .flash.info { background: var(--primary-50); color: var(--primary-dark); border-color: var(--primary); }
+
+        /* ── Filters ──────────────────────────────────── */
+        .filter-bar {
+            display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem;
+            padding: 1rem 1.25rem;
+            background: var(--primary-50); border: 1px solid var(--primary-100);
+            border-radius: 12px; margin-bottom: 1.25rem;
+        }
+        .filter-group label {
+            display: block; font-size: 0.72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            color: var(--text-light); margin-bottom: 5px;
+        }
+        .filter-group select {
+            padding: 8px 14px; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 0.82rem; font-family: 'Inter', sans-serif;
+            color: var(--text-dark); background: var(--card);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .filter-group select:focus {
+            outline: none; border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(95,42,93,0.1);
+        }
+        .btn-filter {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 18px; border-radius: 8px; border: none;
+            background: var(--primary); color: #fff;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; font-family: 'Inter', sans-serif;
+            box-shadow: 0 2px 6px rgba(95,42,93,0.2);
+        }
+        .btn-filter:hover { background: var(--primary-dark); }
+
+        /* ── Stats ────────────────────────────────────── */
+        .stats-row {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 1rem; margin-bottom: 1.25rem;
+        }
+        .stat-card {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid;
+        }
+        .stat-card.entries { background: #f0fdf4; border-color: #bbf7d0; }
+        .stat-card.exits { background: #fef2f2; border-color: #fecaca; }
+        .stat-card.total { background: #eff6ff; border-color: #bfdbfe; }
+        .stat-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+        }
+        .stat-card.entries .stat-icon { background: #dcfce7; color: #16a34a; }
+        .stat-card.exits .stat-icon { background: #fee2e2; color: #dc2626; }
+        .stat-card.total .stat-icon { background: #dbeafe; color: #2563eb; }
+        .stat-label { font-size: 0.72rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+        .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--text-dark); }
+
+        /* ── Table ────────────────────────────────────── */
+        .table-wrap { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th {
+            padding: 0.75rem 1.25rem; text-align: left;
+            font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--primary-dark);
+            background: var(--primary-50);
+            border-bottom: 2px solid var(--primary-100);
+        }
+        .data-table td {
+            padding: 0.85rem 1.25rem;
+            font-size: 0.84rem; color: var(--text-dark);
+            border-bottom: 1px solid #f2eff4;
+        }
+        .data-table tbody tr { transition: background 0.15s; }
+        .data-table tbody tr:hover { background: #faf8fb; }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 12px; border-radius: 100px;
+            font-size: 0.72rem; font-weight: 600;
+        }
+        .badge.entrada { background: #dcfce7; color: #166534; }
+        .badge.salida { background: #fee2e2; color: #991b1b; }
+
+        .empty-row td {
+            text-align: center; padding: 3rem 1rem; color: var(--text-light);
+        }
+        .empty-row i { font-size: 2.5rem; color: #e0dbe4; margin-bottom: 0.75rem; display: block; }
+
+        .record-count {
+            font-size: 0.78rem; color: var(--text-light);
+            margin-top: 0.75rem; padding: 0 0.25rem;
+        }
+
+        /* ── Responsive ───────────────────────────────── */
+        @media (max-width: 640px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .page-wrap { padding: 1.25rem 1rem 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="app-header-inner">
+            <div class="header-brand">
+                <div class="header-logo">
+                    <img src="{{ url_for('academia_student_auth.static', filename='img/nk.png') }}" alt="NK">
+                </div>
+                <div>
+                    <div class="header-title">NK Chambergo</div>
+                    <div class="header-subtitle">Mis Asistencias</div>
+                </div>
+            </div>
+            <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </header>
+
+    <div class="page-wrap">
+        <!-- Page title -->
+        <div class="page-title-bar">
+            <div class="page-title-icon"><i class="fas fa-clipboard-check"></i></div>
+            <div>
+                <div class="page-title">Mi Historial de Asistencias</div>
+                <div class="page-subtitle">Registro de entradas y salidas</div>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash {{ 'success' if category == 'success' else ('error' if category == 'error' else 'info') }}">
+                    <i class="fas {{ 'fa-check-circle' if category == 'success' else ('fa-exclamation-circle' if category == 'error' else 'fa-info-circle') }}"></i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Filters -->
+        <form method="GET" action="{{ url_for('academia_student_auth.mis_asistencias') }}">
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>Mes</label>
+                    <select name="mes">
+                        <option value="">Todos</option>
+                        <option value="1" {% if mes_filtro == 1 %}selected{% endif %}>Enero</option>
+                        <option value="2" {% if mes_filtro == 2 %}selected{% endif %}>Febrero</option>
+                        <option value="3" {% if mes_filtro == 3 %}selected{% endif %}>Marzo</option>
+                        <option value="4" {% if mes_filtro == 4 %}selected{% endif %}>Abril</option>
+                        <option value="5" {% if mes_filtro == 5 %}selected{% endif %}>Mayo</option>
+                        <option value="6" {% if mes_filtro == 6 %}selected{% endif %}>Junio</option>
+                        <option value="7" {% if mes_filtro == 7 %}selected{% endif %}>Julio</option>
+                        <option value="8" {% if mes_filtro == 8 %}selected{% endif %}>Agosto</option>
+                        <option value="9" {% if mes_filtro == 9 %}selected{% endif %}>Septiembre</option>
+                        <option value="10" {% if mes_filtro == 10 %}selected{% endif %}>Octubre</option>
+                        <option value="11" {% if mes_filtro == 11 %}selected{% endif %}>Noviembre</option>
+                        <option value="12" {% if mes_filtro == 12 %}selected{% endif %}>Diciembre</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Año</label>
+                    <select name="anio">
+                        {% for year in range(current_year - 2, current_year + 1) %}
+                        <option value="{{ year }}" {% if anio_filtro == year %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-filter">
+                    <i class="fas fa-filter"></i> Filtrar
+                </button>
+            </div>
+        </form>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card entries">
+                <div class="stat-icon"><i class="fas fa-sign-in-alt"></i></div>
+                <div>
+                    <div class="stat-label">Entradas</div>
+                    <div class="stat-value">{{ estadisticas.entradas }}</div>
+                </div>
+            </div>
+            <div class="stat-card exits">
+                <div class="stat-icon"><i class="fas fa-sign-out-alt"></i></div>
+                <div>
+                    <div class="stat-label">Salidas</div>
+                    <div class="stat-value">{{ estadisticas.salidas }}</div>
+                </div>
+            </div>
+            <div class="stat-card total">
+                <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                <div>
+                    <div class="stat-label">Total Registros</div>
+                    <div class="stat-value">{{ estadisticas.total }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card">
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Tipo</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if asistencias %}
+                            {% for asistencia in asistencias %}
+                            <tr>
+                                <td>{{ asistencia.fecha_formateada }}</td>
+                                <td>{{ asistencia.hora_formateada }}</td>
+                                <td>
+                                    {% if asistencia.tipo == 'entrada' %}
+                                    <span class="badge entrada"><i class="fas fa-sign-in-alt"></i> Entrada</span>
+                                    {% else %}
+                                    <span class="badge salida"><i class="fas fa-sign-out-alt"></i> Salida</span>
+                                    {% endif %}
+                                </td>
+                                <td style="color: var(--text-light);">{{ asistencia.observaciones or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr class="empty-row">
+                                <td colspan="4">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>No hay registros de asistencia para el período seleccionado.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="record-count">
+            Mostrando {{ asistencias|length }} registro(s)
+        </div>
+    </div>
+</body>
+</html>

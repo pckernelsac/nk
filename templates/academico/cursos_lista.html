@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Cursos{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 pop-in flex justify-between items-center">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-book text-primary mr-3"></i>Cursos / Materias
+            </h1>
+            <p class="text-gray-600">Gestiona los cursos disponibles en el sistema</p>
+        </div>
+        {% if session.rol == 'administrador' %}
+        <div>
+            <button type="button" onclick="openModal()"
+                    class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                <i class="fas fa-plus mr-2"></i>Nuevo Curso
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Lista de Cursos -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-list mr-3"></i>Cursos Registrados
+            </h2>
+        </div>
+        <div class="p-8">
+            {% if cursos %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Código</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nivel</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fast Tests</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                            {% if session.rol == 'administrador' %}
+                            <th class="px-6 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider text-center">Acciones</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for curso in cursos %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <code class="px-2 py-1 bg-purple-100 text-purple-700 rounded font-mono text-sm">{{ curso.codigo }}</code>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-semibold text-gray-900">{{ curso.nombre }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if curso.nivel %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">{{ curso.nivel }}</span>
+                                {% else %}
+                                <span class="text-gray-400">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if curso.descripcion %}
+                                <span class="text-gray-600">{{ curso.descripcion[:50] }}{% if curso.descripcion|length > 50 %}...{% endif %}</span>
+                                {% else %}
+                                <span class="text-gray-400">Sin descripción</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                    {{ curso.fast_tests.count() }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if curso.activo %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Activo
+                                </span>
+                                {% else %}
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+                                    <i class="fas fa-ban mr-1"></i>Inactivo
+                                </span>
+                                {% endif %}
+                            </td>
+                            {% if session.rol == 'administrador' %}
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <button onclick="eliminarCurso({{ curso.id }}, '{{ curso.nombre }}')"
+                                        class="px-3 py-2 bg-red-100 hover:bg-red-600 text-red-600 hover:text-white text-xs font-semibold rounded-lg transition-all duration-200"
+                                        title="Eliminar curso">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 text-2xl mr-4"></i>
+                    <p class="text-blue-700 font-medium">No hay cursos registrados. Cree el primer curso.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear Curso -->
+{% if session.rol == 'administrador' %}
+<div id="crearCursoModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm" onclick="if(event.target === this) closeModal()">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 pop-in" onclick="event.stopPropagation()">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 rounded-t-2xl">
+            <h3 class="text-2xl font-bold text-white flex items-center justify-between">
+                <span><i class="fas fa-book-medical mr-2"></i>Nuevo Curso</span>
+                <button onclick="closeModal()" class="text-white hover:text-gray-200 transition-colors">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </h3>
+        </div>
+        <form id="formCrearCurso" class="p-8">
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    Nombre <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="nombre" required placeholder="Matemática"
+                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    Código <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="codigo" required placeholder="MAT"
+                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-2">Nivel</label>
+                <select name="nivel"
+                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                    <option value="">Seleccione nivel</option>
+                    <option value="PRIMARIA">Primaria</option>
+                    <option value="SECUNDARIA">Secundaria</option>
+                    <option value="ACADEMIA">Academia</option>
+                    <option value="Ambos">Ambos</option>
+                </select>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
+                <textarea name="descripcion" rows="3"
+                          class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeModal()"
+                        class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                    Crear Curso
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Funciones para el modal
+function openModal() {
+    document.getElementById('crearCursoModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('crearCursoModal').classList.add('hidden');
+    document.getElementById('formCrearCurso').reset();
+}
+
+// Cerrar modal con Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+
+// Eliminar curso
+async function eliminarCurso(cursoId, nombre) {
+    if (!confirm(`¿Eliminar el curso "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+
+    try {
+        const response = await fetch(`/academico/api/cursos/${cursoId}`, {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': '{{ csrf_token() }}'}
+        });
+        const result = await response.json();
+
+        if (result.ok) {
+            window.location.reload();
+        } else {
+            alert('No se pudo eliminar: ' + result.message);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+// Submit del formulario
+document.getElementById('formCrearCurso').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+
+    try {
+        const response = await fetch('{{ url_for("academico.api_crear_curso") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.ok) {
+            closeModal();
+            window.location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        alert('Error al crear curso: ' + error.message);
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

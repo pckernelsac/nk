@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}Migrar y Promover Aulas - Sistema Escolar{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+    .tab-btn { transition: all 0.2s; }
+    .tab-btn.active { border-bottom: 3px solid; font-weight: 700; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .egresa-badge { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6 max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 pop-in">
+        <div class="flex items-center mb-4">
+            <a href="{{ url_for('aulas.lista') }}" class="mr-4 text-gray-600 hover:text-primary transition-colors">
+                <i class="fas fa-arrow-left text-2xl"></i>
+            </a>
+            <div>
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-exchange-alt text-primary mr-3"></i>Migración y Promoción
+                </h1>
+                <p class="text-gray-600">Migrar datos, promover grados o renovar ciclos de academia</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+        <div class="flex border-b border-gray-200 bg-gray-50">
+            <button onclick="cambiarTab('migracion')" id="tab-migracion"
+                    class="tab-btn active flex-1 px-6 py-4 text-center text-green-700 border-green-600 hover:bg-green-50">
+                <i class="fas fa-database mr-2"></i>Migración de Datos
+            </button>
+            <button onclick="cambiarTab('promocion')" id="tab-promocion"
+                    class="tab-btn flex-1 px-6 py-4 text-center text-blue-700 border-blue-600 hover:bg-blue-50">
+                <i class="fas fa-arrow-up mr-2"></i>Promoción Anual
+            </button>
+            <button onclick="cambiarTab('renovar')" id="tab-renovar"
+                    class="tab-btn flex-1 px-6 py-4 text-center text-purple-700 border-purple-600 hover:bg-purple-50">
+                <i class="fas fa-sync-alt mr-2"></i>Renovar Ciclo
+            </button>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 1: Migración de Datos (existente)          -->
+        <!-- ============================================== -->
+        <div id="content-migracion" class="tab-content active p-8">
+            <div class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-5 mb-6">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 text-2xl mr-4 mt-1"></i>
+                    <div>
+                        <h3 class="font-bold text-yellow-800 mb-2">Migración inicial de datos</h3>
+                        <p class="text-sm text-yellow-700">
+                            Crea aulas automáticamente leyendo los campos <b>nivel, grado, sección y turno</b> de cada estudiante.
+                            Úsalo solo la primera vez para poblar el sistema de aulas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('aulas.migrar_datos') }}" onsubmit="return confirm('¿Ejecutar migración de datos?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="accion" value="migrar_datos"/>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-calendar mr-1"></i>Año Escolar
+                    </label>
+                    <input type="text" name="anio_escolar" value="{{ anio_actual }}" required
+                           pattern="[0-9]{4}" placeholder="{{ current_year }}"
+                           class="w-64 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring focus:ring-green-200">
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" required class="w-5 h-5 text-green-600 rounded">
+                        <span class="text-sm text-gray-700">Confirmo que entiendo el proceso de migración</span>
+                    </label>
+                </div>
+
+                <button type="submit"
+                        class="px-8 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    <i class="fas fa-rocket mr-2"></i>Iniciar Migración
+                </button>
+            </form>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: Promoción Anual (Primaria/Secundaria)   -->
+        <!-- ============================================== -->
+        <div id="content-promocion" class="tab-content p-8">
+            <div class="bg-blue-50 border-2 border-blue-300 rounded-xl p-5 mb-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 text-2xl mr-4 mt-1"></i>
+                    <div>
+                        <h3 class="font-bold text-blue-800 mb-2">Promoción de grado</h3>
+                        <p class="text-sm text-blue-700">
+                            Promueve aulas de Primaria/Secundaria al siguiente grado y año escolar.
+                            Los estudiantes se migran automáticamente. Las aulas de origen se cierran.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('aulas.migrar_datos') }}" id="form-promocion"
+                  onsubmit="return validarPromocion()">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="accion" value="promocion_anual"/>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-calendar-minus mr-1"></i>Año Origen
+                        </label>
+                        <input type="text" name="anio_origen" id="anio_origen" value="{{ anio_actual }}" required
+                               pattern="[0-9]{4}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-calendar-plus mr-1"></i>Año Destino
+                        </label>
+                        <input type="text" name="anio_destino" id="anio_destino" value="{{ (anio_actual|int + 1)|string }}" required
+                               pattern="[0-9]{4}"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200">
+                    </div>
+                </div>
+
+                {% if aulas_promocion %}
+                <!-- Tabla de aulas -->
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="font-bold text-gray-800">
+                        <i class="fas fa-list mr-2"></i>Aulas disponibles para promoción
+                    </h3>
+                    <label class="flex items-center space-x-2 cursor-pointer text-sm">
+                        <input type="checkbox" id="seleccionar-todos-prom" onchange="toggleTodosProm()"
+                               class="w-4 h-4 text-blue-600 rounded">
+                        <span>Seleccionar todas</span>
+                    </label>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-gray-200 mb-6">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-3 text-left w-10"></th>
+                                <th class="px-4 py-3 text-left">Aula</th>
+                                <th class="px-4 py-3 text-left">Nivel</th>
+                                <th class="px-4 py-3 text-left">Grado Actual</th>
+                                <th class="px-4 py-3 text-left">Año</th>
+                                <th class="px-4 py-3 text-center">Estudiantes</th>
+                                <th class="px-4 py-3 text-left">Grado Destino</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aula in aulas_promocion %}
+                            <tr class="border-t hover:bg-blue-50 transition-colors fila-prom" data-anio="{{ aula.anio_escolar }}">
+                                <td class="px-4 py-3">
+                                    <input type="checkbox" name="aulas_ids" value="{{ aula.id }}"
+                                           class="check-prom w-4 h-4 text-blue-600 rounded"
+                                           onchange="toggleFilaProm(this)">
+                                </td>
+                                <td class="px-4 py-3 font-semibold">{{ aula.nombre }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                        {% if aula.nivel == 'PRIMARIA' %}bg-green-100 text-green-700
+                                        {% elif aula.nivel == 'SECUNDARIA' %}bg-blue-100 text-blue-700
+                                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                        {{ aula.nivel }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">{{ aula.grado }}</td>
+                                <td class="px-4 py-3">{{ aula.anio_escolar }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="px-2 py-1 bg-gray-100 rounded-full font-semibold">{{ aula.num_estudiantes }}</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    {% if aula.grado_sugerido is none %}
+                                        <span class="egresa-badge"><i class="fas fa-graduation-cap mr-1"></i>Egresa</span>
+                                        <input type="hidden" name="grados_destino" value="" class="input-grado-destino">
+                                    {% else %}
+                                        <input type="text" name="grados_destino" value="{{ aula.grado_sugerido }}"
+                                               class="input-grado-destino w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                               placeholder="Grado destino">
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" id="confirmar-prom" required class="w-5 h-5 text-blue-600 rounded">
+                        <span class="text-sm text-gray-700">Confirmo que he verificado los grados destino y deseo promover las aulas seleccionadas</span>
+                    </label>
+                </div>
+
+                <button type="submit"
+                        class="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    <i class="fas fa-arrow-up mr-2"></i>Ejecutar Promoción
+                </button>
+
+                {% else %}
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-inbox text-5xl mb-4"></i>
+                    <p class="text-lg">No hay aulas activas de Primaria/Secundaria para promover</p>
+                    <p class="text-sm mt-2">Primero crea o migra aulas desde la lista de aulas</p>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 3: Renovar Ciclo (Academia)                -->
+        <!-- ============================================== -->
+        <div id="content-renovar" class="tab-content p-8">
+            <div class="bg-purple-50 border-2 border-purple-300 rounded-xl p-5 mb-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-purple-600 text-2xl mr-4 mt-1"></i>
+                    <div>
+                        <h3 class="font-bold text-purple-800 mb-2">Renovar ciclo de Academia</h3>
+                        <p class="text-sm text-purple-700">
+                            Cierra un grupo actual (ej: INTENSIVO) y crea uno nuevo (ej: INTENSIVO 1).
+                            Selecciona qué estudiantes pasan al nuevo grupo. Los que no se seleccionen quedan como egresados del grupo anterior.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('aulas.migrar_datos') }}" id="form-renovar"
+                  onsubmit="return validarRenovacion()">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="accion" value="renovar_ciclo"/>
+
+                {% if aulas_academia %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Seleccionar aula origen -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-door-open mr-1"></i>Aula a cerrar
+                        </label>
+                        <select name="aula_id" id="select-aula-ciclo" required onchange="cargarEstudiantesCiclo()"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200">
+                            <option value="">Seleccione un aula</option>
+                            {% for aula in aulas_academia %}
+                            <option value="{{ aula.id }}" data-grado="{{ aula.grado }}" data-anio="{{ aula.anio_escolar }}">
+                                {{ aula.nombre }} ({{ aula.anio_escolar }}) - {{ aula.num_estudiantes }} est.
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Nombre del nuevo programa -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-edit mr-1"></i>Nuevo nombre del programa
+                        </label>
+                        <input type="text" name="nuevo_grado" id="input-nuevo-grado" required
+                               placeholder="Ej: INTENSIVO 1, AVANZADO 2..."
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200">
+                        <p class="text-xs text-gray-500 mt-1">Se mantendrá la misma sección y turno del aula original</p>
+                    </div>
+                </div>
+
+                <!-- Año escolar destino (opcional) -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-calendar mr-1"></i>Año escolar del nuevo grupo
+                    </label>
+                    <input type="text" name="anio_destino_ciclo" id="anio-destino-ciclo" value="{{ anio_actual }}"
+                           pattern="[0-9]{4}" placeholder="Dejar igual si es el mismo año"
+                           class="w-64 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200">
+                    <p class="text-xs text-gray-500 mt-1">Por defecto se usa el mismo año del aula origen</p>
+                </div>
+
+                <!-- Lista de estudiantes (se carga por AJAX) -->
+                <div id="seccion-estudiantes-ciclo" class="mb-6 hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-gray-800">
+                            <i class="fas fa-users mr-2"></i>Estudiantes del grupo
+                            <span id="contador-ciclo" class="text-sm font-normal text-gray-500 ml-2"></span>
+                        </h3>
+                        <label class="flex items-center space-x-2 cursor-pointer text-sm">
+                            <input type="checkbox" id="seleccionar-todos-ciclo" onchange="toggleTodosCiclo()" checked
+                                   class="w-4 h-4 text-purple-600 rounded">
+                            <span>Seleccionar todos</span>
+                        </label>
+                    </div>
+
+                    <div id="lista-estudiantes-ciclo" class="border border-gray-200 rounded-xl max-h-96 overflow-y-auto">
+                        <!-- Se llena por AJAX -->
+                    </div>
+                </div>
+
+                <div id="sin-estudiantes-ciclo" class="mb-6 hidden">
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-user-slash text-3xl mb-2"></i>
+                        <p>Esta aula no tiene estudiantes activos</p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" id="confirmar-ciclo" required class="w-5 h-5 text-purple-600 rounded">
+                        <span class="text-sm text-gray-700">Confirmo que deseo cerrar el aula seleccionada y crear el nuevo grupo</span>
+                    </label>
+                </div>
+
+                <button type="submit"
+                        class="px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    <i class="fas fa-sync-alt mr-2"></i>Renovar Ciclo
+                </button>
+
+                {% else %}
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-inbox text-5xl mb-4"></i>
+                    <p class="text-lg">No hay aulas activas de Academia</p>
+                    <p class="text-sm mt-2">Primero crea aulas de nivel Academia desde la lista de aulas</p>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ==================
+// Tabs
+// ==================
+function cambiarTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('content-' + tab).classList.add('active');
+}
+
+// Activar tab desde hash URL
+if (window.location.hash) {
+    const hash = window.location.hash.substring(1);
+    if (['migracion', 'promocion', 'renovar'].includes(hash)) {
+        cambiarTab(hash);
+    }
+}
+
+// ==================
+// Promoción Anual
+// ==================
+function toggleTodosProm() {
+    const checked = document.getElementById('seleccionar-todos-prom').checked;
+    document.querySelectorAll('.check-prom').forEach(cb => {
+        cb.checked = checked;
+        cb.closest('tr').classList.toggle('bg-blue-50', checked);
+    });
+}
+
+function toggleFilaProm(cb) {
+    cb.closest('tr').classList.toggle('bg-blue-50', cb.checked);
+}
+
+function validarPromocion() {
+    const seleccionadas = document.querySelectorAll('.check-prom:checked');
+    if (seleccionadas.length === 0) {
+        alert('Debe seleccionar al menos un aula para promover');
+        return false;
+    }
+    return confirm(`¿Promover ${seleccionadas.length} aula(s)? Las aulas de origen se cerrarán.`);
+}
+
+// ==================
+// Renovar Ciclo
+// ==================
+function cargarEstudiantesCiclo() {
+    const select = document.getElementById('select-aula-ciclo');
+    const aulaId = select.value;
+    const seccion = document.getElementById('seccion-estudiantes-ciclo');
+    const sinEst = document.getElementById('sin-estudiantes-ciclo');
+    const lista = document.getElementById('lista-estudiantes-ciclo');
+
+    // Sugerir nombre del nuevo grado
+    if (aulaId) {
+        const option = select.options[select.selectedIndex];
+        const gradoActual = option.dataset.grado;
+        const anioAula = option.dataset.anio;
+        const nuevoGradoInput = document.getElementById('input-nuevo-grado');
+        const anioDestinoInput = document.getElementById('anio-destino-ciclo');
+
+        // Sugerir nombre: agregar número incrementado
+        const match = gradoActual.match(/^(.+?)(\s+(\d+))?$/);
+        if (match) {
+            const base = match[1];
+            const num = match[3] ? parseInt(match[3]) + 1 : 1;
+            nuevoGradoInput.value = `${base} ${num}`;
+        }
+        anioDestinoInput.value = anioAula;
+    }
+
+    if (!aulaId) {
+        seccion.classList.add('hidden');
+        sinEst.classList.add('hidden');
+        return;
+    }
+
+    // Cargar estudiantes por AJAX
+    lista.innerHTML = '<div class="p-6 text-center text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Cargando...</p></div>';
+    seccion.classList.remove('hidden');
+    sinEst.classList.add('hidden');
+
+    fetch(`/aulas/api/estudiantes_aula/${aulaId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.length === 0) {
+                seccion.classList.add('hidden');
+                sinEst.classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('contador-ciclo').textContent = `(${data.length} estudiantes)`;
+
+            let html = '';
+            data.forEach(est => {
+                html += `
+                <label class="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-purple-50 cursor-pointer transition-colors">
+                    <input type="checkbox" name="estudiantes_ciclo" value="${est.id}" checked
+                           class="check-ciclo w-4 h-4 text-purple-600 rounded mr-4">
+                    <div class="flex-1">
+                        <span class="font-medium text-gray-800">${est.nombre}</span>
+                        <span class="text-gray-400 text-sm ml-2">DNI: ${est.dni || 'N/A'}</span>
+                    </div>
+                </label>`;
+            });
+            lista.innerHTML = html;
+
+            document.getElementById('seleccionar-todos-ciclo').checked = true;
+        })
+        .catch(() => {
+            lista.innerHTML = '<div class="p-6 text-center text-red-400"><i class="fas fa-exclamation-circle text-2xl"></i><p class="mt-2">Error al cargar estudiantes</p></div>';
+        });
+}
+
+function toggleTodosCiclo() {
+    const checked = document.getElementById('seleccionar-todos-ciclo').checked;
+    document.querySelectorAll('.check-ciclo').forEach(cb => cb.checked = checked);
+}
+
+function validarRenovacion() {
+    const aulaId = document.getElementById('select-aula-ciclo').value;
+    const nuevoGrado = document.getElementById('input-nuevo-grado').value.trim();
+
+    if (!aulaId) { alert('Seleccione un aula'); return false; }
+    if (!nuevoGrado) { alert('Ingrese el nombre del nuevo programa'); return false; }
+
+    const seleccionados = document.querySelectorAll('.check-ciclo:checked').length;
+    const total = document.querySelectorAll('.check-ciclo').length;
+
+    const msg = seleccionados > 0
+        ? `¿Crear grupo "${nuevoGrado}" con ${seleccionados} de ${total} estudiantes?\nEl aula actual se cerrará.`
+        : `¿Crear grupo "${nuevoGrado}" sin estudiantes?\nEl aula actual se cerrará.`;
+
+    return confirm(msg);
+}
+</script>
+{% endblock %}

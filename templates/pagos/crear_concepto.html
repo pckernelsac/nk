@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Concepto{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Breadcrumb -->
+    <nav class="mb-6" aria-label="breadcrumb">
+        <ol class="flex items-center space-x-2 text-sm text-gray-600">
+            <li><a href="{{ url_for('pagos.conceptos_lista') }}" class="hover:text-primary transition-colors">Conceptos</a></li>
+            <li><i class="fas fa-chevron-right text-xs"></i></li>
+            <li class="text-gray-900 font-semibold">Crear</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="mb-8 pop-in">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-plus-circle text-primary mr-3"></i>Crear Concepto de Pago
+        </h1>
+        <p class="text-gray-600">Define un nuevo concepto de pago para asignar a estudiantes</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Formulario -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+                <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-file-invoice mr-3"></i>Datos del Concepto
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Tipo de Pago <span class="text-red-500">*</span>
+                            </label>
+                            <select name="tipo_pago_id" required
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccione un tipo</option>
+                                {% for tipo in tipos %}
+                                <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Monto <span class="text-red-500">*</span>
+                            </label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-4 bg-gray-100 border-2 border-r-0 border-gray-300 rounded-l-xl text-gray-700 font-semibold">
+                                    S/
+                                </span>
+                                <input type="number" name="monto" step="0.01" min="0" required
+                                       class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-r-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    Año Escolar <span class="text-red-500">*</span>
+                                </label>
+                                <select name="anio_escolar"
+                                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                    {% for year in range(current_year - 2, current_year + 3) %}
+                                    <option value="{{ year }}" {% if anio_escolar == year|string %}selected{% endif %}>{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Nivel</label>
+                                <select name="nivel"
+                                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                    <option value="">Todos los niveles</option>
+                                    {% for nivel in niveles %}
+                                    <option value="{{ nivel }}">{{ nivel }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Grado</label>
+                                <select name="grado"
+                                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                                    <option value="">Todos los grados</option>
+                                    {% for grado in grados %}
+                                    <option value="{{ grado }}">{{ grado }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-6 bg-purple-50 p-4 rounded-xl border-2 border-purple-200">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="permite_cuotas" id="permiteCuotas"
+                                       class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-purple-500">
+                                <span class="ml-3 text-sm font-semibold text-gray-800">
+                                    <i class="fas fa-money-bill-wave mr-2"></i>Permite pago en cuotas
+                                </span>
+                            </label>
+                        </div>
+
+                        <div id="cuotasConfig" class="mb-6 hidden">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                Número máximo de cuotas
+                            </label>
+                            <input type="number" name="numero_cuotas_max" min="1" max="12" value="1"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-4 border-t-2 border-gray-100">
+                            <a href="{{ url_for('pagos.conceptos_lista') }}"
+                               class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200">
+                                <i class="fas fa-times mr-2"></i>Cancelar
+                            </a>
+                            <button type="submit"
+                                    class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                                <i class="fas fa-check-circle mr-2"></i>Crear Concepto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Información -->
+        <div class="lg:col-span-1">
+            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-xl p-6 border-2 border-blue-200 pop-in">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>Información
+                </h3>
+                <p class="text-gray-700 mb-4">
+                    Los conceptos de pago definen obligaciones que se pueden asignar a estudiantes.
+                </p>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                        <span>El monto es el valor base del concepto</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                        <span>Puede aplicar a nivel/grado específico o todos</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                        <span>Si permite cuotas, el pago se puede dividir</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('permiteCuotas').addEventListener('change', function() {
+    const cuotasDiv = document.getElementById('cuotasConfig');
+    if (this.checked) {
+        cuotasDiv.classList.remove('hidden');
+    } else {
+        cuotasDiv.classList.add('hidden');
+    }
+});
+</script>
+{% endblock %}

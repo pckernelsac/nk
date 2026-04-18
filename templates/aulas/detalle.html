@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}{{ aula.nombre }} - Sistema Escolar{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 pop-in flex justify-between items-start">
+        <div class="flex items-center">
+            <a href="{{ url_for('aulas.lista') }}" class="mr-4 text-gray-600 hover:text-primary transition-colors">
+                <i class="fas fa-arrow-left text-2xl"></i>
+            </a>
+            <div>
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-door-open text-primary mr-3"></i>{{ aula.nombre }}
+                </h1>
+                <p class="text-gray-600">
+                    <span class="px-3 py-1 bg-primary text-white rounded-lg font-mono font-bold mr-2">{{ aula.codigo }}</span>
+                    Año Escolar: {{ aula.anio_escolar }}
+                </p>
+            </div>
+        </div>
+        <a href="{{ url_for('aulas.matricular', aula_id=aula.id) }}"
+           class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+            <i class="fas fa-user-plus mr-2"></i>Matricular Estudiantes
+        </a>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Total Matriculados -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 pop-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Matriculados</p>
+                    <p class="text-4xl font-bold text-primary mt-2">{{ total_matriculados }}</p>
+                </div>
+                <div class="bg-primary bg-opacity-10 p-4 rounded-xl">
+                    <i class="fas fa-users text-primary text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capacidad -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 pop-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Capacidad</p>
+                    <p class="text-4xl font-bold text-blue-600 mt-2">{{ aula.capacidad_maxima }}</p>
+                </div>
+                <div class="bg-blue-100 p-4 rounded-xl">
+                    <i class="fas fa-chair text-blue-600 text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disponible -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 pop-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Disponible</p>
+                    <p class="text-4xl font-bold {% if disponible > 0 %}text-green-600{% else %}text-red-600{% endif %} mt-2">
+                        {{ disponible }}
+                    </p>
+                </div>
+                <div class="{% if disponible > 0 %}bg-green-100{% else %}bg-red-100{% endif %} p-4 rounded-xl">
+                    <i class="fas fa-clipboard-check {% if disponible > 0 %}text-green-600{% else %}text-red-600{% endif %} text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ocupación -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 pop-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Ocupación</p>
+                    <p class="text-4xl font-bold text-purple-600 mt-2">
+                        {{ ((total_matriculados / aula.capacidad_maxima * 100) if aula.capacidad_maxima > 0 else 0)|round(1) }}%
+                    </p>
+                </div>
+                <div class="bg-purple-100 p-4 rounded-xl">
+                    <i class="fas fa-percentage text-purple-600 text-3xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalles del Aula -->
+    <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-info-circle mr-3"></i>Detalles del Aula
+            </h2>
+        </div>
+        <div class="p-8">
+            <form method="POST" action="{{ url_for('aulas.actualizar', aula_id=aula.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Nivel</label>
+                        <input type="text" value="{{ aula.nivel }}" disabled
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">{{ 'Programa' if aula.nivel == 'ACADEMIA' else 'Grado' }}</label>
+                        <input type="text" value="{{ aula.grado }}" disabled
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Sección</label>
+                        <input type="text" value="{{ aula.seccion }}" disabled
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Turno</label>
+                        <input type="text" value="{{ aula.turno }}" disabled
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Capacidad Máxima</label>
+                        <input type="number" name="capacidad_maxima" value="{{ aula.capacidad_maxima }}" min="1" max="100"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Estado</label>
+                        <select name="activo" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200">
+                            <option value="1" {% if aula.activo %}selected{% endif %}>Activo</option>
+                            <option value="0" {% if not aula.activo %}selected{% endif %}>Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="px-6 py-3 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-all">
+                    <i class="fas fa-save mr-2"></i>Guardar Cambios
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Matrícula Rápida -->
+    {% if aula.activo %}
+    <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-green-500 to-teal-600 p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-bolt mr-3"></i>Matrícula Rápida
+            </h2>
+            <p class="text-green-100 text-sm mt-1">Busque por DNI o nombre y matricule directamente</p>
+        </div>
+        <div class="p-6">
+            <div class="flex gap-3 mb-4">
+                <div class="relative flex-1">
+                    <input type="text" id="buscar-rapido" placeholder="Buscar por DNI o nombre del estudiante..."
+                           class="w-full px-4 py-3 pl-10 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring focus:ring-green-200 transition-all">
+                    <i class="fas fa-search absolute left-3 top-4 text-gray-400"></i>
+                </div>
+            </div>
+            <div id="resultados-busqueda" class="hidden border-2 border-gray-200 rounded-xl max-h-60 overflow-y-auto">
+            </div>
+            <div id="matricula-rapida-msg" class="hidden mt-3 p-3 rounded-lg text-sm"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Lista de Estudiantes -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white flex justify-between items-center">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-users mr-3"></i>Estudiantes Matriculados ({{ matriculas|length }})
+            </h2>
+            {% if matriculas %}
+            <a href="{{ url_for('aulas.generar_carnets_aula', aula_id=aula.id) }}"
+               class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg text-sm font-medium transition-all">
+                <i class="fas fa-qrcode mr-1"></i>Generar Carnets QR
+            </a>
+            {% endif %}
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">#</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">DNI</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estudiante</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha Matrícula</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Observaciones</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% if matriculas %}
+                        {% for matricula in matriculas %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ loop.index }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-mono text-gray-700">{{ matricula.estudiante_dni }}</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="font-semibold text-gray-800">{{ matricula.estudiante_nombre_completo }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ matricula.fecha_matricula.strftime('%d/%m/%Y') if matricula.fecha_matricula else '-' }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-sm text-gray-600">{{ matricula.observaciones or '-' }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex gap-1 flex-wrap">
+                                    <a href="{{ url_for('estudiantes.carnet_pdf', id=matricula.estudiante_id) }}"
+                                       class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                       title="Descargar Carnet con QR">
+                                        <i class="fas fa-qrcode"></i> QR
+                                    </a>
+                                    <a href="{{ url_for('academico.boleta_fast_test', estudiante_id=matricula.estudiante_id, aula_id=aula.id) }}"
+                                       class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                       title="Ver boleta de notas">
+                                        <i class="fas fa-file-alt"></i> Boleta
+                                    </a>
+                                    <button type="button"
+                                            class="btn-retirar px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+                                            data-matricula-id="{{ matricula.id }}"
+                                            data-nombre="{{ matricula.estudiante_nombre_completo|e }}"
+                                            title="Retirar estudiante">
+                                        <i class="fas fa-user-times"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <div class="text-gray-400">
+                                    <i class="fas fa-user-slash text-6xl mb-4"></i>
+                                    <p class="text-xl font-semibold">No hay estudiantes matriculados</p>
+                                    <p class="text-sm mt-2">Comienza matriculando estudiantes en esta aula</p>
+                                    <a href="{{ url_for('aulas.matricular', aula_id=aula.id) }}"
+                                       class="inline-block mt-4 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors">
+                                        <i class="fas fa-user-plus mr-2"></i>Matricular Estudiantes
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div id="modalRetiro" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>Confirmar Retiro
+        </h3>
+        <p class="text-gray-600 mb-6">¿Está seguro que desea retirar a <strong id="nombreEstudiante"></strong> de esta aula?</p>
+
+        <form id="formRetiro" method="POST" action=""
+              data-url-template="{{ url_for('aulas.retirar_estudiante', matricula_id='__MATRICULA_ID__') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-2">Motivo del retiro</label>
+                <textarea name="motivo" rows="3" required
+                          class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200"
+                          placeholder="Ingrese el motivo del retiro..."></textarea>
+            </div>
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-colors">
+                    <i class="fas fa-check mr-2"></i>Confirmar
+                </button>
+                <button type="button" onclick="cerrarModal()" class="flex-1 px-6 py-3 bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold rounded-xl transition-colors">
+                    <i class="fas fa-times mr-2"></i>Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function confirmarRetiro(matriculaId, nombreEstudiante) {
+    const form = document.getElementById('formRetiro');
+    const tpl = form.getAttribute('data-url-template') || '';
+    form.action = tpl.replace('__MATRICULA_ID__', encodeURIComponent(matriculaId));
+    document.getElementById('nombreEstudiante').textContent = nombreEstudiante;
+    const textarea = form.querySelector('textarea[name="motivo"]');
+    if (textarea) textarea.value = '';
+    document.getElementById('modalRetiro').classList.remove('hidden');
+}
+
+function cerrarModal() {
+    document.getElementById('modalRetiro').classList.add('hidden');
+}
+
+document.querySelectorAll('.btn-retirar').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        confirmarRetiro(btn.dataset.matriculaId, btn.dataset.nombre || '');
+    });
+});
+
+document.getElementById('modalRetiro').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+});
+
+// === Matrícula Rápida con AJAX ===
+(function() {
+    const input = document.getElementById('buscar-rapido');
+    if (!input) return;
+
+    const resultados = document.getElementById('resultados-busqueda');
+    const msgDiv = document.getElementById('matricula-rapida-msg');
+    let timeout = null;
+
+    input.addEventListener('input', function() {
+        clearTimeout(timeout);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            resultados.classList.add('hidden');
+            return;
+        }
+        timeout = setTimeout(function() {
+            fetch(`{{ url_for('aulas.api_buscar_estudiante') }}?q=${encodeURIComponent(q)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.length) {
+                        resultados.innerHTML = '<div class="p-4 text-gray-500 text-center">No se encontraron estudiantes</div>';
+                    } else {
+                        resultados.innerHTML = data.map(est =>
+                            `<div class="flex items-center justify-between p-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer"
+                                  onclick="matricularRapido(${est.id}, '${est.nombre.replace(/'/g, "\\'")}')">
+                                <div>
+                                    <span class="font-semibold text-gray-800">${est.nombre}</span>
+                                    <span class="text-sm text-gray-500 ml-2">DNI: ${est.dni || '-'}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">${est.nivel || '-'} ${est.grado || ''}</span>
+                                    <button class="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors">
+                                        <i class="fas fa-plus mr-1"></i>Matricular
+                                    </button>
+                                </div>
+                            </div>`
+                        ).join('');
+                    }
+                    resultados.classList.remove('hidden');
+                })
+                .catch(() => {
+                    resultados.innerHTML = '<div class="p-4 text-red-500 text-center">Error en la búsqueda</div>';
+                    resultados.classList.remove('hidden');
+                });
+        }, 300);
+    });
+
+    window.matricularRapido = function(estudianteId, nombre) {
+        if (!confirm(`¿Matricular a ${nombre} en esta aula?`)) return;
+
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        const form = new FormData();
+        form.append('csrf_token', csrfToken);
+        form.append('estudiantes', estudianteId);
+
+        fetch(`{{ url_for('aulas.matricular', aula_id=aula.id) }}`, {
+            method: 'POST',
+            body: form
+        }).then(r => {
+            if (r.redirected) {
+                // Recargar la página para mostrar el estudiante matriculado
+                window.location.reload();
+            } else {
+                msgDiv.className = 'mt-3 p-3 rounded-lg text-sm bg-red-100 text-red-800';
+                msgDiv.textContent = 'Error al matricular el estudiante';
+                msgDiv.classList.remove('hidden');
+            }
+        }).catch(() => {
+            msgDiv.className = 'mt-3 p-3 rounded-lg text-sm bg-red-100 text-red-800';
+            msgDiv.textContent = 'Error de conexión';
+            msgDiv.classList.remove('hidden');
+        });
+    };
+
+    // Cerrar resultados al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!input.contains(e.target) && !resultados.contains(e.target)) {
+            resultados.classList.add('hidden');
+        }
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte Mensual de Asistencias · Sistema Escolar{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .animate-slide-in {
+        animation: slideInUp 0.5s ease-out;
+    }
+    .dia-cell {
+        min-width: 35px;
+        max-width: 35px;
+        width: 35px;
+        padding: 4px 2px !important;
+        text-align: center;
+        font-size: 11px;
+    }
+    .estudiante-cell {
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 10;
+        min-width: 250px;
+    }
+    .tabla-asistencias {
+        font-size: 13px;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .tabla-asistencias {
+            font-size: 10px;
+        }
+        .dia-cell {
+            min-width: 25px;
+            max-width: 25px;
+            width: 25px;
+            padding: 2px 1px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="rounded-2xl shadow-xl p-8 mb-8 text-white animate-slide-in relative overflow-hidden no-print" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+        <div class="absolute top-0 right-0 opacity-10 text-9xl">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="absolute bottom-0 left-20 opacity-10 text-7xl">
+            <i class="fas fa-clipboard-list"></i>
+        </div>
+
+        <div class="flex items-center justify-between relative z-10">
+            <div>
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-calendar-alt text-white text-3xl mr-3 animate-pulse"></i>
+                    <h1 class="text-5xl font-bold">Reporte Mensual de Asistencias</h1>
+                </div>
+                <div class="flex items-center text-xl opacity-90">
+                    <i class="fas fa-filter text-white mr-2"></i>
+                    <p>{{ mes_nombre }} {{ anio }} - Visualización por día</p>
+                </div>
+            </div>
+            <div class="hidden md:block">
+                <div class="bg-white bg-opacity-20 rounded-full p-6 hover:bg-opacity-30 transition-all duration-300">
+                    <i class="fas fa-table text-white text-6xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 animate-slide-in no-print" style="animation-delay: 0.1s">
+        <div class="p-6 text-white" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+            <h3 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-filter mr-3"></i>Filtros de Búsqueda
+            </h3>
+        </div>
+
+        <form method="GET" class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <!-- Mes -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-calendar mr-2" style="color: #5F2A5D;"></i>Mes
+                    </label>
+                    <select name="mes" class="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring-4 focus:ring-purple-200 transition-all">
+                        <option value="1" {% if mes == 1 %}selected{% endif %}>Enero</option>
+                        <option value="2" {% if mes == 2 %}selected{% endif %}>Febrero</option>
+                        <option value="3" {% if mes == 3 %}selected{% endif %}>Marzo</option>
+                        <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
+                        <option value="5" {% if mes == 5 %}selected{% endif %}>Mayo</option>
+                        <option value="6" {% if mes == 6 %}selected{% endif %}>Junio</option>
+                        <option value="7" {% if mes == 7 %}selected{% endif %}>Julio</option>
+                        <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                        <option value="9" {% if mes == 9 %}selected{% endif %}>Septiembre</option>
+                        <option value="10" {% if mes == 10 %}selected{% endif %}>Octubre</option>
+                        <option value="11" {% if mes == 11 %}selected{% endif %}>Noviembre</option>
+                        <option value="12" {% if mes == 12 %}selected{% endif %}>Diciembre</option>
+                    </select>
+                </div>
+
+                <!-- Año -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-calendar-alt mr-2" style="color: #5F2A5D;"></i>Año
+                    </label>
+                    <input type="number" name="anio" value="{{ anio }}" min="{{ current_year - 5 }}" max="{{ current_year + 5 }}" class="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring-4 focus:ring-purple-200 transition-all">
+                </div>
+
+                <!-- Nivel -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-layer-group mr-2" style="color: #5F2A5D;"></i>Nivel
+                    </label>
+                    <select name="nivel" class="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring-4 focus:ring-purple-200 transition-all">
+                        <option value="">Todos</option>
+                        {% for n in niveles %}
+                        <option value="{{ n }}" {% if nivel == n %}selected{% endif %}>{{ n }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Grado -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-graduation-cap mr-2" style="color: #5F2A5D;"></i>Grado
+                    </label>
+                    <select name="grado" class="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring-4 focus:ring-purple-200 transition-all">
+                        <option value="">Todos</option>
+                        {% for g in grados %}
+                        <option value="{{ g }}" {% if grado == g %}selected{% endif %}>{{ g }}°</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sección -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-users mr-2" style="color: #5F2A5D;"></i>Sección
+                    </label>
+                    <select name="seccion" class="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring-4 focus:ring-purple-200 transition-all">
+                        <option value="">Todas</option>
+                        {% for s in secciones %}
+                        <option value="{{ s }}" {% if seccion == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="inline-flex items-center px-6 py-3 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transition-all" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                    <i class="fas fa-search mr-2"></i>Filtrar
+                </button>
+                <a href="{{ url_for('asistencias.reporte_mensual') }}" class="inline-flex items-center px-6 py-3 bg-gray-300 text-gray-700 font-bold rounded-xl shadow-md hover:shadow-lg transition-all">
+                    <i class="fas fa-eraser mr-2"></i>Limpiar
+                </a>
+                <a id="btnExportExcel"
+                   href="{{ url_for('asistencias.reporte_mensual_excel', nivel=nivel, grado=grado, seccion=seccion, mes=mes, anio=anio) }}"
+                   class="inline-flex items-center px-6 py-3 bg-green-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:bg-green-700 transition-all">
+                    <i class="fas fa-file-excel mr-2"></i>Exportar Excel
+                </a>
+                <button type="button" onclick="window.print()" class="inline-flex items-center px-6 py-3 bg-purple-500 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:bg-purple-600 transition-all">
+                    <i class="fas fa-print mr-2"></i>Imprimir
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    {% if estudiantes %}
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 no-print">
+        <div class="bg-white rounded-2xl shadow-xl p-6 animate-slide-in" style="animation-delay: 0.2s">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-xs font-semibold uppercase mb-2">Total Estudiantes</p>
+                    <h3 class="text-3xl font-black" style="color: #5F2A5D;">{{ estudiantes.total }}</h3>
+                </div>
+                <div class="p-3 rounded-full" style="background-color: rgba(95, 42, 93, 0.1);">
+                    <i class="fas fa-users text-2xl" style="color: #5F2A5D;"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl p-6 animate-slide-in" style="animation-delay: 0.3s">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-xs font-semibold uppercase mb-2">Días del Mes</p>
+                    <h3 class="text-3xl font-black text-purple-600">{{ dias_mes|length }}</h3>
+                </div>
+                <div class="bg-purple-100 p-3 rounded-full">
+                    <i class="fas fa-calendar-day text-purple-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl p-6 animate-slide-in" style="animation-delay: 0.4s">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-xs font-semibold uppercase mb-2">Filtro Aplicado</p>
+                    <h3 class="text-xl font-black text-gray-700">
+                        {% if nivel or grado or seccion %}
+                            {{ nivel }} {{ grado }}° {{ seccion }}
+                        {% else %}
+                            Todos
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="bg-purple-100 p-3 rounded-full">
+                    <i class="fas fa-filter text-purple-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl p-6 animate-slide-in" style="animation-delay: 0.5s">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-xs font-semibold uppercase mb-2">Período</p>
+                    <h3 class="text-xl font-black text-green-600">{{ mes_nombre }} {{ anio }}</h3>
+                </div>
+                <div class="bg-green-100 p-3 rounded-full">
+                    <i class="fas fa-calendar-check text-green-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabla de Asistencias -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden animate-slide-in" style="animation-delay: 0.6s">
+        <div class="p-6 text-white" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+            <h3 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-table mr-3"></i>Registro de Asistencias - {{ mes_nombre }} {{ anio }}
+            </h3>
+        </div>
+
+        {% if estudiantes %}
+        <div class="overflow-x-auto">
+            <table class="w-full tabla-asistencias">
+                <thead class="bg-gray-100 sticky top-0">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider estudiante-cell border-r-2 border-gray-300">
+                            Estudiante
+                        </th>
+                        {% for dia in dias_mes %}
+                        <th class="dia-cell text-xs font-bold text-gray-700 border-r border-gray-200" style="color: #5F2A5D;">
+                            {{ dia }}
+                        </th>
+                        {% endfor %}
+                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase">
+                            Total
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for estudiante in estudiantes.items %}
+                    {% set total_asistencias = 0 %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-4 py-3 estudiante-cell border-r-2 border-gray-300">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                                    {{ estudiante.nombres_est[0] }}{{ estudiante.apellido_paterno_est[0] }}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 text-sm truncate">
+                                        {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}
+                                    </div>
+                                    <div class="text-gray-500 text-xs truncate">{{ estudiante.nombres_est }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        {% for dia in dias_mes %}
+                        {% set asistencias_dia = asistencias_dict.get((estudiante.id, dia), []) %}
+                        <td class="dia-cell border-r border-gray-200">
+                            {% if asistencias_dia %}
+                                {% if 'ENTRADA' in asistencias_dia and 'SALIDA' in asistencias_dia %}
+                                    <!-- Asistió completo -->
+                                    <div class="w-6 h-6 mx-auto bg-green-500 rounded-full flex items-center justify-center" title="Asistió: Entrada y Salida">
+                                        <i class="fas fa-check text-white text-xs"></i>
+                                    </div>
+                                    {% set total_asistencias = total_asistencias + 1 %}
+                                {% elif 'ENTRADA' in asistencias_dia %}
+                                    <!-- Solo entrada -->
+                                    <div class="w-6 h-6 mx-auto bg-yellow-500 rounded-full flex items-center justify-center" title="Solo Entrada">
+                                        <i class="fas fa-arrow-right text-white text-xs"></i>
+                                    </div>
+                                    {% set total_asistencias = total_asistencias + 0.5 %}
+                                {% elif 'SALIDA' in asistencias_dia %}
+                                    <!-- Solo salida -->
+                                    <div class="w-6 h-6 mx-auto bg-orange-500 rounded-full flex items-center justify-center" title="Solo Salida">
+                                        <i class="fas fa-arrow-left text-white text-xs"></i>
+                                    </div>
+                                    {% set total_asistencias = total_asistencias + 0.5 %}
+                                {% endif %}
+                            {% else %}
+                                <!-- Faltó -->
+                                <div class="w-6 h-6 mx-auto bg-red-100 rounded-full flex items-center justify-center" title="Faltó">
+                                    <i class="fas fa-times text-red-500 text-xs"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold text-white" style="background-color: #5F2A5D;">
+                                {{ total_asistencias }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="p-6 bg-gray-50 border-t-2 border-gray-200">
+            <h4 class="font-bold text-gray-800 mb-3 flex items-center">
+                <i class="fas fa-info-circle mr-2" style="color: #5F2A5D;"></i>
+                Leyenda
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-check text-white text-xs"></i>
+                    </div>
+                    <span class="text-sm text-gray-700">Asistió (Entrada y Salida)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-arrow-right text-white text-xs"></i>
+                    </div>
+                    <span class="text-sm text-gray-700">Solo Entrada</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-arrow-left text-white text-xs"></i>
+                    </div>
+                    <span class="text-sm text-gray-700">Solo Salida</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-times text-red-500 text-xs"></i>
+                    </div>
+                    <span class="text-sm text-gray-700">Faltó</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        <div class="p-6 bg-gray-100 border-t-2 border-gray-200 no-print">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-gray-600">
+                    Mostrando {{ ((estudiantes.page - 1) * estudiantes.per_page) + 1 }} - {{ [estudiantes.page * estudiantes.per_page, estudiantes.total] | min }} de {{ estudiantes.total }} estudiantes
+                </p>
+                <nav class="flex justify-center" aria-label="Paginación">
+                    <ul class="flex items-center gap-2">
+                        <!-- Anterior -->
+                        <li>
+                            {% if estudiantes.has_prev %}
+                            <a href="{{ url_for('asistencias.reporte_mensual', page=estudiantes.prev_num, nivel=nivel, grado=grado, seccion=seccion, mes=mes, anio=anio) }}"
+                               class="px-4 py-2 bg-white hover:bg-purple-50 border-2 border-purple-200 rounded-lg font-semibold transition-all" style="color: #5F2A5D;">
+                                <i class="fas fa-chevron-left mr-1"></i>Anterior
+                            </a>
+                            {% else %}
+                            <span class="px-4 py-2 bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
+                                <i class="fas fa-chevron-left mr-1"></i>Anterior
+                            </span>
+                            {% endif %}
+                        </li>
+
+                        <!-- Números de página -->
+                        {% for page_num in estudiantes.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == estudiantes.page %}
+                                <li>
+                                    <span class="px-4 py-2 text-white rounded-lg font-bold shadow-lg" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                                        {{ page_num }}
+                                    </span>
+                                </li>
+                                {% else %}
+                                <li>
+                                    <a href="{{ url_for('asistencias.reporte_mensual', page=page_num, nivel=nivel, grado=grado, seccion=seccion, mes=mes, anio=anio) }}"
+                                       class="px-4 py-2 bg-white hover:bg-purple-50 border-2 border-purple-200 rounded-lg font-semibold transition-all" style="color: #5F2A5D;">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li><span class="px-2 text-gray-400">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        <!-- Siguiente -->
+                        <li>
+                            {% if estudiantes.has_next %}
+                            <a href="{{ url_for('asistencias.reporte_mensual', page=estudiantes.next_num, nivel=nivel, grado=grado, seccion=seccion, mes=mes, anio=anio) }}"
+                               class="px-4 py-2 bg-white hover:bg-purple-50 border-2 border-purple-200 rounded-lg font-semibold transition-all" style="color: #5F2A5D;">
+                                Siguiente<i class="fas fa-chevron-right ml-1"></i>
+                            </a>
+                            {% else %}
+                            <span class="px-4 py-2 bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
+                                Siguiente<i class="fas fa-chevron-right ml-1"></i>
+                            </span>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500 font-semibold mb-2">No hay estudiantes con los filtros seleccionados</p>
+            <p class="text-gray-400 text-sm">Intenta ajustar los filtros para ver resultados</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes Completos - Academia{% endblock %}
+
+{% block page_title %}Reportes Completos de ETAs{% endblock %}
+
+{% block content %}
+        <!-- Estadisticas Generales -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users text-3xl text-purple-500"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Estudiantes</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_estudiantes or 0 }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clipboard-list text-3xl text-green-500"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total ETAs</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_etas or 0 }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-chart-line text-3xl text-purple-500"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Promedio General</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ promedio_general or 0 }}%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones Principales -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-file-pdf mr-2 text-red-500"></i>Generar Reportes
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Reporte Completo -->
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-chart-bar text-2xl text-purple-500 mr-3"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Reporte General Completo</h3>
+                            <p class="text-sm text-gray-600">Analisis de todos los estudiantes con estadisticas comparativas</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('complete_reports.generate_complete') if url_for is defined else '#' }}"
+                       class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-colors duration-200 inline-block text-center"
+                       onclick="mostrarCarga(this, 'Generando reporte completo...')">
+                        <i class="fas fa-download mr-2"></i>Generar Reporte General
+                    </a>
+                </div>
+
+                <!-- Busqueda Individual -->
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-user-graduate text-2xl text-green-500 mr-3"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Reporte Individual</h3>
+                            <p class="text-sm text-gray-600">Analisis detallado de un estudiante especifico</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="relative">
+                            <input type="text"
+                                   id="buscar-estudiante"
+                                   placeholder="Buscar por codigo o nombre..."
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <div id="resultados-busqueda" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
+                        </div>
+
+                        <button id="btn-generar-individual"
+                                disabled
+                                class="w-full bg-gray-400 text-white font-bold py-2 px-4 rounded transition-colors duration-200 cursor-not-allowed">
+                            <i class="fas fa-download mr-2"></i>Selecciona un estudiante
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Estudiantes -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-list mr-2 text-green-500"></i>Top 20 Estudiantes por Rendimiento
+            </h2>
+
+            <div class="overflow-x-auto">
+                {% if estudiantes %}
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pos.</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Codigo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ETAs</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Promedio</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for estudiante in estudiantes %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ loop.index }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ estudiante.student_id }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ estudiante.first_name }} {{ estudiante.last_name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ estudiante.academic_area or 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    {{ estudiante.num_etas }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if estudiante.promedio >= 85 %}bg-green-100 text-green-800
+                                    {% elif estudiante.promedio >= 70 %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ "%.1f"|format(estudiante.promedio) }}%
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="{{ url_for('complete_reports.generate_individual', student_id=estudiante.student_id) if url_for is defined else '#' }}"
+                                   class="text-purple-600 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-3 py-1 rounded-md transition-colors duration-200"
+                                   onclick="mostrarCarga(this, 'Generando...')">
+                                    <i class="fas fa-file-pdf mr-1"></i>Reporte
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-users text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No hay estudiantes disponibles</h3>
+                    <p class="text-gray-500">No se encontraron estudiantes con ETAs registradas.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+        let estudianteSeleccionado = null;
+        let timeoutBusqueda = null;
+
+        // Busqueda de estudiantes
+        document.getElementById('buscar-estudiante').addEventListener('input', function() {
+            const query = this.value.trim();
+            const resultados = document.getElementById('resultados-busqueda');
+
+            clearTimeout(timeoutBusqueda);
+
+            if (query.length < 2) {
+                resultados.classList.add('hidden');
+                resetearSeleccion();
+                return;
+            }
+
+            timeoutBusqueda = setTimeout(() => {
+                fetch(`/complete_reports/search_students?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            resultados.innerHTML = data.map(est => `
+                                <div class="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0"
+                                     onclick="seleccionarEstudiante('${est.student_id}', '${est.nombre}')">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <div class="font-medium text-gray-900">${est.nombre}</div>
+                                            <div class="text-sm text-gray-500">Codigo: ${est.student_id} | Area: ${est.area}</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-medium">${est.promedio}%</div>
+                                            <div class="text-xs text-gray-500">${est.num_etas} ETAs</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('');
+                            resultados.classList.remove('hidden');
+                        } else {
+                            resultados.innerHTML = '<div class="p-3 text-gray-500">No se encontraron resultados</div>';
+                            resultados.classList.remove('hidden');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error en busqueda:', error);
+                        resultados.innerHTML = '<div class="p-3 text-red-500">Error en la busqueda</div>';
+                        resultados.classList.remove('hidden');
+                    });
+            }, 300);
+        });
+
+        function seleccionarEstudiante(studentId, nombre) {
+            estudianteSeleccionado = studentId;
+            document.getElementById('buscar-estudiante').value = nombre;
+            document.getElementById('resultados-busqueda').classList.add('hidden');
+
+            const btn = document.getElementById('btn-generar-individual');
+            btn.disabled = false;
+            btn.className = 'w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors duration-200';
+            btn.innerHTML = '<i class="fas fa-download mr-2"></i>Generar Reporte Individual';
+            btn.onclick = () => {
+                mostrarCarga(btn, 'Generando reporte...');
+                window.location.href = `/complete_reports/generate_individual/${studentId}`;
+            };
+        }
+
+        function resetearSeleccion() {
+            estudianteSeleccionado = null;
+            const btn = document.getElementById('btn-generar-individual');
+            btn.disabled = true;
+            btn.className = 'w-full bg-gray-400 text-white font-bold py-2 px-4 rounded transition-colors duration-200 cursor-not-allowed';
+            btn.innerHTML = '<i class="fas fa-download mr-2"></i>Selecciona un estudiante';
+            btn.onclick = null;
+        }
+
+        function mostrarCarga(elemento, mensaje) {
+            const textoOriginal = elemento.innerHTML;
+            elemento.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${mensaje}`;
+            elemento.disabled = true;
+
+            setTimeout(() => {
+                elemento.innerHTML = textoOriginal;
+                elemento.disabled = false;
+            }, 3000);
+        }
+
+        // Cerrar resultados al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#buscar-estudiante') && !e.target.closest('#resultados-busqueda')) {
+                document.getElementById('resultados-busqueda').classList.add('hidden');
+            }
+        });
+</script>
+{% endblock %}

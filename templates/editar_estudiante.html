@@ -1,0 +1,945 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Estudiante{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp 0.5s ease-out; }
+
+    .required-label::after {
+        content: ' *';
+        color: #ef4444;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header con Botón Volver -->
+    <div class="mb-8 fade-in-up flex items-center justify-between">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-user-graduate text-primary mr-3"></i>Editar Estudiante
+            </h1>
+            <p class="text-gray-600">Actualice la información del estudiante y sus responsables</p>
+        </div>
+        <a href="{{ url_for('estudiantes.ver', id=estudiante.id) }}" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 inline-flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i>Volver
+        </a>
+    </div>
+
+    <div class="max-w-7xl mx-auto">
+        <form id="registroEstudianteForm" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <!-- Sección 1: Información del Estudiante -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-user-graduate mr-3"></i>Información del Estudiante
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Nivel -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Nivel</label>
+                            <select name="nivel" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar Nivel</option>
+                                <option value="INICIAL" {% if estudiante.nivel == 'INICIAL' %} selected {% endif %}>Inicial</option>
+                                <option value="PRIMARIA" {% if estudiante.nivel == 'PRIMARIA' %} selected {% endif %}>Primaria</option>
+                                <option value="SECUNDARIA" {% if estudiante.nivel == 'SECUNDARIA' %} selected {% endif %}>Secundaria</option>
+                                <option value="ACADEMIA" {% if estudiante.nivel == 'ACADEMIA' %} selected {% endif %}>Academia</option>
+                            </select>
+                        </div>
+
+                        <!-- Grado / Programa -->
+                        <div>
+                            <label id="label-grado" class="block text-sm font-bold text-gray-700 mb-2 required-label">{{ 'Programa' if estudiante.nivel == 'ACADEMIA' else 'Grado' }}</label>
+                            <select name="grado" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar {{ 'Programa' if estudiante.nivel == 'ACADEMIA' else 'Grado' }}</option>
+                                <option value="1" {% if estudiante.grado == '1' %} selected {% endif %}>1°</option>
+                                <option value="2" {% if estudiante.grado == '2' %} selected {% endif %}>2°</option>
+                                <option value="3" {% if estudiante.grado == '3' %} selected {% endif %}>3°</option>
+                                <option value="4" {% if estudiante.grado == '4' %} selected {% endif %}>4°</option>
+                                <option value="5" {% if estudiante.grado == '5' %} selected {% endif %}>5°</option>
+                                <option value="6" {% if estudiante.grado == '6' %} selected {% endif %}>6°</option>
+                            </select>
+                        </div>
+
+                        <!-- Sección -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Sección</label>
+                            <select name="seccion" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar Sección</option>
+                                <option value="A" {% if estudiante.seccion == 'A' %} selected {% endif %}>A</option>
+                                <option value="B" {% if estudiante.seccion == 'B' %} selected {% endif %}>B</option>
+                                <option value="C" {% if estudiante.seccion == 'C' %} selected {% endif %}>C</option>
+                            </select>
+                        </div>
+
+                        <!-- Turno -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Turno</label>
+                            <select name="turno" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar Turno</option>
+                                <option value="mañana" {% if estudiante.turno == 'mañana' %} selected {% endif %}>Mañana</option>
+                                <option value="tarde" {% if estudiante.turno == 'tarde' %} selected {% endif %}>Tarde</option>
+                            </select>
+                        </div>
+
+                        <!-- Carrera al que Postula -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Carrera al que Postula</label>
+                            <input type="text" name="carrera_postula" value="{{ estudiante.carrera_postula or '' }}" placeholder="Ej: Enfermería, Medicina, Ingeniería, etc." class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Área a la que Postula -->
+                        <div id="area_postula_container" style="display: none;">
+                            <label id="area_postula_label" class="block text-sm font-bold text-gray-700 mb-2">Área a la que Postula</label>
+                            <select name="area_postula" id="area_postula" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar Área</option>
+                                <option value="Area 1" {% if estudiante.area_postula == 'Area 1' %} selected {% endif %}>Area 1</option>
+                                <option value="Area 2" {% if estudiante.area_postula == 'Area 2' %} selected {% endif %}>Area 2</option>
+                                <option value="Area 3" {% if estudiante.area_postula == 'Area 3' %} selected {% endif %}>Area 3</option>
+                                <option value="Area 4" {% if estudiante.area_postula == 'Area 4' %} selected {% endif %}>Area 4</option>
+                                <option value="Area 5" {% if estudiante.area_postula == 'Area 5' %} selected {% endif %}>Area 5</option>
+                            </select>
+                        </div>
+
+                        <!-- Apellido Paterno -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Apellido Paterno</label>
+                            <input type="text" name="apellido_paterno_est" required value="{{ estudiante.apellido_paterno_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Apellido Materno -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Apellido Materno</label>
+                            <input type="text" name="apellido_materno_est" required value="{{ estudiante.apellido_materno_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Nombres -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Nombres</label>
+                            <input type="text" name="nombres_est" required value="{{ estudiante.nombres_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- DNI -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">DNI</label>
+                            <input type="text" name="dni_est" pattern="[0-9]{8}" required value="{{ estudiante.dni_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all dni-input">
+                        </div>
+
+                        <!-- Correo -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <input type="email" name="correo_est" value="{{ estudiante.correo_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Fecha Nacimiento -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento_est" value="{{ estudiante.fecha_nacimiento_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Foto del Estudiante -->
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <i class="fas fa-camera mr-2 text-primary"></i>Foto del Estudiante
+                            </label>
+                            <div class="flex items-center gap-4">
+                                <div class="flex-shrink-0">
+                                    <img id="foto-preview" src="{% if estudiante.foto_perfil %}/static/{{ estudiante.foto_perfil }}{% else %}/static/img/default-student.svg{% endif %}" alt="Vista previa"
+                                         class="w-24 h-24 rounded-full object-cover border-4 border-gray-300 shadow-md">
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" name="foto_perfil" id="foto_perfil" accept="image/png,image/jpeg,image/jpg,image/gif"
+                                           class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>Formatos permitidos: PNG, JPG, JPEG, GIF (Máximo 16MB)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dirección -->
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                            <input type="text" name="direccion_est" value="{{ estudiante.direccion_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Distrito -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                            <input type="text" name="distrito_est" value="{{ estudiante.distrito_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Provincia -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Provincia</label>
+                            <input type="text" name="provincia_est" value="{{ estudiante.provincia_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Referencia -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Referencia</label>
+                            <input type="text" name="referencia_est" value="{{ estudiante.referencia_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Celular -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Número de Celular</label>
+                            <input type="tel" name="numero_celular_est" required value="{{ estudiante.numero_celular_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+
+                        <!-- Teléfono Fijo -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                            <input type="tel" name="telefono_fijo_est" value="{{ estudiante.telefono_fijo_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+
+                        <!-- Religión -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Religión</label>
+                            <input type="text" name="religion_est" value="{{ estudiante.religion_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Tiene Hermanos -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Tiene Hermanos?</label>
+                            <div class="flex gap-4 mt-3">
+                                <label class="flex items-center">
+                                    <input type="radio" name="tiene_hermanos" value="si" {% if estudiante.tiene_hermanos == 'si' %} checked {% endif %} class="w-4 h-4 text-primary">
+                                    <span class="ml-2">Sí</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="tiene_hermanos" value="no" {% if estudiante.tiene_hermanos == 'no' %} checked {% endif %} class="w-4 h-4 text-primary">
+                                    <span class="ml-2">No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Número de Hermanos -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Número de Hermanos</label>
+                            <input type="number" name="numero_hermanos" min="0" value="{{ estudiante.numero_hermanos or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Tiene Computadora -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Tiene Computadora?</label>
+                            <select name="tiene_computadora" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="si" {% if estudiante.tiene_computadora == 'si' %} selected {% endif %}>Sí</option>
+                                <option value="no" {% if estudiante.tiene_computadora == 'no' %} selected {% endif %}>No</option>
+                            </select>
+                        </div>
+
+                        <!-- Grupo Sanguíneo -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Grupo Sanguíneo</label>
+                            <select name="grupo_sanguineo" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="O+" {% if estudiante.grupo_sanguineo == 'O+' %} selected {% endif %}>O+</option>
+                                <option value="O-" {% if estudiante.grupo_sanguineo == 'O-' %} selected {% endif %}>O-</option>
+                                <option value="A+" {% if estudiante.grupo_sanguineo == 'A+' %} selected {% endif %}>A+</option>
+                                <option value="A-" {% if estudiante.grupo_sanguineo == 'A-' %} selected {% endif %}>A-</option>
+                                <option value="B+" {% if estudiante.grupo_sanguineo == 'B+' %} selected {% endif %}>B+</option>
+                                <option value="B-" {% if estudiante.grupo_sanguineo == 'B-' %} selected {% endif %}>B-</option>
+                                <option value="AB+" {% if estudiante.grupo_sanguineo == 'AB+' %} selected {% endif %}>AB+</option>
+                                <option value="AB-" {% if estudiante.grupo_sanguineo == 'AB-' %} selected {% endif %}>AB-</option>
+                            </select>
+                        </div>
+
+                        <!-- Alergias -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Alergias</label>
+                            <input type="text" name="es_alergica" placeholder="Especificar si aplica" value="{{ estudiante.es_alergica or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Enfermedades -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Enfermedades</label>
+                            <input type="text" name="padece_enfermedad" placeholder="Especificar si aplica" value="{{ estudiante.padece_enfermedad or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Discapacidades -->
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Discapacidades</label>
+                            <input type="text" name="tiene_discapacidad" placeholder="Especificar si aplica" value="{{ estudiante.tiene_discapacidad or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 2: Información del Padre -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.1s;">
+                <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-male mr-3"></i>Información del Padre
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Paterno</label>
+                            <input type="text" name="apellido_paterno_padre" value="{{ estudiante.apellido_paterno_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Materno</label>
+                            <input type="text" name="apellido_materno_padre" value="{{ estudiante.apellido_materno_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nombres</label>
+                            <input type="text" name="nombres_padre" value="{{ estudiante.nombres_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">DNI</label>
+                            <input type="text" name="dni_padre" pattern="[0-9]{8}" value="{{ estudiante.dni_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all dni-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Grado de Instrucción</label>
+                            <select name="grado_instruccion_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="primaria" {% if estudiante.grado_instruccion_padre == 'primaria' %} selected {% endif %}>Primaria</option>
+                                <option value="secundaria" {% if estudiante.grado_instruccion_padre == 'secundaria' %} selected {% endif %}>Secundaria</option>
+                                <option value="tecnico" {% if estudiante.grado_instruccion_padre == 'tecnico' %} selected {% endif %}>Técnico</option>
+                                <option value="universitario" {% if estudiante.grado_instruccion_padre == 'universitario' %} selected {% endif %}>Universitario</option>
+                                <option value="postgrado" {% if estudiante.grado_instruccion_padre == 'postgrado' %} selected {% endif %}>Postgrado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento_padre" value="{{ estudiante.fecha_nacimiento_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                            <input type="text" name="direccion_padre" value="{{ estudiante.direccion_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                            <input type="text" name="distrito_padre" value="{{ estudiante.distrito_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Provincia</label>
+                            <input type="text" name="provincia_padre" value="{{ estudiante.provincia_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Celular</label>
+                            <input type="tel" name="celular_padre" required value="{{ estudiante.celular_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                            <input type="tel" name="telefono_fijo_padre" value="{{ estudiante.telefono_fijo_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Ocupación</label>
+                            <input type="text" name="ocupacion_padre" value="{{ estudiante.ocupacion_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Centro de Trabajo</label>
+                            <input type="text" name="centro_trabajo_padre" value="{{ estudiante.centro_trabajo_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono del Trabajo</label>
+                            <input type="tel" name="telefono_trabajo_padre" value="{{ estudiante.telefono_trabajo_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado Civil</label>
+                            <select name="estado_civil_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="soltero" {% if estudiante.estado_civil_padre == 'soltero' %} selected {% endif %}>Soltero</option>
+                                <option value="casado" {% if estudiante.estado_civil_padre == 'casado' %} selected {% endif %}>Casado</option>
+                                <option value="divorciado" {% if estudiante.estado_civil_padre == 'divorciado' %} selected {% endif %}>Divorciado</option>
+                                <option value="viudo" {% if estudiante.estado_civil_padre == 'viudo' %} selected {% endif %}>Viudo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Religión</label>
+                            <input type="text" name="religion_padre" value="{{ estudiante.religion_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Vive con su hijo?</label>
+                            <select name="vive_con_hijo_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="si" {% if estudiante.vive_con_hijo_padre == 'si' %} selected {% endif %}>Sí</option>
+                                <option value="no" {% if estudiante.vive_con_hijo_padre == 'no' %} selected {% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Correo Electrónico</label>
+                            <input type="email" name="correo_padre" required value="{{ estudiante.correo_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 3: Información de la Madre -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.2s;">
+                <div class="bg-gradient-to-r from-pink-500 to-pink-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-female mr-3"></i>Información de la Madre
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Paterno</label>
+                            <input type="text" name="apellido_paterno_madre" value="{{ estudiante.apellido_paterno_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Materno</label>
+                            <input type="text" name="apellido_materno_madre" value="{{ estudiante.apellido_materno_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nombres</label>
+                            <input type="text" name="nombres_madre" value="{{ estudiante.nombres_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">DNI</label>
+                            <input type="text" name="dni_madre" pattern="[0-9]{8}" value="{{ estudiante.dni_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all dni-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Grado de Instrucción</label>
+                            <select name="grado_instruccion_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="primaria" {% if estudiante.grado_instruccion_madre == 'primaria' %} selected {% endif %}>Primaria</option>
+                                <option value="secundaria" {% if estudiante.grado_instruccion_madre == 'secundaria' %} selected {% endif %}>Secundaria</option>
+                                <option value="tecnico" {% if estudiante.grado_instruccion_madre == 'tecnico' %} selected {% endif %}>Técnico</option>
+                                <option value="universitario" {% if estudiante.grado_instruccion_madre == 'universitario' %} selected {% endif %}>Universitario</option>
+                                <option value="postgrado" {% if estudiante.grado_instruccion_madre == 'postgrado' %} selected {% endif %}>Postgrado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento_madre" value="{{ estudiante.fecha_nacimiento_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                            <input type="text" name="direccion_madre" value="{{ estudiante.direccion_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                            <input type="text" name="distrito_madre" value="{{ estudiante.distrito_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Provincia</label>
+                            <input type="text" name="provincia_madre" value="{{ estudiante.provincia_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Celular</label>
+                            <input type="tel" name="celular_madre" value="{{ estudiante.celular_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                            <input type="tel" name="telefono_fijo_madre" value="{{ estudiante.telefono_fijo_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Ocupación</label>
+                            <input type="text" name="ocupacion_madre" value="{{ estudiante.ocupacion_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Centro de Trabajo</label>
+                            <input type="text" name="centro_trabajo_madre" value="{{ estudiante.centro_trabajo_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono del Trabajo</label>
+                            <input type="tel" name="telefono_trabajo_madre" value="{{ estudiante.telefono_trabajo_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado Civil</label>
+                            <select name="estado_civil_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="soltera" {% if estudiante.estado_civil_madre == 'soltera' %} selected {% endif %}>Soltera</option>
+                                <option value="casada" {% if estudiante.estado_civil_madre == 'casada' %} selected {% endif %}>Casada</option>
+                                <option value="divorciada" {% if estudiante.estado_civil_madre == 'divorciada' %} selected {% endif %}>Divorciada</option>
+                                <option value="viuda" {% if estudiante.estado_civil_madre == 'viuda' %} selected {% endif %}>Viuda</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Religión</label>
+                            <input type="text" name="religion_madre" value="{{ estudiante.religion_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Vive con su hijo?</label>
+                            <select name="vive_con_hijo_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="si" {% if estudiante.vive_con_hijo_madre == 'si' %} selected {% endif %}>Sí</option>
+                                <option value="no" {% if estudiante.vive_con_hijo_madre == 'no' %} selected {% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <input type="email" name="correo_madre" value="{{ estudiante.correo_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 4: Estado de Supervivencia -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.3s;">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-heartbeat mr-3"></i>Estado de Supervivencia de los Padres
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado del Padre</label>
+                            <select name="padre_supervivencia" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="vivo" {% if estudiante.padre_supervivencia == 'vivo' %} selected {% endif %}>Vivo</option>
+                                <option value="fallecido" {% if estudiante.padre_supervivencia == 'fallecido' %} selected {% endif %}>Fallecido</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado de la Madre</label>
+                            <select name="madre_supervivencia" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="viva" {% if estudiante.madre_supervivencia == 'viva' %} selected {% endif %}>Viva</option>
+                                <option value="fallecida" {% if estudiante.madre_supervivencia == 'fallecida' %} selected {% endif %}>Fallecida</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 5: Información del Apoderado -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.4s;">
+                <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-user-shield mr-3"></i>Información del Apoderado
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Paterno</label>
+                            <input type="text" name="apellido_paterno_apoderado" value="{{ estudiante.apellido_paterno_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Materno</label>
+                            <input type="text" name="apellido_materno_apoderado" value="{{ estudiante.apellido_materno_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nombres</label>
+                            <input type="text" name="nombres_apoderado" value="{{ estudiante.nombres_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">DNI</label>
+                            <input type="text" name="dni_apoderado" pattern="[0-9]{8}" value="{{ estudiante.dni_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all dni-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Relación con el Estudiante</label>
+                            <select name="relacion_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="padre" {% if estudiante.relacion_apoderado == 'padre' %} selected {% endif %}>Padre</option>
+                                <option value="madre" {% if estudiante.relacion_apoderado == 'madre' %} selected {% endif %}>Madre</option>
+                                <option value="abuelo" {% if estudiante.relacion_apoderado == 'abuelo' %} selected {% endif %}>Abuelo/a</option>
+                                <option value="tio" {% if estudiante.relacion_apoderado == 'tio' %} selected {% endif %}>Tío/a</option>
+                                <option value="otro" {% if estudiante.relacion_apoderado == 'otro' %} selected {% endif %}>Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Grado de Instrucción</label>
+                            <select name="grado_instruccion_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="primaria" {% if estudiante.grado_instruccion_apoderado == 'primaria' %} selected {% endif %}>Primaria</option>
+                                <option value="secundaria" {% if estudiante.grado_instruccion_apoderado == 'secundaria' %} selected {% endif %}>Secundaria</option>
+                                <option value="tecnico" {% if estudiante.grado_instruccion_apoderado == 'tecnico' %} selected {% endif %}>Técnico</option>
+                                <option value="universitario" {% if estudiante.grado_instruccion_apoderado == 'universitario' %} selected {% endif %}>Universitario</option>
+                                <option value="postgrado" {% if estudiante.grado_instruccion_apoderado == 'postgrado' %} selected {% endif %}>Postgrado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento_apoderado" value="{{ estudiante.fecha_nacimiento_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                            <input type="text" name="direccion_apoderado" value="{{ estudiante.direccion_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                            <input type="text" name="distrito_apoderado" value="{{ estudiante.distrito_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Provincia</label>
+                            <input type="text" name="provincia_apoderado" value="{{ estudiante.provincia_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Celular</label>
+                            <input type="tel" name="celular_apoderado" value="{{ estudiante.celular_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                            <input type="tel" name="telefono_fijo_apoderado" value="{{ estudiante.telefono_fijo_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Ocupación</label>
+                            <input type="text" name="ocupacion_apoderado" value="{{ estudiante.ocupacion_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Centro de Trabajo</label>
+                            <input type="text" name="centro_trabajo_apoderado" value="{{ estudiante.centro_trabajo_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono del Trabajo</label>
+                            <input type="tel" name="telefono_trabajo_apoderado" value="{{ estudiante.telefono_trabajo_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado Civil</label>
+                            <select name="estado_civil_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="soltero" {% if estudiante.estado_civil_apoderado == 'soltero' %} selected {% endif %}>Soltero/a</option>
+                                <option value="casado" {% if estudiante.estado_civil_apoderado == 'casado' %} selected {% endif %}>Casado/a</option>
+                                <option value="divorciado" {% if estudiante.estado_civil_apoderado == 'divorciado' %} selected {% endif %}>Divorciado/a</option>
+                                <option value="viudo" {% if estudiante.estado_civil_apoderado == 'viudo' %} selected {% endif %}>Viudo/a</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Religión</label>
+                            <input type="text" name="religion_apoderado" value="{{ estudiante.religion_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Vive con el Estudiante?</label>
+                            <select name="vive_con_hijo_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="si" {% if estudiante.vive_con_hijo_apoderado == 'si' %} selected {% endif %}>Sí</option>
+                                <option value="no" {% if estudiante.vive_con_hijo_apoderado == 'no' %} selected {% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <input type="email" name="correo_apoderado" value="{{ estudiante.correo_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex justify-end gap-4 fade-in-up" style="animation-delay: 0.5s;">
+                <button type="reset" class="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-eraser mr-2"></i>Limpiar Formulario
+                </button>
+                <button type="submit" class="px-8 py-4 bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-save mr-2"></i>Actualizar Información
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Campos Faltantes -->
+<div id="modalCamposFaltantes" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-gradient-to-r from-red-500 to-red-600 p-6 text-white rounded-t-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-3"></i>Campos Obligatorios Faltantes
+                </h3>
+                <button onclick="cerrarModal()" class="text-white hover:text-gray-200 text-3xl font-bold">
+                    &times;
+                </button>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-700 mb-4 text-lg">Por favor, complete los siguientes campos obligatorios antes de guardar:</p>
+            <div id="listaCamposFaltantes" class="space-y-2"></div>
+        </div>
+        <div class="p-6 bg-gray-50 rounded-b-2xl flex justify-end">
+            <button onclick="cerrarModal()" class="px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl transition-all duration-300">
+                <i class="fas fa-check mr-2"></i>Entendido
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Pre-seleccionar nivel y grado
+window.addEventListener('DOMContentLoaded', function() {
+    const nivelSelect = document.querySelector('select[name="nivel"]');
+    const gradoSelect = document.querySelector('select[name="grado"]');
+
+    // Trigger cambio de nivel para cargar grados correctos
+    if (nivelSelect.value) {
+        nivelSelect.dispatchEvent(new Event('change'));
+
+        // Después de un pequeño delay, seleccionar el grado correcto
+        setTimeout(function() {
+            const gradoValue = '{{ estudiante.grado or "" }}';
+            if (gradoValue) {
+                const gradoOption = gradoSelect.querySelector(`option[value="${gradoValue}"]`);
+                if (gradoOption) {
+                    gradoSelect.value = gradoValue;
+                }
+            }
+        }, 100);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registroEstudianteForm');
+
+    // Lógica dinámica de grados según nivel
+    const nivelSelect = document.querySelector('select[name="nivel"]');
+    const gradoSelect = document.querySelector('select[name="grado"]');
+
+    const gradosPorNivel = {
+        'inicial': [
+            { value: '3años', text: '3 años' },
+            { value: '4años', text: '4 años' },
+            { value: '5años', text: '5 años' }
+        ],
+        'primaria': [
+            { value: '1', text: '1°' },
+            { value: '2', text: '2°' },
+            { value: '3', text: '3°' },
+            { value: '4', text: '4°' },
+            { value: '5', text: '5°' },
+            { value: '6', text: '6°' }
+        ],
+        'secundaria': [
+            { value: '1', text: '1°' },
+            { value: '2', text: '2°' },
+            { value: '3', text: '3°' },
+            { value: '4', text: '4°' },
+            { value: '5', text: '5°' }
+        ],
+        'academia': [
+            { value: 'NK KIDS', text: 'NK KIDS' },
+            { value: 'CICLADO', text: 'CICLADO' },
+            { value: 'CICLADO VERANO', text: 'CICLADO VERANO' },
+            { value: 'CICLO VERANO 1', text: 'CICLO VERANO 1' },
+            { value: 'CICLO VERANO 2', text: 'CICLO VERANO 2' },
+            { value: 'CICLO VERANO 3', text: 'CICLO VERANO 3' },
+            { value: 'CICLO VERANO 4', text: 'CICLO VERANO 4' },
+            { value: 'MATE DESDE CERO', text: 'MATE DESDE CERO' },
+            { value: 'PRE PRIMERA SELECCION', text: 'PRE PRIMERA SELECCION' },
+            { value: 'SEMESTRAL', text: 'SEMESTRAL' },
+            { value: 'INTENSIVO', text: 'INTENSIVO' },
+            { value: 'PARALELO CEPRE UNCP', text: 'PARALELO CEPRE UNCP' }
+        ]
+    };
+
+    // Elementos del campo Área a la que Postula
+    const areaContainer = document.getElementById('area_postula_container');
+    const areaSelect = document.getElementById('area_postula');
+    const areaLabel = document.getElementById('area_postula_label');
+
+    function actualizarAreaPostula(nivel) {
+        const nivelUpper = nivel.toUpperCase();
+        if (nivelUpper === 'ACADEMIA') {
+            areaContainer.style.display = '';
+            areaSelect.required = true;
+            areaLabel.classList.add('required-label');
+        } else if (nivelUpper === 'INICIAL' || nivelUpper === 'PRIMARIA' || nivelUpper === 'SECUNDARIA') {
+            areaContainer.style.display = '';
+            areaSelect.required = false;
+            areaLabel.classList.remove('required-label');
+        } else {
+            areaContainer.style.display = 'none';
+            areaSelect.required = false;
+            areaSelect.value = '';
+            areaLabel.classList.remove('required-label');
+        }
+    }
+
+    const labelGrado = document.getElementById('label-grado');
+
+    nivelSelect.addEventListener('change', function() {
+        const nivelSeleccionado = this.value;
+        const esAcademia = nivelSeleccionado.toUpperCase() === 'ACADEMIA';
+
+        // Cambiar label Grado/Programa según nivel
+        if (labelGrado) {
+            labelGrado.textContent = esAcademia ? 'Programa' : 'Grado';
+        }
+
+        // Limpiar opciones actuales
+        gradoSelect.innerHTML = '<option value="">Seleccionar ' + (esAcademia ? 'Programa' : 'Grado') + '</option>';
+
+        // Agregar nuevas opciones según el nivel
+        if (nivelSeleccionado && gradosPorNivel[nivelSeleccionado]) {
+            gradosPorNivel[nivelSeleccionado].forEach(function(grado) {
+                const option = document.createElement('option');
+                option.value = grado.value;
+                option.textContent = grado.text;
+                gradoSelect.appendChild(option);
+            });
+        }
+
+        // Mostrar/ocultar y requerir campo Área según nivel
+        actualizarAreaPostula(nivelSeleccionado);
+    });
+
+    // Inicializar estado del campo área
+    if (nivelSelect.value) {
+        actualizarAreaPostula(nivelSelect.value);
+    }
+
+    // Vista previa de foto
+    const fotoInput = document.getElementById('foto_perfil');
+    const fotoPreview = document.getElementById('foto-preview');
+
+    if (fotoInput) {
+        fotoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validar tamaño (16MB máximo)
+                if (file.size > 16 * 1024 * 1024) {
+                    alert('La imagen es demasiado grande. Tamaño máximo: 16MB');
+                    this.value = '';
+                    return;
+                }
+
+                // Validar tipo de archivo
+                const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Formato de imagen no válido. Use PNG, JPG, JPEG o GIF');
+                    this.value = '';
+                    return;
+                }
+
+                // Mostrar vista previa
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    fotoPreview.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Validación de DNI
+    const dniInputs = form.querySelectorAll('.dni-input');
+    dniInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+        });
+    });
+
+    // Validación de teléfonos
+    const telefonoInputs = form.querySelectorAll('.telefono-input');
+    telefonoInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);
+        });
+    });
+
+    // Validación de fecha de nacimiento
+    const fechaNacimientoInputs = form.querySelectorAll('input[type="date"]');
+    fechaNacimientoInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const fechaIngresada = new Date(this.value);
+            const fechaActual = new Date();
+            const edadMinima = new Date(fechaActual.getFullYear() - 100, fechaActual.getMonth(), fechaActual.getDate());
+            const edadMaxima = new Date(fechaActual.getFullYear() - 1, fechaActual.getMonth(), fechaActual.getDate());
+
+            if (fechaIngresada > edadMaxima || fechaIngresada < edadMinima) {
+                this.setCustomValidity('Fecha de nacimiento inválida');
+                this.reportValidity();
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    });
+
+    // Validación general del formulario
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        // Definir campos obligatorios con sus nombres amigables
+        const camposObligatorios = [
+            // Estudiante
+            { name: 'apellido_paterno_est', label: 'Apellido Paterno del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'apellido_materno_est', label: 'Apellido Materno del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'nombres_est', label: 'Nombres del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'dni_est', label: 'DNI del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'numero_celular_est', label: 'Celular del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'nivel', label: 'Nivel', seccion: 'Información del Estudiante' },
+            { name: 'grado', label: 'Grado', seccion: 'Información del Estudiante' },
+            // Padre
+            { name: 'correo_padre', label: 'Correo del Padre', seccion: 'Información del Padre' },
+            { name: 'celular_padre', label: 'Celular del Padre', seccion: 'Información del Padre' }
+        ];
+
+        // Verificar campos faltantes
+        const camposFaltantes = [];
+        camposObligatorios.forEach(campo => {
+            const input = form.querySelector(`[name="${campo.name}"]`);
+            if (input && !input.value.trim()) {
+                camposFaltantes.push(campo);
+            }
+        });
+
+        if (camposFaltantes.length > 0) {
+            mostrarModalCamposFaltantes(camposFaltantes);
+        } else {
+            // Todos los campos están completos, enviar formulario
+            form.submit();
+        }
+    });
+});
+
+// Función para mostrar el modal con los campos faltantes
+function mostrarModalCamposFaltantes(campos) {
+    const modal = document.getElementById('modalCamposFaltantes');
+    const lista = document.getElementById('listaCamposFaltantes');
+
+    // Agrupar por sección
+    const porSeccion = {};
+    campos.forEach(campo => {
+        if (!porSeccion[campo.seccion]) {
+            porSeccion[campo.seccion] = [];
+        }
+        porSeccion[campo.seccion].push(campo.label);
+    });
+
+    // Generar HTML
+    let html = '';
+    for (const [seccion, campos] of Object.entries(porSeccion)) {
+        html += `
+            <div class="mb-4">
+                <h4 class="font-bold text-lg text-red-600 mb-2">
+                    <i class="fas fa-chevron-right mr-2"></i>${seccion}
+                </h4>
+                <ul class="ml-6 space-y-1">
+                    ${campos.map(campo => `
+                        <li class="text-gray-700 flex items-center">
+                            <i class="fas fa-times-circle text-red-500 mr-2"></i>${campo}
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    lista.innerHTML = html;
+    modal.style.display = 'flex';
+}
+
+// Función para cerrar el modal
+function cerrarModal() {
+    const modal = document.getElementById('modalCamposFaltantes');
+    modal.style.display = 'none';
+}
+
+// Cerrar modal al hacer clic fuera de él
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('modalCamposFaltantes');
+    if (event.target === modal) {
+        cerrarModal();
+    }
+});
+</script>
+{% endblock %}

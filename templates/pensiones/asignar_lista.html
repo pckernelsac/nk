@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Asignar Pensiones{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .pop-in { animation: popIn 0.3s ease-out; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 pop-in">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-users-cog text-primary mr-3"></i>Asignar Pensiones
+        </h1>
+        <p class="text-gray-600">Gestiona los montos de pensión para cada estudiante</p>
+    </div>
+
+    <!-- Filtros (server-side) -->
+    <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden pop-in">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-filter mr-3"></i>Búsqueda y Filtros
+            </h2>
+        </div>
+        <div class="p-8">
+            <form method="GET" action="{{ url_for('pensiones.asignar_lista') }}" id="form-filtros">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-search mr-1"></i>Buscar Estudiante
+                        </label>
+                        <input type="text" name="buscar" value="{{ buscar }}"
+                               placeholder="Nombre o DNI..."
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-layer-group mr-1"></i>Nivel
+                        </label>
+                        <select name="nivel" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            <option value="">Todos</option>
+                            <option value="INICIAL"  {% if nivel == 'INICIAL'   %}selected{% endif %}>Inicial</option>
+                            <option value="PRIMARIA" {% if nivel == 'PRIMARIA'  %}selected{% endif %}>Primaria</option>
+                            <option value="SECUNDARIA" {% if nivel == 'SECUNDARIA' %}selected{% endif %}>Secundaria</option>
+                            <option value="ACADEMIA" {% if nivel == 'ACADEMIA' %}selected{% endif %}>Academia</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-graduation-cap mr-1"></i>Grado
+                        </label>
+                        <select name="grado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            <option value="">Todos</option>
+                            {% for g in ['1', '2', '3', '4', '5', '6'] %}
+                            <option value="{{ g }}" {% if grado == g %}selected{% endif %}>{{ g }}°</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-info-circle mr-1"></i>Estado
+                        </label>
+                        <select name="estado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                            <option value="">Todos</option>
+                            <option value="asignado"    {% if estado == 'asignado'    %}selected{% endif %}>Con pensión asignada</option>
+                            <option value="sin-asignar" {% if estado == 'sin-asignar' %}selected{% endif %}>Sin pensión asignada</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2 flex items-end gap-3">
+                        <button type="submit"
+                                class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-xl shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                            <i class="fas fa-search mr-2"></i>Filtrar
+                        </button>
+                        <a href="{{ url_for('pensiones.asignar_lista') }}"
+                           class="px-6 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition-all duration-300">
+                            <i class="fas fa-times mr-2"></i>Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de estudiantes -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden pop-in" style="animation-delay: 0.1s">
+        <div class="bg-gradient-to-r from-primary to-primary-light p-6 text-white flex justify-between items-center">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-users mr-3"></i>Lista de Estudiantes
+            </h2>
+            <span class="px-4 py-2 bg-white bg-opacity-20 rounded-full text-sm font-bold">
+                {% if paginacion %}
+                    {{ paginacion.total }} estudiante(s) &mdash; página {{ paginacion.page }} de {{ paginacion.pages }}
+                {% else %}
+                    0 estudiantes
+                {% endif %}
+            </span>
+        </div>
+
+        {% if not estudiantes %}
+        <div class="p-16 text-center">
+            <i class="fas fa-user-slash text-gray-300 mb-4" style="font-size: 5rem;"></i>
+            <p class="text-gray-500 text-xl font-semibold mb-2">No se encontraron estudiantes</p>
+            <p class="text-gray-400">Prueba con otros filtros o registra estudiantes primero</p>
+        </div>
+        {% else %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gradient-to-r from-gray-100 to-gray-200 border-b-2 border-gray-300">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <i class="fas fa-user mr-1"></i>Estudiante
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <i class="fas fa-id-card mr-1"></i>DNI
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <i class="fas fa-layer-group mr-1"></i>Nivel
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <i class="fas fa-graduation-cap mr-1"></i>Grado
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <i class="fas fa-dollar-sign mr-1"></i>Monto Mensual
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <i class="fas fa-info-circle mr-1"></i>Estado
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            <i class="fas fa-cog mr-1"></i>Acciones
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for est in estudiantes %}
+                    <tr class="hover:bg-purple-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                                    {{ est.nombres_est[0] }}{{ est.apellido_paterno_est[0] }}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-bold text-gray-900">
+                                        {{ est.apellido_paterno_est }} {{ est.apellido_materno_est }}, {{ est.nombres_est }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="font-mono text-sm text-gray-700">{{ est.dni_est or '-' }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
+                                {{ est.nivel|capitalize if est.nivel else '-' }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm font-semibold text-gray-700">{{ est.grado or '-' }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if est.pension %}
+                                <span class="text-lg font-bold text-green-600">S/ {{ "%.2f"|format(est.pension.monto_mensual|float) }}</span>
+                            {% else %}
+                                <span class="text-gray-400 text-sm">Sin asignar</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if est.pension %}
+                                <span class="px-4 py-2 inline-flex text-sm font-bold rounded-full bg-green-100 text-green-800 border-2 border-green-300">
+                                    <i class="fas fa-check-circle mr-2"></i>Asignado
+                                </span>
+                            {% else %}
+                                <span class="px-4 py-2 inline-flex text-sm font-bold rounded-full bg-red-100 text-red-800 border-2 border-red-300">
+                                    <i class="fas fa-times-circle mr-2"></i>Sin asignar
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('pensiones.asignar_form', estudiante_id=est.id) }}"
+                               class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                                <i class="fas fa-edit mr-2"></i>
+                                {% if est.pension %}Editar{% else %}Asignar{% endif %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if paginacion and paginacion.pages > 1 %}
+        <div class="px-6 py-5 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p class="text-sm text-gray-600">
+                Mostrando <span class="font-bold text-gray-800">{{ (paginacion.page - 1) * 20 + 1 }}</span>
+                – <span class="font-bold text-gray-800">{{ [(paginacion.page * 20), paginacion.total] | min }}</span>
+                de <span class="font-bold text-gray-800">{{ paginacion.total }}</span> estudiantes
+            </p>
+            <nav class="flex items-center gap-1">
+                {# Anterior #}
+                {% if paginacion.has_prev %}
+                <a href="{{ url_for('pensiones.asignar_lista', page=paginacion.prev_num, buscar=buscar, nivel=nivel, grado=grado, estado=estado) }}"
+                   class="px-3 py-2 rounded-lg bg-white border-2 border-gray-300 text-gray-700 hover:border-purple-500 hover:text-purple-600 font-bold transition-all">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% else %}
+                <span class="px-3 py-2 rounded-lg bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed">
+                    <i class="fas fa-chevron-left"></i>
+                </span>
+                {% endif %}
+
+                {# Páginas #}
+                {% for p in paginacion.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        {% if p == paginacion.page %}
+                        <span class="px-4 py-2 rounded-lg bg-purple-600 text-white font-bold border-2 border-purple-600">{{ p }}</span>
+                        {% else %}
+                        <a href="{{ url_for('pensiones.asignar_lista', page=p, buscar=buscar, nivel=nivel, grado=grado, estado=estado) }}"
+                           class="px-4 py-2 rounded-lg bg-white border-2 border-gray-300 text-gray-700 hover:border-purple-500 hover:text-purple-600 font-bold transition-all">{{ p }}</a>
+                        {% endif %}
+                    {% else %}
+                        <span class="px-2 py-2 text-gray-400">…</span>
+                    {% endif %}
+                {% endfor %}
+
+                {# Siguiente #}
+                {% if paginacion.has_next %}
+                <a href="{{ url_for('pensiones.asignar_lista', page=paginacion.next_num, buscar=buscar, nivel=nivel, grado=grado, estado=estado) }}"
+                   class="px-3 py-2 rounded-lg bg-white border-2 border-gray-300 text-gray-700 hover:border-purple-500 hover:text-purple-600 font-bold transition-all">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% else %}
+                <span class="px-3 py-2 rounded-lg bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed">
+                    <i class="fas fa-chevron-right"></i>
+                </span>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

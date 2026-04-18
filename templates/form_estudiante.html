@@ -1,0 +1,939 @@
+{% extends "base.html" %}
+
+{% block title %}Registro de Estudiante{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp 0.5s ease-out; }
+
+    .required-label::after {
+        content: ' *';
+        color: #ef4444;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header -->
+    <div class="mb-8 fade-in-up">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-user-graduate text-primary mr-3"></i>Registro de Estudiante
+        </h1>
+        <p class="text-gray-600">Complete toda la información del estudiante y sus responsables</p>
+    </div>
+
+    <div class="max-w-7xl mx-auto">
+        <form id="registroEstudianteForm" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <!-- Sección 1: Información del Estudiante -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-user-graduate mr-3"></i>Información del Estudiante
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Nivel -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Nivel</label>
+                            <select name="nivel" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar Nivel</option>
+                                <option value="INICIAL">Inicial</option>
+                                <option value="PRIMARIA">Primaria</option>
+                                <option value="SECUNDARIA">Secundaria</option>
+                                <option value="ACADEMIA">Academia</option>
+                            </select>
+                        </div>
+
+                        <!-- Grado / Programa -->
+                        <div>
+                            <label id="label-grado" class="block text-sm font-bold text-gray-700 mb-2 required-label">Grado</label>
+                            <select id="grado-select" name="grado" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccione primero un nivel</option>
+                            </select>
+                            <p id="grado-empty-hint" class="hidden mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                No hay aulas creadas para este nivel.
+                                <a href="{{ url_for('aulas.crear') }}" class="font-semibold underline hover:text-amber-900">
+                                    Crear un aula primero
+                                </a>
+                                para que aparezca aquí como opción.
+                            </p>
+                        </div>
+
+                        <!-- Sección -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Sección</label>
+                            <select name="seccion" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar Sección</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                            </select>
+                        </div>
+
+                        <!-- Turno -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Turno</label>
+                            <select name="turno" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar Turno</option>
+                                <option value="mañana">Mañana</option>
+                                <option value="tarde">Tarde</option>
+                            </select>
+                        </div>
+
+                        <!-- Carrera al que Postula -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Carrera al que Postula</label>
+                            <input type="text" name="carrera_postula" placeholder="Ej: Enfermería, Medicina, Ingeniería, etc." class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Área a la que Postula -->
+                        <div id="area_postula_container" style="display: none;">
+                            <label id="area_postula_label" class="block text-sm font-bold text-gray-700 mb-2">Área a la que Postula</label>
+                            <select name="area_postula" id="area_postula" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar Área</option>
+                                <option value="Area 1">Area 1</option>
+                                <option value="Area 2">Area 2</option>
+                                <option value="Area 3">Area 3</option>
+                                <option value="Area 4">Area 4</option>
+                                <option value="Area 5">Area 5</option>
+                            </select>
+                        </div>
+
+                        <!-- Apellido Paterno -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Apellido Paterno</label>
+                            <input type="text" name="apellido_paterno_est" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Apellido Materno -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Apellido Materno</label>
+                            <input type="text" name="apellido_materno_est" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Nombres -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Nombres</label>
+                            <input type="text" name="nombres_est" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- DNI -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">DNI</label>
+                            <input type="text" name="dni_est" pattern="[0-9]{8}" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all dni-input">
+                        </div>
+
+                        <!-- Correo -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <input type="email" name="correo_est" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Celular -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 required-label">Número de Celular</label>
+                            <input type="tel" name="numero_celular_est" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+
+                        <!-- Fecha Nacimiento -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento_est" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Foto del Estudiante -->
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <i class="fas fa-camera mr-2 text-primary"></i>Foto del Estudiante
+                            </label>
+                            <div class="flex items-center gap-4">
+                                <div class="flex-shrink-0">
+                                    <img id="foto-preview" src="/static/img/default-student.svg" alt="Vista previa"
+                                         class="w-24 h-24 rounded-full object-cover border-4 border-gray-300 shadow-md">
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" name="foto_perfil" id="foto_perfil" accept="image/png,image/jpeg,image/jpg,image/gif"
+                                           class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>Formatos permitidos: PNG, JPG, JPEG, GIF (Máximo 16MB)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dirección -->
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                            <input type="text" name="direccion_est" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Distrito -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                            <input type="text" name="distrito_est" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Provincia -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Provincia</label>
+                            <input type="text" name="provincia_est" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Referencia -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Referencia</label>
+                            <input type="text" name="referencia_est" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Teléfono Fijo -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                            <input type="tel" name="telefono_fijo_est" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+
+                        <!-- Religión -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Religión</label>
+                            <input type="text" name="religion_est" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Tiene Hermanos -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Tiene Hermanos?</label>
+                            <div class="flex gap-4 mt-3">
+                                <label class="flex items-center">
+                                    <input type="radio" name="tiene_hermanos" value="si" class="w-4 h-4 text-primary">
+                                    <span class="ml-2">Sí</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="tiene_hermanos" value="no" class="w-4 h-4 text-primary">
+                                    <span class="ml-2">No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Número de Hermanos -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Número de Hermanos</label>
+                            <input type="number" name="numero_hermanos" min="0" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Tiene Computadora -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Tiene Computadora?</label>
+                            <select name="tiene_computadora" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="si">Sí</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+
+                        <!-- Grupo Sanguíneo -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Grupo Sanguíneo</label>
+                            <select name="grupo_sanguineo" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                            </select>
+                        </div>
+
+                        <!-- Alergias -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Alergias</label>
+                            <input type="text" name="es_alergica" placeholder="Especificar si aplica" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Enfermedades -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Enfermedades</label>
+                            <input type="text" name="padece_enfermedad" placeholder="Especificar si aplica" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+
+                        <!-- Discapacidades -->
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Discapacidades</label>
+                            <input type="text" name="tiene_discapacidad" placeholder="Especificar si aplica" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción Superiores -->
+            <div class="flex justify-end gap-4 mb-6 fade-in-up" style="animation-delay: 0.15s;">
+                <button type="submit" class="px-8 py-4 bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-save mr-2"></i>Guardar Información
+                </button>
+            </div>
+
+            <!-- Sección 2: Información del Padre -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.1s;">
+                <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white cursor-pointer hover:from-green-600 hover:to-green-700 transition-all" onclick="toggleSection('seccionPadre')">
+                    <h2 class="text-2xl font-bold flex items-center justify-between">
+                        <span class="flex items-center">
+                            <i class="fas fa-male mr-3"></i>Información del Padre
+                        </span>
+                        <i id="iconPadre" class="fas fa-chevron-down transition-transform"></i>
+                    </h2>
+                </div>
+                <div id="seccionPadre" class="p-8 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Paterno</label>
+                            <input type="text" name="apellido_paterno_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Materno</label>
+                            <input type="text" name="apellido_materno_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nombres</label>
+                            <input type="text" name="nombres_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">DNI</label>
+                            <input type="text" name="dni_padre" pattern="[0-9]{8}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all dni-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Grado de Instrucción</label>
+                            <select name="grado_instruccion_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="primaria">Primaria</option>
+                                <option value="secundaria">Secundaria</option>
+                                <option value="tecnico">Técnico</option>
+                                <option value="universitario">Universitario</option>
+                                <option value="postgrado">Postgrado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                            <input type="text" name="direccion_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                            <input type="text" name="distrito_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Provincia</label>
+                            <input type="text" name="provincia_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Celular</label>
+                            <input type="tel" name="celular_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                            <input type="tel" name="telefono_fijo_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Ocupación</label>
+                            <input type="text" name="ocupacion_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Centro de Trabajo</label>
+                            <input type="text" name="centro_trabajo_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono del Trabajo</label>
+                            <input type="tel" name="telefono_trabajo_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado Civil</label>
+                            <select name="estado_civil_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="soltero">Soltero</option>
+                                <option value="casado">Casado</option>
+                                <option value="divorciado">Divorciado</option>
+                                <option value="viudo">Viudo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Religión</label>
+                            <input type="text" name="religion_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Vive con su hijo?</label>
+                            <select name="vive_con_hijo_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="si">Sí</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <input type="email" name="correo_padre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 3: Información de la Madre -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.2s;">
+                <div class="bg-gradient-to-r from-pink-500 to-pink-600 p-6 text-white cursor-pointer hover:from-pink-600 hover:to-pink-700 transition-all" onclick="toggleSection('seccionMadre')">
+                    <h2 class="text-2xl font-bold flex items-center justify-between">
+                        <span class="flex items-center">
+                            <i class="fas fa-female mr-3"></i>Información de la Madre
+                        </span>
+                        <i id="iconMadre" class="fas fa-chevron-down transition-transform"></i>
+                    </h2>
+                </div>
+                <div id="seccionMadre" class="p-8 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Paterno</label>
+                            <input type="text" name="apellido_paterno_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Materno</label>
+                            <input type="text" name="apellido_materno_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nombres</label>
+                            <input type="text" name="nombres_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">DNI</label>
+                            <input type="text" name="dni_madre" pattern="[0-9]{8}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all dni-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Grado de Instrucción</label>
+                            <select name="grado_instruccion_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="primaria">Primaria</option>
+                                <option value="secundaria">Secundaria</option>
+                                <option value="tecnico">Técnico</option>
+                                <option value="universitario">Universitario</option>
+                                <option value="postgrado">Postgrado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                            <input type="text" name="direccion_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                            <input type="text" name="distrito_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Provincia</label>
+                            <input type="text" name="provincia_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Celular</label>
+                            <input type="tel" name="celular_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                            <input type="tel" name="telefono_fijo_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Ocupación</label>
+                            <input type="text" name="ocupacion_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Centro de Trabajo</label>
+                            <input type="text" name="centro_trabajo_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono del Trabajo</label>
+                            <input type="tel" name="telefono_trabajo_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado Civil</label>
+                            <select name="estado_civil_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="soltera">Soltera</option>
+                                <option value="casada">Casada</option>
+                                <option value="divorciada">Divorciada</option>
+                                <option value="viuda">Viuda</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Religión</label>
+                            <input type="text" name="religion_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Vive con su hijo?</label>
+                            <select name="vive_con_hijo_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="si">Sí</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <input type="email" name="correo_madre" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 4: Estado de Supervivencia -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.3s;">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white cursor-pointer hover:from-purple-600 hover:to-purple-700 transition-all" onclick="toggleSection('seccionSupervivencia')">
+                    <h2 class="text-2xl font-bold flex items-center justify-between">
+                        <span class="flex items-center">
+                            <i class="fas fa-heartbeat mr-3"></i>Estado de Supervivencia de los Padres
+                        </span>
+                        <i id="iconSupervivencia" class="fas fa-chevron-down transition-transform"></i>
+                    </h2>
+                </div>
+                <div id="seccionSupervivencia" class="p-8 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado del Padre</label>
+                            <select name="padre_supervivencia" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="vivo">Vivo</option>
+                                <option value="fallecido">Fallecido</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado de la Madre</label>
+                            <select name="madre_supervivencia" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="viva">Viva</option>
+                                <option value="fallecida">Fallecida</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 5: Información del Apoderado -->
+            <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden fade-in-up" style="animation-delay: 0.4s;">
+                <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white cursor-pointer hover:from-amber-600 hover:to-orange-600 transition-all" onclick="toggleSection('seccionApoderado')">
+                    <h2 class="text-2xl font-bold flex items-center justify-between">
+                        <span class="flex items-center">
+                            <i class="fas fa-user-shield mr-3"></i>Información del Apoderado
+                        </span>
+                        <i id="iconApoderado" class="fas fa-chevron-down transition-transform"></i>
+                    </h2>
+                </div>
+                <div id="seccionApoderado" class="p-8 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Paterno</label>
+                            <input type="text" name="apellido_paterno_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Apellido Materno</label>
+                            <input type="text" name="apellido_materno_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nombres</label>
+                            <input type="text" name="nombres_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">DNI</label>
+                            <input type="text" name="dni_apoderado" pattern="[0-9]{8}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all dni-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Relación con el Estudiante</label>
+                            <select name="relacion_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="padre">Padre</option>
+                                <option value="madre">Madre</option>
+                                <option value="abuelo">Abuelo/a</option>
+                                <option value="tio">Tío/a</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Grado de Instrucción</label>
+                            <select name="grado_instruccion_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="primaria">Primaria</option>
+                                <option value="secundaria">Secundaria</option>
+                                <option value="tecnico">Técnico</option>
+                                <option value="universitario">Universitario</option>
+                                <option value="postgrado">Postgrado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
+                            <input type="text" name="direccion_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Distrito</label>
+                            <input type="text" name="distrito_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Provincia</label>
+                            <input type="text" name="provincia_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Celular</label>
+                            <input type="tel" name="celular_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono Fijo</label>
+                            <input type="tel" name="telefono_fijo_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Ocupación</label>
+                            <input type="text" name="ocupacion_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Centro de Trabajo</label>
+                            <input type="text" name="centro_trabajo_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono del Trabajo</label>
+                            <input type="tel" name="telefono_trabajo_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all telefono-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estado Civil</label>
+                            <select name="estado_civil_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="soltero">Soltero/a</option>
+                                <option value="casado">Casado/a</option>
+                                <option value="divorciado">Divorciado/a</option>
+                                <option value="viudo">Viudo/a</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Religión</label>
+                            <input type="text" name="religion_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">¿Vive con el Estudiante?</label>
+                            <select name="vive_con_hijo_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="si">Sí</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <input type="email" name="correo_apoderado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex justify-end gap-4 fade-in-up" style="animation-delay: 0.5s;">
+                <button type="reset" class="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-eraser mr-2"></i>Limpiar Formulario
+                </button>
+                <button type="submit" class="px-8 py-4 bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-save mr-2"></i>Guardar Información
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Campos Faltantes -->
+<div id="modalCamposFaltantes" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-gradient-to-r from-red-500 to-red-600 p-6 text-white rounded-t-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-2xl font-bold flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-3"></i>Campos Obligatorios Faltantes
+                </h3>
+                <button onclick="cerrarModal()" class="text-white hover:text-gray-200 text-3xl font-bold">
+                    &times;
+                </button>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-700 mb-4 text-lg">Por favor, complete los siguientes campos obligatorios antes de guardar:</p>
+            <div id="listaCamposFaltantes" class="space-y-2"></div>
+        </div>
+        <div class="p-6 bg-gray-50 rounded-b-2xl flex justify-end">
+            <button onclick="cerrarModal()" class="px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl transition-all duration-300">
+                <i class="fas fa-check mr-2"></i>Entendido
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registroEstudianteForm');
+
+    // Lógica dinámica de grados según nivel
+    const nivelSelect = document.querySelector('select[name="nivel"]');
+    const gradoSelect = document.querySelector('select[name="grado"]');
+
+    // Grados base hardcodeados (fallback cuando no hay aulas en BD)
+    // Grados/Programas: se construyen exclusivamente a partir de las aulas activas
+    // creadas en /aulas/crear. Si un nivel no tiene aulas, el dropdown queda vacío
+    // y se muestra un mensaje que invita a crear el aula primero.
+    const gradosBD = {{ grados_db | tojson }};
+    const gradosPorNivel = {};
+    Object.keys(gradosBD).forEach(function(nivel) {
+        gradosPorNivel[nivel] = (gradosBD[nivel] || []).map(function(g) {
+            return { value: g, text: g };
+        });
+    });
+
+    // Elementos del campo Área a la que Postula
+    const areaContainer = document.getElementById('area_postula_container');
+    const areaSelect = document.getElementById('area_postula');
+    const areaLabel = document.getElementById('area_postula_label');
+
+    function actualizarAreaPostula(nivel) {
+        if (nivel === 'ACADEMIA') {
+            areaContainer.style.display = '';
+            areaSelect.required = true;
+            areaLabel.classList.add('required-label');
+        } else if (nivel === 'INICIAL' || nivel === 'PRIMARIA' || nivel === 'SECUNDARIA') {
+            areaContainer.style.display = '';
+            areaSelect.required = false;
+            areaLabel.classList.remove('required-label');
+        } else {
+            areaContainer.style.display = 'none';
+            areaSelect.required = false;
+            areaSelect.value = '';
+            areaLabel.classList.remove('required-label');
+        }
+    }
+
+    const labelGrado = document.getElementById('label-grado');
+
+    nivelSelect.addEventListener('change', function() {
+        const nivelSeleccionado = this.value;
+        const esAcademia = nivelSeleccionado === 'ACADEMIA';
+
+        // Cambiar label Grado/Programa según nivel
+        labelGrado.textContent = esAcademia ? 'Programa' : 'Grado';
+
+        // Limpiar opciones actuales
+        gradoSelect.innerHTML = '<option value="">Seleccionar ' + (esAcademia ? 'Programa' : 'Grado') + '</option>';
+
+        const opciones = (nivelSeleccionado && gradosPorNivel[nivelSeleccionado]) || [];
+        opciones.forEach(function(grado) {
+            const option = document.createElement('option');
+            option.value = grado.value;
+            option.textContent = grado.text;
+            gradoSelect.appendChild(option);
+        });
+
+        // Mostrar hint si no hay aulas creadas para ese nivel
+        const hint = document.getElementById('grado-empty-hint');
+        if (hint) {
+            if (nivelSeleccionado && opciones.length === 0) {
+                hint.classList.remove('hidden');
+                gradoSelect.disabled = true;
+            } else {
+                hint.classList.add('hidden');
+                gradoSelect.disabled = false;
+            }
+        }
+
+        // Mostrar/ocultar y requerir campo Área según nivel
+        actualizarAreaPostula(nivelSeleccionado);
+    });
+
+    // Inicializar estado del campo área si ya hay un nivel seleccionado
+    if (nivelSelect.value) {
+        actualizarAreaPostula(nivelSelect.value);
+    }
+
+    // Vista previa de foto
+    const fotoInput = document.getElementById('foto_perfil');
+    const fotoPreview = document.getElementById('foto-preview');
+
+    if (fotoInput) {
+        fotoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validar tamaño (16MB máximo)
+                if (file.size > 16 * 1024 * 1024) {
+                    alert('La imagen es demasiado grande. Tamaño máximo: 16MB');
+                    this.value = '';
+                    return;
+                }
+
+                // Validar tipo de archivo
+                const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Formato de imagen no válido. Use PNG, JPG, JPEG o GIF');
+                    this.value = '';
+                    return;
+                }
+
+                // Mostrar vista previa
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    fotoPreview.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Validación de DNI
+    const dniInputs = form.querySelectorAll('.dni-input');
+    dniInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+        });
+    });
+
+    // Validación de teléfonos
+    const telefonoInputs = form.querySelectorAll('.telefono-input');
+    telefonoInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);
+        });
+    });
+
+    // Validación de fecha de nacimiento
+    const fechaNacimientoInputs = form.querySelectorAll('input[type="date"]');
+    fechaNacimientoInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const fechaIngresada = new Date(this.value);
+            const fechaActual = new Date();
+            const edadMinima = new Date(fechaActual.getFullYear() - 100, fechaActual.getMonth(), fechaActual.getDate());
+            const edadMaxima = new Date(fechaActual.getFullYear() - 1, fechaActual.getMonth(), fechaActual.getDate());
+
+            if (fechaIngresada > edadMaxima || fechaIngresada < edadMinima) {
+                this.setCustomValidity('Fecha de nacimiento inválida');
+                this.reportValidity();
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    });
+
+    // Validación general del formulario
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        // Definir campos obligatorios con sus nombres amigables
+        const camposObligatorios = [
+            // Estudiante
+            { name: 'apellido_paterno_est', label: 'Apellido Paterno del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'apellido_materno_est', label: 'Apellido Materno del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'nombres_est', label: 'Nombres del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'dni_est', label: 'DNI del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'numero_celular_est', label: 'Celular del Estudiante', seccion: 'Información del Estudiante' },
+            { name: 'nivel', label: 'Nivel', seccion: 'Información del Estudiante' },
+            { name: 'grado', label: (nivelSelect.value === 'ACADEMIA' ? 'Programa' : 'Grado'), seccion: 'Información del Estudiante' }
+        ];
+
+        // Verificar campos faltantes
+        const camposFaltantes = [];
+        camposObligatorios.forEach(campo => {
+            const input = form.querySelector(`[name="${campo.name}"]`);
+            if (input && !input.value.trim()) {
+                camposFaltantes.push(campo);
+            }
+        });
+
+        if (camposFaltantes.length > 0) {
+            mostrarModalCamposFaltantes(camposFaltantes);
+        } else {
+            // Todos los campos están completos, enviar formulario
+            form.submit();
+        }
+    });
+});
+
+// Función para mostrar el modal con los campos faltantes
+function mostrarModalCamposFaltantes(campos) {
+    const modal = document.getElementById('modalCamposFaltantes');
+    const lista = document.getElementById('listaCamposFaltantes');
+
+    // Agrupar por sección
+    const porSeccion = {};
+    campos.forEach(campo => {
+        if (!porSeccion[campo.seccion]) {
+            porSeccion[campo.seccion] = [];
+        }
+        porSeccion[campo.seccion].push(campo.label);
+    });
+
+    // Generar HTML
+    let html = '';
+    for (const [seccion, campos] of Object.entries(porSeccion)) {
+        html += `
+            <div class="mb-4">
+                <h4 class="font-bold text-lg text-red-600 mb-2">
+                    <i class="fas fa-chevron-right mr-2"></i>${seccion}
+                </h4>
+                <ul class="ml-6 space-y-1">
+                    ${campos.map(campo => `
+                        <li class="text-gray-700 flex items-center">
+                            <i class="fas fa-times-circle text-red-500 mr-2"></i>${campo}
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    lista.innerHTML = html;
+    modal.style.display = 'flex';
+}
+
+// Función para cerrar el modal
+function cerrarModal() {
+    const modal = document.getElementById('modalCamposFaltantes');
+    modal.style.display = 'none';
+}
+
+// Cerrar modal al hacer clic fuera de él
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('modalCamposFaltantes');
+    if (event.target === modal) {
+        cerrarModal();
+    }
+});
+
+// Función para colapsar/expandir secciones
+function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const iconId = 'icon' + sectionId.replace('seccion', '');
+    const icon = document.getElementById(iconId);
+
+    if (section.classList.contains('hidden')) {
+        // Expandir
+        section.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        // Colapsar
+        section.classList.add('hidden');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+</script>
+{% endblock %}

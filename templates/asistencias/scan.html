@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block title %}Escanear Asistencia{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+  .scan-page-wrapper {
+    min-height: calc(100vh - 120px);
+    background: linear-gradient(135deg, #5F2A5D 0%, #7c3b7a 100%);
+  }
+</style>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="scan-page-wrapper">
+  <div class="container mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="inline-block mb-4">
+        <div class="bg-white bg-opacity-20 rounded-full p-6 backdrop-blur-lg animate-pulse shadow-2xl">
+          <i class="fas fa-qrcode text-white" style="font-size: 4rem;"></i>
+        </div>
+      </div>
+      <h1 class="text-5xl font-bold text-white mb-3">Escanear Asistencia</h1>
+      <p class="text-xl text-white text-opacity-90">Utilice el lector de barras o la cámara (QR y códigos de barras) para registrar asistencias</p>
+    </div>
+
+    <!-- Mode Selector -->
+    <div class="flex justify-center gap-4 mb-8">
+      <button id="btn-barcode-mode" onclick="switchMode('barcode')" class="px-8 py-4 bg-white text-purple-600 shadow-2xl rounded-xl font-bold text-lg transition-all transform hover:scale-105">
+        <i class="fas fa-barcode mr-2 text-2xl"></i>
+        <span>Lector de Barras</span>
+      </button>
+
+      <button id="btn-qr-mode" onclick="switchMode('qr')" class="px-8 py-4 bg-white bg-opacity-20 text-white border-2 border-white border-opacity-30 shadow-2xl rounded-xl font-bold text-lg transition-all transform hover:scale-105">
+        <i class="fas fa-camera mr-2 text-2xl"></i>
+        <span>Escaneo con Cámara</span>
+      </button>
+    </div>
+
+    <!-- Barcode Container -->
+    <div id="barcode-container">
+      <div class="bg-white bg-opacity-25 backdrop-blur-lg border border-white border-opacity-20 rounded-3xl shadow-2xl p-8 mb-8">
+
+        <div class="text-center mb-6">
+          <div class="inline-block rounded-3xl p-6 animate-pulse shadow-2xl bg-gradient-to-r from-purple-600 to-purple-600">
+            <i class="fas fa-barcode text-white" style="font-size: 4rem;"></i>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-white text-center text-2xl font-bold mb-4">
+            <i class="fas fa-arrow-down mr-2 animate-bounce"></i>
+            Listo para escanear
+          </label>
+          <input id="scan-input"
+                 type="text"
+                 inputmode="numeric"
+                 autocomplete="off"
+                 autofocus
+                 placeholder="Esperando código..."
+                 class="w-full px-6 py-4 text-center font-bold rounded-xl border-4 border-white border-opacity-30 text-2xl tracking-widest focus:outline-none focus:border-opacity-50 focus:ring-4 focus:ring-white focus:ring-opacity-30">
+
+          <div class="text-center mt-4 text-white text-opacity-90">
+            <i class="fas fa-info-circle mr-2 text-purple-300"></i>
+            <span class="text-sm">El sistema detecta automáticamente el fin del escaneo</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-6 pt-6 border-t border-white border-opacity-25">
+          <div class="text-center">
+            <div class="text-5xl font-black text-white mb-2" id="total-today">0</div>
+            <div class="text-white text-opacity-75 text-sm font-semibold uppercase">Hoy</div>
+          </div>
+          <div class="text-center">
+            <div class="text-5xl font-black text-green-400 mb-2" id="total-session">0</div>
+            <div class="text-white text-opacity-75 text-sm font-semibold uppercase">Sesión</div>
+          </div>
+          <div class="text-center">
+            <div class="text-5xl font-black text-yellow-400 mb-2" id="scan-speed">—</div>
+            <div class="text-white text-opacity-75 text-sm font-semibold uppercase">Última</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Container -->
+    <div id="qr-container" class="hidden">
+      <div class="bg-white bg-opacity-25 backdrop-blur-lg border border-white border-opacity-20 rounded-3xl shadow-2xl p-8 mb-8">
+
+        <div class="text-center mb-6">
+          <div class="inline-block rounded-3xl p-6 animate-pulse shadow-2xl bg-gradient-to-r from-indigo-600 to-purple-600">
+            <i class="fas fa-qrcode text-white" style="font-size: 4rem;"></i>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-white text-center text-2xl font-bold mb-4">
+            <i class="fas fa-qrcode mr-2"></i>
+            <i class="fas fa-barcode mr-2"></i>
+            Escaneo con Cámara
+          </label>
+          <div id="qr-reader" class="rounded-2xl overflow-hidden shadow-2xl border-4 border-white border-opacity-30"></div>
+
+          <div class="text-center mt-4">
+            <div class="inline-block bg-white bg-opacity-10 text-white px-6 py-3 rounded-xl">
+              <i class="fas fa-camera mr-2 text-purple-300"></i>
+              <span id="qr-status" class="text-sm font-semibold">Coloque el código QR o código de barras frente a la cámara</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-6 pt-6 border-t border-white border-opacity-25">
+          <div class="text-center">
+            <div class="text-5xl font-black text-white mb-2" id="total-today-qr">0</div>
+            <div class="text-white text-opacity-75 text-sm font-semibold uppercase">Hoy</div>
+          </div>
+          <div class="text-center">
+            <div class="text-5xl font-black text-green-400 mb-2" id="total-session-qr">0</div>
+            <div class="text-white text-opacity-75 text-sm font-semibold uppercase">Sesión</div>
+          </div>
+          <div class="text-center">
+            <div class="text-5xl font-black text-yellow-400 mb-2" id="scan-speed-qr">—</div>
+            <div class="text-white text-opacity-75 text-sm font-semibold uppercase">Última</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="flex justify-center gap-4">
+      <a href="{{ url_for('asistencias.dashboard') }}" class="inline-flex items-center px-6 py-3 bg-white bg-opacity-25 text-white font-semibold rounded-xl border border-white border-opacity-25 hover:bg-opacity-35 transition-all">
+        <i class="fas fa-chart-line mr-2"></i>
+        Ver Dashboard
+      </a>
+      <a href="{{ url_for('asistencias.reportes') }}" class="inline-flex items-center px-6 py-3 bg-white bg-opacity-25 text-white font-semibold rounded-xl border border-white border-opacity-25 hover:bg-opacity-35 transition-all">
+        <i class="fas fa-file-excel mr-2"></i>
+        Exportar Reportes
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal con Tailwind puro -->
+<div id="student-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+    <div id="modal-header" class="bg-gradient-to-r from-green-500 to-green-600 text-white text-center py-8 px-6 relative">
+      <button type="button" onclick="closeModal()" class="absolute top-4 right-4 text-white hover:text-gray-200 transition-colors">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+      <div class="bg-white bg-opacity-20 rounded-full mb-4 mx-auto flex items-center justify-center backdrop-blur-lg" style="width: 100px; height: 100px;">
+        <i class="fas fa-check-circle text-white" style="font-size: 4rem;"></i>
+      </div>
+      <h3 id="modal-title" class="text-3xl font-black mb-2">¡Asistencia Registrada!</h3>
+      <p id="modal-time" class="text-white text-opacity-80">—</p>
+    </div>
+    <div class="p-8 text-center">
+      <div class="mb-6">
+        <img id="student-photo"
+             src=""
+             alt="Foto del estudiante"
+             class="rounded-2xl border-4 border-white shadow-xl mx-auto hidden"
+             style="width: 160px; height: 160px; object-fit: cover;">
+        <div id="student-initials"
+             class="rounded-2xl shadow-xl mx-auto hidden text-white font-black flex items-center justify-center bg-gradient-to-r from-purple-600 to-purple-600"
+             style="width: 160px; height: 160px; font-size: 3rem;">
+        </div>
+      </div>
+
+      <h4 id="student-name" class="text-3xl font-bold text-gray-800 mb-6">—</h4>
+
+      <div class="mb-6">
+        <span id="tipo-badge" class="inline-flex items-center px-6 py-3 text-lg font-bold rounded-full shadow-lg">
+          <i id="tipo-icon" class="fas mr-2"></i>
+          <span id="tipo-text">—</span>
+        </span>
+      </div>
+
+      <div class="text-gray-600 mb-4">
+        <div class="inline-flex items-center bg-gray-100 rounded-full px-6 py-3">
+          <i class="fas fa-barcode mr-2"></i>
+          <span id="student-codigo" class="font-mono font-semibold">—</span>
+        </div>
+      </div>
+
+      <!-- Estado de Pensión -->
+      <div id="pension-section" class="hidden">
+        <div id="pension-badge" class="rounded-xl px-5 py-3 inline-block">
+          <div id="pension-status" class="font-bold text-sm"></div>
+          <div id="pension-detail" class="text-xs mt-1"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const THRESHOLD_MS = 80;
+  const MIN_LENGTH = 6;
+  let buffer = "";
+  let lastTime = 0;
+  let timer = null;
+  let sessionCount = 0;
+  let currentMode = 'barcode';
+  let html5QrCode = null;
+  let isQrScanning = false;
+
+  const input = document.getElementById('scan-input');
+  const modal = document.getElementById('student-modal');
+  input.focus();
+
+  function closeModal() {
+    modal.classList.add('hidden');
+  }
+
+  function switchMode(mode) {
+    currentMode = mode;
+    const barcodeContainer = document.getElementById('barcode-container');
+    const qrContainer = document.getElementById('qr-container');
+    const btnBarcode = document.getElementById('btn-barcode-mode');
+    const btnQr = document.getElementById('btn-qr-mode');
+
+    if (mode === 'barcode') {
+      barcodeContainer.classList.remove('hidden');
+      qrContainer.classList.add('hidden');
+      btnBarcode.className = 'px-8 py-4 bg-white text-purple-600 shadow-2xl rounded-xl font-bold text-lg transition-all transform hover:scale-105';
+      btnQr.className = 'px-8 py-4 bg-white bg-opacity-20 text-white border-2 border-white border-opacity-30 shadow-2xl rounded-xl font-bold text-lg transition-all transform hover:scale-105';
+      stopQrScanner();
+      input.focus();
+    } else {
+      barcodeContainer.classList.add('hidden');
+      qrContainer.classList.remove('hidden');
+      btnBarcode.className = 'px-8 py-4 bg-white bg-opacity-20 text-white border-2 border-white border-opacity-30 shadow-2xl rounded-xl font-bold text-lg transition-all transform hover:scale-105';
+      btnQr.className = 'px-8 py-4 bg-white text-purple-600 shadow-2xl rounded-xl font-bold text-lg transition-all transform hover:scale-105';
+      startQrScanner();
+    }
+  }
+
+  function startQrScanner() {
+    if (isQrScanning) return;
+
+    console.log('Iniciando escáner de códigos...');
+    document.getElementById('qr-status').textContent = 'Iniciando cámara...';
+
+    try {
+      html5QrCode = new Html5Qrcode("qr-reader");
+
+      // Configuración para soportar QR y códigos de barras
+      const config = {
+        fps: 10,
+        qrbox: { width: 300, height: 300 },
+        // Formatos soportados: QR y códigos de barras comunes
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.CODABAR
+        ]
+      };
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText, decodedResult) => {
+          console.log('Código detectado:', decodedText, 'Formato:', decodedResult.result.format.formatName);
+          document.getElementById('qr-status').textContent = `¡${decodedResult.result.format.formatName} detectado!`;
+          submitCode(decodedText);
+
+          setTimeout(() => {
+            if (currentMode === 'qr') {
+              document.getElementById('qr-status').textContent = 'Listo para siguiente escaneo';
+            }
+          }, 1500);
+        },
+        (errorMessage) => {
+          // Error de lectura (normal mientras busca códigos)
+        }
+      ).then(() => {
+        isQrScanning = true;
+        console.log('Cámara iniciada correctamente');
+        document.getElementById('qr-status').textContent = 'Cámara activa - Coloque el código';
+      }).catch((err) => {
+        console.error('Error al iniciar cámara:', err);
+        alert('Error al acceder a la cámara. Verifique los permisos.');
+        document.getElementById('qr-status').textContent = 'Error: ' + err.message;
+      });
+    } catch (err) {
+      console.error('Error al crear Html5Qrcode:', err);
+      alert('Error al inicializar escáner');
+      document.getElementById('qr-status').textContent = 'Error al inicializar';
+    }
+  }
+
+  function stopQrScanner() {
+    if (html5QrCode && isQrScanning) {
+      html5QrCode.stop().then(() => {
+        isQrScanning = false;
+        html5QrCode = null;
+      }).catch((err) => {
+        console.error('Error al detener cámara:', err);
+      });
+    }
+  }
+
+  function scheduleFlush() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (buffer.length >= MIN_LENGTH) {
+        const code = buffer;
+        buffer = "";
+        input.value = "";
+        submitCode(code);
+      } else {
+        buffer = "";
+      }
+    }, THRESHOLD_MS);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (currentMode !== 'barcode') return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (['Shift','Tab','Backspace','Escape','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) return;
+
+    const now = performance.now();
+    const dt = now - lastTime;
+    lastTime = now;
+
+    if (dt > 500) buffer = "";
+
+    if (e.key.length === 1 && /[0-9A-Za-z]/.test(e.key)) {
+      buffer += e.key;
+      input.value = buffer;
+      scheduleFlush();
+      e.preventDefault();
+    }
+  });
+
+  function showModal(studentData, timestamp, tipo, isError = false, pensionData = null) {
+    const photo = document.getElementById('student-photo');
+    const initials = document.getElementById('student-initials');
+    const modalHeader = document.getElementById('modal-header');
+    const modalTitle = document.getElementById('modal-title');
+    const modalTime = document.getElementById('modal-time');
+
+    if (studentData.photo_url) {
+      photo.src = studentData.photo_url;
+      photo.classList.remove('hidden');
+      initials.classList.add('hidden');
+    } else {
+      const firstInitial = studentData.nombres.charAt(0).toUpperCase();
+      const lastInitial = studentData.apellidos.charAt(0).toUpperCase();
+      initials.textContent = firstInitial + lastInitial;
+      initials.classList.remove('hidden');
+      photo.classList.add('hidden');
+    }
+
+    document.getElementById('student-name').textContent = `${studentData.nombres} ${studentData.apellidos}`;
+    document.getElementById('student-codigo').textContent = `${studentData.codigo}`;
+    document.getElementById('modal-time').textContent = timestamp;
+
+    if (isError) {
+      modalHeader.className = 'bg-gradient-to-r from-red-500 to-red-600 text-white text-center py-8 px-6 relative';
+      modalTitle.textContent = '¡Registro Duplicado!';
+      modalTime.textContent = `Ya registró su ${tipo.toLowerCase()} hoy`;
+    } else {
+      modalHeader.className = 'bg-gradient-to-r from-green-500 to-green-600 text-white text-center py-8 px-6 relative';
+      modalTitle.textContent = '¡Asistencia Registrada!';
+      modalTime.textContent = timestamp;
+    }
+
+    const tipoBadge = document.getElementById('tipo-badge');
+    const tipoText = document.getElementById('tipo-text');
+    const tipoIcon = document.getElementById('tipo-icon');
+
+    tipoText.textContent = tipo;
+
+    if (tipo === 'ENTRADA') {
+      tipoBadge.className = 'inline-flex items-center px-6 py-3 text-lg font-bold rounded-full shadow-lg bg-green-100 text-green-800 border-2 border-green-300';
+      tipoIcon.className = 'fas fa-sign-in-alt mr-2';
+    } else {
+      tipoBadge.className = 'inline-flex items-center px-6 py-3 text-lg font-bold rounded-full shadow-lg bg-orange-100 text-orange-800 border-2 border-orange-300';
+      tipoIcon.className = 'fas fa-sign-out-alt mr-2';
+    }
+
+    // Mostrar estado de pensión
+    const pensionSection = document.getElementById('pension-section');
+    const pensionBadge = document.getElementById('pension-badge');
+    const pensionStatus = document.getElementById('pension-status');
+    const pensionDetail = document.getElementById('pension-detail');
+
+    if (pensionData && pensionData.asignada) {
+      pensionSection.classList.remove('hidden');
+      if (pensionData.tiene_deuda) {
+        pensionBadge.className = 'rounded-xl px-5 py-3 inline-block bg-red-100 border-2 border-red-300';
+        pensionStatus.innerHTML = '<i class="fas fa-exclamation-triangle text-red-600 mr-1"></i><span class="text-red-700">DEBE ' + pensionData.cantidad + ' MES' + (pensionData.cantidad > 1 ? 'ES' : '') + '</span>';
+        const mesesTexto = pensionData.meses_pendientes.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ');
+        pensionDetail.innerHTML = '<span class="text-red-600">' + mesesTexto + '</span>';
+      } else {
+        pensionBadge.className = 'rounded-xl px-5 py-3 inline-block bg-green-100 border-2 border-green-300';
+        pensionStatus.innerHTML = '<i class="fas fa-check-circle text-green-600 mr-1"></i><span class="text-green-700">PENSIÓN AL DÍA</span>';
+        pensionDetail.textContent = '';
+      }
+    } else {
+      pensionSection.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+
+    if (isError) {
+      playErrorSound();
+    } else {
+      playSuccessSound();
+    }
+
+    const autoCloseMs = (pensionData && pensionData.tiene_deuda) ? 7000 : 5000;
+    setTimeout(() => {
+      closeModal();
+    }, autoCloseMs);
+  }
+
+  async function submitCode(code) {
+    const startTime = performance.now();
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    try {
+      const res = await fetch('{{ url_for("asistencias.api_scan") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({code})
+      });
+
+      const data = await res.json();
+      const endTime = performance.now();
+      const scanTime = Math.round(endTime - startTime);
+
+      if (data.student && data.tipo) {
+        sessionCount++;
+
+        document.getElementById('total-session').textContent = sessionCount;
+        document.getElementById('total-session-qr').textContent = sessionCount;
+        document.getElementById('scan-speed').textContent = scanTime + 'ms';
+        document.getElementById('scan-speed-qr').textContent = scanTime + 'ms';
+
+        showModal(data.student, data.when, data.tipo, !data.ok, data.pension || null);
+      } else if (!res.ok || !data.ok) {
+        alert(data.message || 'Error al registrar');
+        playErrorSound();
+      }
+
+    } catch (err) {
+      alert('Error de conexión');
+      playErrorSound();
+    } finally {
+      if (currentMode === 'barcode') {
+        input.focus();
+      }
+    }
+  }
+
+  function playSuccessSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.1);
+      g.gain.setValueAtTime(0.001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      o.start();
+      o.stop(ctx.currentTime + 0.15);
+    } catch(e) {}
+  }
+
+  function playErrorSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(200, ctx.currentTime);
+      g.gain.setValueAtTime(0.001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      o.start();
+      o.stop(ctx.currentTime + 0.2);
+    } catch(e) {}
+  }
+
+  window.addEventListener('focus', () => {
+    if (currentMode === 'barcode') {
+      input.focus();
+    }
+  });
+
+  window.addEventListener('beforeunload', () => {
+    stopQrScanner();
+  });
+
+  // Cerrar modal al hacer clic fuera
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+</script>
+{% endblock %}

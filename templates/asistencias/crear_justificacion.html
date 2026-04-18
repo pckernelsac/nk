@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Justificacion · Sistema Escolar{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #5F2A5D;
+        --secondary-color: #7c3b7a;
+    }
+    .step-card {
+        transition: all 0.3s ease;
+    }
+    .step-card.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    .resultado-item {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .resultado-item:hover {
+        background-color: #f3e8f4;
+        transform: translateX(4px);
+    }
+    .fecha-ausencia-btn {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .fecha-ausencia-btn:hover {
+        transform: scale(1.02);
+    }
+    .fecha-ausencia-btn.selected {
+        ring: 4px;
+        box-shadow: 0 0 0 3px #5F2A5D;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6 max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+        <div class="absolute top-0 right-0 opacity-10 text-9xl">
+            <i class="fas fa-file-medical"></i>
+        </div>
+        <div class="flex items-center relative z-10">
+            <a href="{{ url_for('asistencias.justificaciones_lista') }}" class="mr-4 text-white hover:text-gray-200 transition-colors">
+                <i class="fas fa-arrow-left text-2xl"></i>
+            </a>
+            <div>
+                <h1 class="text-4xl font-bold">Nueva Justificacion</h1>
+                <p class="text-white opacity-90 mt-1">Registra la justificacion de inasistencia de un estudiante</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" id="formJustificacion">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="estudiante_id" id="estudiante_id" value="">
+
+        <!-- PASO 1: Buscar Estudiante -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 step-card" id="step1">
+            <div class="p-5 text-white flex items-center" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                <span class="w-8 h-8 bg-white rounded-full flex items-center justify-center font-bold mr-3" style="color: #5F2A5D;">1</span>
+                <h3 class="text-xl font-bold">Buscar Estudiante</h3>
+            </div>
+            <div class="p-6">
+                <div class="flex gap-3">
+                    <input type="text" id="inputBuscar" placeholder="Ingrese DNI o nombre del estudiante..."
+                           class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200 font-semibold text-gray-700">
+                    <button type="button" onclick="buscarEstudiante()" id="btnBuscar"
+                            class="px-6 py-3 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                            style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                        <i class="fas fa-search mr-2"></i>Buscar
+                    </button>
+                </div>
+
+                <!-- Resultados de busqueda -->
+                <div id="resultadosBusqueda" class="mt-4 hidden">
+                    <div id="listaResultados"></div>
+                </div>
+
+                <!-- Estudiante seleccionado -->
+                <div id="estudianteSeleccionado" class="mt-4 hidden">
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 rounded-2xl p-6" style="border-color: rgba(95, 42, 93, 0.3);">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                                    <span id="infoIniciales">--</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xl font-bold text-gray-800" id="infoNombre">-</h4>
+                                    <div class="flex gap-4 text-sm text-gray-600 mt-1">
+                                        <span><i class="fas fa-id-card mr-1" style="color: #5F2A5D;"></i>DNI: <strong id="infoDni">-</strong></span>
+                                        <span><i class="fas fa-layer-group mr-1" style="color: #5F2A5D;"></i><span id="infoNivel">-</span></span>
+                                        <span><i class="fas fa-graduation-cap mr-1" style="color: #5F2A5D;"></i><span id="infoGrado">-</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" onclick="limpiarEstudiante()" class="text-gray-400 hover:text-red-500 transition-colors" title="Cambiar estudiante">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 2: Seleccionar Fecha de Ausencia -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 step-card disabled" id="step2">
+            <div class="p-5 text-white flex items-center" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                <span class="w-8 h-8 bg-white rounded-full flex items-center justify-center font-bold mr-3" style="color: #5F2A5D;">2</span>
+                <h3 class="text-xl font-bold">Seleccionar Fecha de Ausencia</h3>
+            </div>
+            <div class="p-6">
+                <div id="cargandoFechas" class="text-center py-4 hidden">
+                    <i class="fas fa-spinner fa-spin text-3xl mb-2" style="color: #5F2A5D;"></i>
+                    <p class="text-gray-500">Buscando dias de ausencia...</p>
+                </div>
+
+                <div id="listaFechas" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                </div>
+
+                <div id="sinAusencias" class="text-center py-6 hidden">
+                    <i class="fas fa-check-circle text-green-500 text-4xl mb-2"></i>
+                    <p class="text-gray-600 font-semibold">El estudiante no tiene ausencias sin justificar en los ultimos 60 dias</p>
+                </div>
+
+                <input type="hidden" name="fecha" id="inputFecha" value="">
+            </div>
+        </div>
+
+        <!-- PASO 3: Datos del Apoderado y Motivo -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 step-card disabled" id="step3">
+            <div class="p-5 text-white flex items-center" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                <span class="w-8 h-8 bg-white rounded-full flex items-center justify-center font-bold mr-3" style="color: #5F2A5D;">3</span>
+                <h3 class="text-xl font-bold">Datos del Apoderado y Motivo</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-user mr-1" style="color: #5F2A5D;"></i>
+                            Nombre del Apoderado <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="apoderado_nombre" id="inputApoderadoNombre" required
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-id-card mr-1" style="color: #5F2A5D;"></i>
+                            DNI del Apoderado <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="apoderado_dni" id="inputApoderadoDni" required pattern="[0-9]{8}" maxlength="8"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-phone mr-1" style="color: #5F2A5D;"></i>
+                            Telefono
+                        </label>
+                        <input type="tel" name="apoderado_telefono" id="inputApoderadoTelefono"
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-users mr-1" style="color: #5F2A5D;"></i>
+                            Relacion con el estudiante
+                        </label>
+                        <select name="apoderado_relacion" id="inputApoderadoRelacion"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200 bg-white">
+                            <option value="">Seleccione...</option>
+                            <option value="padre">Padre</option>
+                            <option value="madre">Madre</option>
+                            <option value="tutor">Tutor</option>
+                            <option value="abuelo">Abuelo/a</option>
+                            <option value="tio">Tio/a</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-tag mr-1" style="color: #5F2A5D;"></i>
+                            Tipo de Motivo <span class="text-red-500">*</span>
+                        </label>
+                        <select name="tipo_motivo" required
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200 bg-white">
+                            <option value="enfermedad">Enfermedad</option>
+                            <option value="familiar">Motivo Familiar</option>
+                            <option value="emergencia">Emergencia</option>
+                            <option value="cita_medica">Cita Medica</option>
+                            <option value="otros">Otros</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-comment-alt mr-1" style="color: #5F2A5D;"></i>
+                            Motivo de la Inasistencia <span class="text-red-500">*</span>
+                        </label>
+                        <textarea name="motivo" rows="4" required
+                                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200"
+                                  placeholder="Describa detalladamente el motivo de la inasistencia..."></textarea>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fas fa-file-alt mr-1" style="color: #5F2A5D;"></i>
+                            ¿Tiene documento de respaldo?
+                        </label>
+                        <div class="flex gap-6">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="tiene_documento" value="si" class="mr-2" onchange="toggleDocumento(true)">
+                                <span class="font-medium">Si</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="tiene_documento" value="no" checked class="mr-2" onchange="toggleDocumento(false)">
+                                <span class="font-medium">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 hidden" id="divDocumento">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de Documento</label>
+                        <input type="text" name="tipo_documento" placeholder="Ej: Certificado medico, Carta, etc."
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200">
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-4 mt-6">
+                    <button type="submit" id="btnSubmit"
+                            class="flex-1 inline-flex items-center justify-center px-8 py-4 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-lg"
+                            style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+                        <i class="fas fa-save mr-3 text-xl"></i>Registrar Justificacion
+                    </button>
+                    <a href="{{ url_for('asistencias.justificaciones_lista') }}"
+                       class="px-8 py-4 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold rounded-xl transition-all text-lg flex items-center">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const urlBuscar = "{{ url_for('asistencias.api_buscar_estudiante_asistencia') }}";
+const urlFechas = "{{ url_for('asistencias.api_fechas_ausencia', estudiante_id=0) }}".replace('/0', '');
+const csrfToken = "{{ csrf_token() }}";
+
+// Buscar con Enter
+document.getElementById('inputBuscar').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        buscarEstudiante();
+    }
+});
+
+async function buscarEstudiante() {
+    const termino = document.getElementById('inputBuscar').value.trim();
+    if (!termino || termino.length < 2) {
+        alert('Ingrese al menos 2 caracteres para buscar');
+        return;
+    }
+
+    const btn = document.getElementById('btnBuscar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Buscando...';
+
+    try {
+        const resp = await fetch(urlBuscar, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ termino: termino })
+        });
+        const data = await resp.json();
+
+        if (!data.success) {
+            document.getElementById('resultadosBusqueda').classList.remove('hidden');
+            document.getElementById('listaResultados').innerHTML =
+                '<div class="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl text-yellow-800"><i class="fas fa-exclamation-triangle mr-2"></i>' + data.message + '</div>';
+            return;
+        }
+
+        if (data.multiple) {
+            // Mostrar lista de resultados
+            let html = '<p class="text-sm font-bold text-gray-600 mb-3">Se encontraron ' + data.estudiantes.length + ' estudiantes:</p>';
+            data.estudiantes.forEach(est => {
+                html += `<div class="resultado-item p-4 border-2 border-gray-200 rounded-xl mb-2 flex justify-between items-center"
+                              onclick="seleccionarDesdeListaId(${est.id})">
+                    <div>
+                        <div class="font-bold text-gray-800">${est.nombre_completo}</div>
+                        <div class="text-sm text-gray-500">DNI: ${est.dni} | ${est.nivel} - ${est.grado}</div>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>`;
+            });
+            document.getElementById('listaResultados').innerHTML = html;
+            document.getElementById('resultadosBusqueda').classList.remove('hidden');
+        } else {
+            seleccionarEstudiante(data.estudiante);
+        }
+    } catch (err) {
+        alert('Error al buscar: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-search mr-2"></i>Buscar';
+    }
+}
+
+async function seleccionarDesdeListaId(estudianteId) {
+    // Buscar por ID - hacemos otra consulta con el DNI del estudiante clickeado
+    const items = document.querySelectorAll('.resultado-item');
+    let dniTarget = '';
+    items.forEach(item => {
+        if (item.getAttribute('onclick').includes(estudianteId)) {
+            const dniMatch = item.querySelector('.text-sm').textContent.match(/DNI: (\d+)/);
+            if (dniMatch) dniTarget = dniMatch[1];
+        }
+    });
+
+    if (dniTarget) {
+        const resp = await fetch(urlBuscar, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ termino: dniTarget })
+        });
+        const data = await resp.json();
+        if (data.success && !data.multiple) {
+            seleccionarEstudiante(data.estudiante);
+        }
+    }
+}
+
+function seleccionarEstudiante(est) {
+    document.getElementById('estudiante_id').value = est.id;
+    document.getElementById('infoNombre').textContent = est.nombre_completo;
+    document.getElementById('infoDni').textContent = est.dni;
+    document.getElementById('infoNivel').textContent = est.nivel;
+    document.getElementById('infoGrado').textContent = est.grado;
+
+    // Iniciales
+    const partes = est.nombre_completo.split(',');
+    if (partes.length >= 2) {
+        document.getElementById('infoIniciales').textContent =
+            (partes[1].trim()[0] || '') + (partes[0].trim()[0] || '');
+    }
+
+    // Ocultar busqueda, mostrar seleccionado
+    document.getElementById('resultadosBusqueda').classList.add('hidden');
+    document.getElementById('estudianteSeleccionado').classList.remove('hidden');
+    document.getElementById('inputBuscar').classList.add('hidden');
+    document.getElementById('btnBuscar').classList.add('hidden');
+
+    // Auto-llenar datos del apoderado
+    if (est.apoderado_nombre) document.getElementById('inputApoderadoNombre').value = est.apoderado_nombre;
+    if (est.apoderado_dni) document.getElementById('inputApoderadoDni').value = est.apoderado_dni;
+    if (est.apoderado_celular) document.getElementById('inputApoderadoTelefono').value = est.apoderado_celular;
+    if (est.apoderado_relacion) {
+        const select = document.getElementById('inputApoderadoRelacion');
+        for (let option of select.options) {
+            if (option.value === est.apoderado_relacion) {
+                option.selected = true;
+                break;
+            }
+        }
+    }
+
+    // Activar paso 2 y cargar fechas de ausencia
+    document.getElementById('step2').classList.remove('disabled');
+    cargarFechasAusencia(est.id);
+}
+
+function limpiarEstudiante() {
+    document.getElementById('estudiante_id').value = '';
+    document.getElementById('inputFecha').value = '';
+    document.getElementById('estudianteSeleccionado').classList.add('hidden');
+    document.getElementById('inputBuscar').classList.remove('hidden');
+    document.getElementById('btnBuscar').classList.remove('hidden');
+    document.getElementById('inputBuscar').value = '';
+    document.getElementById('resultadosBusqueda').classList.add('hidden');
+    document.getElementById('step2').classList.add('disabled');
+    document.getElementById('step3').classList.add('disabled');
+    document.getElementById('listaFechas').innerHTML = '';
+    document.getElementById('inputApoderadoNombre').value = '';
+    document.getElementById('inputApoderadoDni').value = '';
+    document.getElementById('inputApoderadoTelefono').value = '';
+    document.getElementById('inputApoderadoRelacion').value = '';
+}
+
+async function cargarFechasAusencia(estudianteId) {
+    document.getElementById('cargandoFechas').classList.remove('hidden');
+    document.getElementById('listaFechas').innerHTML = '';
+    document.getElementById('sinAusencias').classList.add('hidden');
+
+    try {
+        const resp = await fetch(urlFechas + '/' + estudianteId);
+        const data = await resp.json();
+
+        document.getElementById('cargandoFechas').classList.add('hidden');
+
+        if (!data.success) {
+            document.getElementById('listaFechas').innerHTML =
+                '<div class="col-span-3 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700">' + data.message + '</div>';
+            return;
+        }
+
+        // Filtrar solo las no justificadas
+        const sinJustificar = data.fechas.filter(f => !f.justificada);
+
+        if (sinJustificar.length === 0) {
+            document.getElementById('sinAusencias').classList.remove('hidden');
+            return;
+        }
+
+        let html = '';
+        sinJustificar.forEach(f => {
+            html += `<div class="fecha-ausencia-btn p-4 border-2 border-gray-200 rounded-xl hover:border-purple-400"
+                         onclick="seleccionarFecha(this, '${f.fecha}')"
+                         data-fecha="${f.fecha}">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center bg-red-100">
+                        <i class="fas fa-calendar-times text-red-500"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-gray-800">${f.dia_semana} ${f.fecha_formato}</div>
+                        <div class="text-xs text-red-500 font-medium">Sin justificar</div>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        document.getElementById('listaFechas').innerHTML = html;
+    } catch (err) {
+        document.getElementById('cargandoFechas').classList.add('hidden');
+        document.getElementById('listaFechas').innerHTML =
+            '<div class="col-span-3 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700">Error al cargar fechas: ' + err.message + '</div>';
+    }
+}
+
+function seleccionarFecha(el, fecha) {
+    // Quitar seleccion previa
+    document.querySelectorAll('.fecha-ausencia-btn').forEach(btn => {
+        btn.classList.remove('selected');
+        btn.style.borderColor = '';
+    });
+
+    // Seleccionar
+    el.classList.add('selected');
+    el.style.borderColor = '#5F2A5D';
+    document.getElementById('inputFecha').value = fecha;
+
+    // Activar paso 3
+    document.getElementById('step3').classList.remove('disabled');
+}
+
+function toggleDocumento(mostrar) {
+    const div = document.getElementById('divDocumento');
+    if (mostrar) {
+        div.classList.remove('hidden');
+    } else {
+        div.classList.add('hidden');
+    }
+}
+
+// Validar antes de enviar
+document.getElementById('formJustificacion').addEventListener('submit', function(e) {
+    if (!document.getElementById('estudiante_id').value) {
+        e.preventDefault();
+        alert('Debe seleccionar un estudiante');
+        return;
+    }
+    if (!document.getElementById('inputFecha').value) {
+        e.preventDefault();
+        alert('Debe seleccionar una fecha de ausencia');
+        return;
+    }
+});
+</script>
+{% endblock %}

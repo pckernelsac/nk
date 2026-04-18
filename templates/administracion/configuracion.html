@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración del Sistema{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .animate-slide-in {
+        animation: slideInUp 0.5s ease-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-6">
+    <!-- Header Section -->
+    <div class="bg-gradient-to-r from-purple-600 to-purple-600 rounded-2xl shadow-xl p-8 mb-8 text-white animate-slide-in relative overflow-hidden">
+        <!-- Iconos decorativos de fondo -->
+        <div class="absolute top-0 right-0 opacity-10 text-9xl">
+            <i class="fas fa-cogs"></i>
+        </div>
+        <div class="absolute bottom-0 left-20 opacity-10 text-7xl">
+            <i class="fas fa-building"></i>
+        </div>
+
+        <div class="flex items-center justify-between relative z-10">
+            <div>
+                <div class="flex items-center mb-3">
+                    <i class="fas fa-sliders-h text-white text-3xl mr-3 animate-pulse"></i>
+                    <h1 class="text-5xl font-bold">Configuración del Sistema</h1>
+                </div>
+                <div class="flex items-center text-xl opacity-90">
+                    <i class="fas fa-info-circle text-white mr-2"></i>
+                    <p>Datos institucionales y configuración general</p>
+                </div>
+            </div>
+            <div class="hidden md:block">
+                <div class="bg-white bg-opacity-20 rounded-full p-6 hover:bg-opacity-30 transition-all duration-300">
+                    <i class="fas fa-tools text-white text-6xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de configuración -->
+    <div class="max-w-5xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden animate-slide-in" style="animation-delay: 0.1s">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-600 p-6 text-white relative overflow-hidden">
+                <div class="absolute right-0 top-0 opacity-20 text-7xl">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h3 class="text-2xl font-bold flex items-center relative z-10">
+                    <i class="fas fa-clipboard-list mr-3"></i>Formulario de Configuración
+                </h3>
+            </div>
+
+            <div class="p-6">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                    <!-- Datos Institucionales -->
+                    <div class="mb-8">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center border-b-2 border-purple-600 pb-2">
+                            <i class="fas fa-school text-purple-600 mr-2"></i> Datos Institucionales
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-building text-purple-600 mr-1"></i> Nombre de la Institución <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="nombre_institucion"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
+                                       value="{{ config.nombre_institucion if config else '' }}"
+                                       placeholder="Ej: Colegio y NK Chambergo"
+                                       required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-id-card text-purple-600 mr-1"></i> RUC
+                                </label>
+                                <input type="text" name="ruc"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
+                                       value="{{ config.ruc if config else '' }}"
+                                       placeholder="Ej: 12345678901"
+                                       maxlength="11">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-phone text-purple-600 mr-1"></i> Teléfono
+                                </label>
+                                <input type="text" name="telefono"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
+                                       value="{{ config.telefono if config else '' }}"
+                                       placeholder="Ej: 987654321">
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-map-marker-alt text-purple-600 mr-1"></i> Dirección
+                                </label>
+                                <input type="text" name="direccion"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
+                                       value="{{ config.direccion if config else '' }}"
+                                       placeholder="Ej: Av. Principal 123, Lima">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-envelope text-purple-600 mr-1"></i> Email
+                                </label>
+                                <input type="email" name="email"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
+                                       value="{{ config.email if config else '' }}"
+                                       placeholder="Ej: contacto@colegio.edu.pe">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-globe text-purple-600 mr-1"></i> Sitio Web
+                                </label>
+                                <input type="text" name="sitio_web"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
+                                       value="{{ config.sitio_web if config else '' }}"
+                                       placeholder="Ej: www.colegio.edu.pe">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Año Académico -->
+                    <div class="mb-8">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center border-b-2 border-purple-600 pb-2">
+                            <i class="fas fa-calendar-alt text-purple-600 mr-2"></i> Año Académico
+                        </h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-calendar-check text-purple-600 mr-1"></i> Año Académico Actual <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="anio_academico_actual"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
+                                   value="{{ config.anio_academico_actual if config else current_year }}"
+                                   placeholder="Ej: {{ current_year }}"
+                                   required>
+                            <small class="text-gray-500 flex items-center mt-1">
+                                <i class="fas fa-info-circle mr-1"></i>Este año se usará en todos los módulos del sistema
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Configuración Regional -->
+                    <div class="mb-8">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center border-b-2 border-purple-600 pb-2">
+                            <i class="fas fa-globe-americas text-purple-600 mr-2"></i> Configuración Regional
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-clock text-purple-600 mr-1"></i> Zona Horaria
+                                </label>
+                                <select name="zona_horaria"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all">
+                                    <option value="America/Lima" {% if config and config.zona_horaria == 'America/Lima' %}selected{% endif %}>América/Lima (UTC-5)</option>
+                                    <option value="America/Bogota" {% if config and config.zona_horaria == 'America/Bogota' %}selected{% endif %}>América/Bogotá (UTC-5)</option>
+                                    <option value="America/Mexico_City" {% if config and config.zona_horaria == 'America/Mexico_City' %}selected{% endif %}>América/Ciudad de México (UTC-6)</option>
+                                    <option value="America/Buenos_Aires" {% if config and config.zona_horaria == 'America/Buenos_Aires' %}selected{% endif %}>América/Buenos Aires (UTC-3)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-language text-purple-600 mr-1"></i> Idioma
+                                </label>
+                                <select name="idioma"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all">
+                                    <option value="es" {% if not config or config.idioma == 'es' %}selected{% endif %}>Español</option>
+                                    <option value="en" {% if config and config.idioma == 'en' %}selected{% endif %}>English</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-dollar-sign text-purple-600 mr-1"></i> Moneda
+                                </label>
+                                <select name="moneda"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all">
+                                    <option value="PEN" {% if not config or config.moneda == 'PEN' %}selected{% endif %}>Soles (PEN)</option>
+                                    <option value="USD" {% if config and config.moneda == 'USD' %}selected{% endif %}>Dólares (USD)</option>
+                                    <option value="EUR" {% if config and config.moneda == 'EUR' %}selected{% endif %}>Euros (EUR)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="pt-6 border-t-2 border-gray-200 flex flex-col sm:flex-row justify-between gap-4">
+                        <a href="{{ url_for('administracion.dashboard') }}"
+                           class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold rounded-xl shadow-lg transition-all transform hover:scale-105">
+                            <i class="fas fa-arrow-left mr-2"></i> Volver
+                        </a>
+                        <button type="submit"
+                                class="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-105">
+                            <i class="fas fa-save mr-2"></i> Guardar Configuración
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if config %}
+        <!-- Información adicional -->
+        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 mt-6 text-white animate-slide-in relative overflow-hidden" style="animation-delay: 0.2s">
+            <div class="absolute right-0 bottom-0 opacity-10 text-9xl">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <h5 class="text-xl font-bold mb-4 flex items-center relative z-10">
+                <i class="fas fa-database mr-2"></i> Información del Sistema
+            </h5>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                <div class="space-y-2">
+                    <p class="flex items-center">
+                        <i class="far fa-calendar-plus mr-2"></i>
+                        <strong>Fecha de Creación:</strong>
+                        <span class="ml-2">{{ config.fecha_creacion.strftime('%Y-%m-%d %H:%M') if config.fecha_creacion else '-' }}</span>
+                    </p>
+                    <p class="flex items-center">
+                        <i class="far fa-calendar-check mr-2"></i>
+                        <strong>Última Modificación:</strong>
+                        <span class="ml-2">{{ config.fecha_modificacion.strftime('%Y-%m-%d %H:%M') if config.fecha_modificacion else '-' }}</span>
+                    </p>
+                </div>
+                <div class="space-y-2">
+                    <p class="flex items-center">
+                        <i class="fas fa-user-edit mr-2"></i>
+                        <strong>Usuario que Modificó:</strong>
+                        <span class="ml-2">{{ config.usuario_modificacion or '-' }}</span>
+                    </p>
+                    <p class="flex items-center">
+                        <i class="fas fa-toggle-on mr-2"></i>
+                        <strong>Estado:</strong>
+                        {% if config.activo %}
+                        <span class="ml-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">
+                            <i class="fas fa-check-circle mr-1"></i>Activo
+                        </span>
+                        {% else %}
+                        <span class="ml-2 bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold">
+                            <i class="fas fa-times-circle mr-1"></i>Inactivo
+                        </span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
