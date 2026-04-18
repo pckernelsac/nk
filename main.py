@@ -79,6 +79,10 @@ async def lifespan(app: FastAPI):
     if estudiantes_actualizar:
         db_facade.session.commit()
 
+    from utils.bootstrap_admin import ensure_bootstrap_admin
+
+    ensure_bootstrap_admin(logger)
+
     yield
 
 

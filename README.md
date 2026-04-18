@@ -10,8 +10,9 @@ Aplicación **FastAPI** con plantillas Jinja2, SQLAlchemy y SQLite (`instance/es
 ## Configuración
 
 1. Copiar `.env.example` a `.env` y definir al menos `SECRET_KEY` y, en producción, `APP_ENV=production`.
-2. No subir `.env` ni la base de datos al repositorio (ya están en `.gitignore`).
-3. Credenciales opcionales (Firebase): colocar el JSON en `config/` y referenciar `FIREBASE_CREDENTIALS_PATH` en `.env`.
+2. **Primer usuario administrador:** `init_db.py` borra la base y solo sirve para desarrollo. En producción, si la BD está vacía, define `ADMIN_BOOTSTRAP_PASSWORD` (y opcionalmente `ADMIN_BOOTSTRAP_USERNAME`) antes del primer arranque; la app creará el admin automáticamente. Si ya levantaste sin eso, puedes ejecutar en el servidor: `python reset_admin_password.py --password "TuClave"`.
+3. No subir `.env` ni la base de datos al repositorio (ya están en `.gitignore`).
+4. Credenciales opcionales (Firebase): colocar el JSON en `config/` y referenciar `FIREBASE_CREDENTIALS_PATH` en `.env`.
 
 ## Desarrollo
 

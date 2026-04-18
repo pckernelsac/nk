@@ -79,6 +79,11 @@ class Config:
         'QR_TAMANIO_MM': 20,
     }
 
+    # Primer administrador (solo si la tabla usuarios está vacía al arrancar)
+    ADMIN_BOOTSTRAP_USERNAME = os.environ.get("ADMIN_BOOTSTRAP_USERNAME", "admin")
+    ADMIN_BOOTSTRAP_PASSWORD = os.environ.get("ADMIN_BOOTSTRAP_PASSWORD", "").strip()
+    ADMIN_BOOTSTRAP_EMAIL = os.environ.get("ADMIN_BOOTSTRAP_EMAIL", "").strip()
+
     # Configuración de Email (SMTP; envío vía utils/email_helper)
     # Las credenciales se cargan desde el archivo .env
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
