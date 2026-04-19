@@ -257,7 +257,6 @@ async def asignar_form(request: Request, estudiante_id: int, _user_id: int = Dep
                     url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
                     status_code=303,
                 )
-            monto_mensual = float(form.get("monto_mensual"))
             anio_escolar = form.get("anio_escolar")
             tipo = form.get("tipo") or "regular"
 
@@ -271,6 +270,28 @@ async def asignar_form(request: Request, estudiante_id: int, _user_id: int = Dep
                         status_code=303,
                     )
                 meses_activos_csv = ",".join(meses_sel)
+                try:
+                    monto_total = float(form.get("monto_total_academia") or 0)
+                except ValueError:
+                    monto_total = 0.0
+                if monto_total <= 0:
+                    add_flash(request, "Ingrese el monto total del paquete de Academia.", "error")
+                    return RedirectResponse(
+                        url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                        status_code=303,
+                    )
+                monto_mensual = round(monto_total / len(meses_sel), 2)
+            else:
+                try:
+                    monto_mensual = float(form.get("monto_mensual") or 0)
+                except ValueError:
+                    monto_mensual = 0.0
+                if monto_mensual <= 0:
+                    add_flash(request, "Ingrese el monto mensual.", "error")
+                    return RedirectResponse(
+                        url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                        status_code=303,
+                    )
 
             # Verificar si ya existe una pensión del mismo tipo para este estudiante y año
             pension = PensionEstudiante.query.filter_by(

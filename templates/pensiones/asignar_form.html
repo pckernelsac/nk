@@ -145,23 +145,51 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <!-- Monto Mensual -->
+                        <!-- Monto: Mensual (regular) o Total del Paquete (academia) -->
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-3">
-                                <i class="fas fa-dollar-sign text-green-600 mr-2"></i>
-                                Monto Mensual (S/) <span class="text-red-500">*</span>
-                            </label>
-                            <div class="relative">
-                                <span class="absolute left-5 top-5 text-gray-500 font-bold text-xl">S/</span>
-                                <input type="number" name="monto_mensual" step="0.01" min="0.01" required
-                                       value="{{ pension.monto_mensual if pension else '' }}"
-                                       class="w-full pl-16 pr-6 py-4 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring focus:ring-green-200 transition-all font-bold text-2xl"
-                                       placeholder="250.00">
+                            <!-- REGULAR: monto mensual -->
+                            <div id="campo-monto-regular" class="{% if pension and pension.tipo == 'academia' %}hidden{% endif %}">
+                                <label class="block text-sm font-bold text-gray-700 mb-3">
+                                    <i class="fas fa-dollar-sign text-green-600 mr-2"></i>
+                                    Monto Mensual (S/) <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-5 top-5 text-gray-500 font-bold text-xl">S/</span>
+                                    <input type="number" name="monto_mensual" id="input-monto-mensual"
+                                           step="0.01" min="0.01"
+                                           {% if not pension or pension.tipo != 'academia' %}required{% endif %}
+                                           value="{{ pension.monto_mensual if pension and pension.tipo != 'academia' else '' }}"
+                                           class="w-full pl-16 pr-6 py-4 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring focus:ring-green-200 transition-all font-bold text-2xl"
+                                           placeholder="250.00">
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">
+                                    <i class="fas fa-lightbulb text-amber-500 mr-1"></i>
+                                    Monto que el estudiante debe pagar cada mes
+                                </p>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">
-                                <i class="fas fa-lightbulb text-amber-500 mr-1"></i>
-                                Este será el monto que el estudiante debe pagar cada mes
-                            </p>
+
+                            <!-- ACADEMIA: monto total del paquete -->
+                            <div id="campo-monto-academia" class="{% if not pension or pension.tipo != 'academia' %}hidden{% endif %}">
+                                <label class="block text-sm font-bold text-gray-700 mb-3">
+                                    <i class="fas fa-coins text-blue-600 mr-2"></i>
+                                    Monto Total del Paquete (S/) <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-5 top-5 text-gray-500 font-bold text-xl">S/</span>
+                                    <input type="number" name="monto_total_academia" id="input-monto-total-academia"
+                                           step="0.01" min="0.01"
+                                           {% if pension and pension.tipo == 'academia' %}required{% endif %}
+                                           value="{% if pension and pension.tipo == 'academia' and meses_academia_actuales %}{{ '%.2f' % (pension.monto_mensual|float * (meses_academia_actuales|length)) }}{% endif %}"
+                                           class="w-full pl-16 pr-6 py-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all font-bold text-2xl"
+                                           placeholder="1200.00"
+                                           oninput="actualizarEjemplo()">
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">
+                                    <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                                    Total del ciclo. Se dividirá entre los meses seleccionados:
+                                    <span id="academia-mensual-calc" class="font-bold text-blue-700">S/ 0.00</span>/mes
+                                </p>
+                            </div>
                         </div>
 
                         <!-- Año Escolar -->
@@ -541,39 +569,65 @@
 function onTipoChange() {
     const esAcademia = document.getElementById('tipo-academia').checked;
     document.getElementById('seccion-meses-academia').classList.toggle('hidden', !esAcademia);
+
+    const campoRegular = document.getElementById('campo-monto-regular');
+    const campoAcademia = document.getElementById('campo-monto-academia');
+    const inputMensual = document.getElementById('input-monto-mensual');
+    const inputTotal = document.getElementById('input-monto-total-academia');
+
+    campoRegular.classList.toggle('hidden', esAcademia);
+    campoAcademia.classList.toggle('hidden', !esAcademia);
+
+    if (esAcademia) {
+        inputMensual.removeAttribute('required');
+        inputTotal.setAttribute('required', 'required');
+    } else {
+        inputTotal.removeAttribute('required');
+        inputMensual.setAttribute('required', 'required');
+    }
     actualizarEjemplo();
 }
 
 function actualizarEjemplo() {
-    const montoInput = document.querySelector('input[name="monto_mensual"]');
-    const monto = parseFloat(montoInput ? montoInput.value : 0) || 0;
+    const esAcademia = document.getElementById('tipo-academia').checked;
+    let monto, numMeses;
 
-    let numMeses;
-    if (document.getElementById('tipo-academia').checked) {
+    if (esAcademia) {
         const marcados = document.querySelectorAll('.mes-academia-check:checked');
         numMeses = marcados.length;
         document.getElementById('count-meses-academia').textContent = numMeses;
         document.getElementById('ejemplo-meses').textContent = numMeses > 0 ? `${numMeses} mes(es)` : '—';
+
+        const total = parseFloat(document.getElementById('input-monto-total-academia').value) || 0;
+        monto = numMeses > 0 ? (total / numMeses) : 0;
+
+        const calcEl = document.getElementById('academia-mensual-calc');
+        if (calcEl) calcEl.textContent = `S/ ${monto.toFixed(2)}`;
+
+        document.getElementById('ejemplo-mensual').textContent = `S/ ${monto.toFixed(2)}`;
+        document.getElementById('ejemplo-total').textContent = numMeses > 0
+            ? `S/ ${total.toFixed(2)}`
+            : '—';
     } else {
+        monto = parseFloat(document.getElementById('input-monto-mensual').value) || 0;
         {% if config and config.meses_activos %}
         numMeses = {{ config.meses_activos.split(',')|length }};
         {% else %}
         numMeses = 10;
         {% endif %}
         document.getElementById('ejemplo-meses').textContent = `${numMeses} mes(es)`;
+        document.getElementById('ejemplo-mensual').textContent = `S/ ${monto.toFixed(2)}`;
+        document.getElementById('ejemplo-total').textContent = `S/ ${(monto * numMeses).toFixed(2)}`;
     }
-
-    document.getElementById('ejemplo-mensual').textContent = `S/ ${monto.toFixed(2)}`;
-    document.getElementById('ejemplo-total').textContent = numMeses > 0
-        ? `S/ ${(monto * numMeses).toFixed(2)}`
-        : '—';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
-    const montoInput = form.querySelector('input[name="monto_mensual"]');
+    const inputMensual = document.getElementById('input-monto-mensual');
+    const inputTotal = document.getElementById('input-monto-total-academia');
 
-    montoInput.addEventListener('input', actualizarEjemplo);
+    if (inputMensual) inputMensual.addEventListener('input', actualizarEjemplo);
+    if (inputTotal) inputTotal.addEventListener('input', actualizarEjemplo);
     actualizarEjemplo();
 
     form.addEventListener('submit', function(event) {
