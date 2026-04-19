@@ -122,6 +122,74 @@ class PagoPension(db.Model):
 
 
 # ============================================================
+# PLAN DE PAGOS DE PENSIONES (cronograma + cuotas)
+# ============================================================
+
+class CronogramaPagoPension(db.Model):
+    """Plan de pagos: monto total acordado para varios meses, dividido en cuotas."""
+    __tablename__ = 'cronograma_pago_pension'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    estudiante_id = db.Column(db.Integer, nullable=False, index=True)
+    estudiante_nombre_completo = db.Column(db.String(200))
+    anio_escolar = db.Column(db.String(10), nullable=False, index=True)
+
+    meses_cubiertos = db.Column(db.String(200), nullable=False)  # CSV: "marzo,abril,mayo"
+    monto_total = db.Column(db.Numeric(10, 2), nullable=False)
+    numero_cuotas = db.Column(db.Integer, nullable=False)
+
+    estado = db.Column(db.String(20), default='activo', nullable=False)  # activo, completado, anulado
+    observaciones = db.Column(db.String(500))
+
+    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    usuario_registro = db.Column(db.String(50))
+
+    fecha_anulacion = db.Column(db.DateTime)
+    usuario_anulacion = db.Column(db.String(50))
+    motivo_anulacion = db.Column(db.String(500))
+
+    cuotas = db.relationship(
+        'CuotaPagoPension',
+        back_populates='cronograma',
+        order_by='CuotaPagoPension.numero_cuota',
+        cascade='all, delete-orphan',
+        lazy='joined',
+    )
+
+    def __repr__(self):
+        return f'<CronogramaPagoPension est={self.estudiante_id} total=S/{self.monto_total}>'
+
+
+class CuotaPagoPension(db.Model):
+    """Cuota individual de un cronograma de pago."""
+    __tablename__ = 'cuota_pago_pension'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    cronograma_id = db.Column(
+        db.Integer, db.ForeignKey('cronograma_pago_pension.id'), nullable=False, index=True
+    )
+    numero_cuota = db.Column(db.Integer, nullable=False)
+    monto = db.Column(db.Numeric(10, 2), nullable=False)
+    fecha_programada = db.Column(db.String(20), nullable=False)  # YYYY-MM-DD
+
+    estado = db.Column(db.String(20), default='programada', nullable=False)  # programada, pagada, anulada
+
+    fecha_pago_real = db.Column(db.String(20))
+    metodo_pago = db.Column(db.String(50))
+    numero_operacion = db.Column(db.String(50))
+    usuario_cobro = db.Column(db.String(50))
+    fecha_cobro = db.Column(db.DateTime)
+    recibos_generados = db.Column(db.String(200))  # CSV de N° de recibo emitidos al cobrar
+
+    cronograma = db.relationship('CronogramaPagoPension', back_populates='cuotas')
+
+    def __repr__(self):
+        return f'<CuotaPagoPension #{self.numero_cuota} S/{self.monto} {self.estado}>'
+
+
+# ============================================================
 # PAGOS GENERALES - Tipos, conceptos, obligaciones y pagos
 # ============================================================
 

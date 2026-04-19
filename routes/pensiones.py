@@ -10,7 +10,16 @@ from sqlalchemy import or_
 
 from config import Config
 from dependencies import get_current_user_id, require_roles
-from models import ConfiguracionPension, Estudiante, ObligacionPagoEstudiante, PagoPension, PensionEstudiante, db
+from models import (
+    ConfiguracionPension,
+    CronogramaPagoPension,
+    CuotaPagoPension,
+    Estudiante,
+    ObligacionPagoEstudiante,
+    PagoPension,
+    PensionEstudiante,
+    db,
+)
 from services.pago_service import PagoService
 from template_helpers import add_flash, common_context, csrf_ok, templates
 from utils.helpers import (
@@ -322,6 +331,16 @@ async def asignar_form(request: Request, estudiante_id: int, _user_id: int = Dep
         if pension and pension.tipo == 'academia' and pension.meses_activos:
             meses_academia_actuales = [m.strip() for m in pension.meses_activos.split(',') if m.strip()]
 
+        cronogramas_activos = (
+            CronogramaPagoPension.query.filter_by(
+                estudiante_id=estudiante_id,
+                anio_escolar=anio_actual,
+            )
+            .filter(CronogramaPagoPension.estado != 'anulado')
+            .order_by(CronogramaPagoPension.fecha_registro.desc())
+            .all()
+        )
+
         return templates.TemplateResponse(
             "pensiones/asignar_form.html",
             common_context(
@@ -333,6 +352,7 @@ async def asignar_form(request: Request, estudiante_id: int, _user_id: int = Dep
                 saldos_por_mes=saldos_por_mes,
                 todos_los_meses=todos_los_meses,
                 meses_academia_actuales=meses_academia_actuales,
+                cronogramas_activos=cronogramas_activos,
                 now=datetime.utcnow(),
             ),
         )
@@ -483,6 +503,405 @@ async def adelantar_cuotas(request: Request, estudiante_id: int, _user_id: int =
         add_flash(request, "Error al registrar los pagos adelantados. Intente nuevamente.", "error")
         return RedirectResponse(
             url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+            status_code=303,
+        )
+
+
+# ============================================================
+# PLAN DE PAGOS (cronograma + cuotas)
+# ============================================================
+
+@router.post("/asignar/{estudiante_id:int}/crear_plan", name="pensiones.crear_plan")
+async def crear_plan(request: Request, estudiante_id: int, _user_id: int = Depends(get_current_user_id)):
+    """Crea un plan de pagos: monto total dividido en N cuotas con fecha programada."""
+    try:
+        form = await request.form()
+        if getattr(Config, "WTF_CSRF_ENABLED", True) and not csrf_ok(request, form.get("csrf_token")):
+            add_flash(request, "Sesión de seguridad expirada. Intente de nuevo.", "error")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        estudiante = _est_or_404(estudiante_id)
+        config = ConfiguracionPension.query.filter_by(activo=True).first()
+        anio_actual = config.anio_escolar if config else str(datetime.now().year)
+
+        pension = PensionEstudiante.query.filter_by(
+            estudiante_id=estudiante_id,
+            anio_escolar=anio_actual,
+            activo=True,
+        ).first()
+
+        if not pension:
+            add_flash(request, "El estudiante no tiene pensión asignada.", "error")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        meses_seleccionados = form.getlist("meses_plan")
+        if not meses_seleccionados:
+            add_flash(request, "Seleccione al menos un mes para el plan.", "warning")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        try:
+            monto_total = round(float(form.get("monto_total_plan") or 0), 2)
+        except ValueError:
+            add_flash(request, "Monto total inválido.", "error")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        if monto_total <= 0:
+            add_flash(request, "El monto total debe ser mayor a 0.", "warning")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        cuotas_montos = form.getlist("cuota_monto")
+        cuotas_fechas = form.getlist("cuota_fecha")
+
+        if not cuotas_montos or len(cuotas_montos) != len(cuotas_fechas):
+            add_flash(request, "Defina al menos una cuota con monto y fecha.", "warning")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        cuotas_data = []
+        suma = 0.0
+        for idx, (monto_raw, fecha_raw) in enumerate(zip(cuotas_montos, cuotas_fechas), start=1):
+            try:
+                monto = round(float(monto_raw), 2)
+            except ValueError:
+                add_flash(request, f"Monto inválido en cuota #{idx}.", "error")
+                return RedirectResponse(
+                    url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                    status_code=303,
+                )
+            if monto <= 0:
+                add_flash(request, f"La cuota #{idx} debe ser mayor a 0.", "warning")
+                return RedirectResponse(
+                    url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                    status_code=303,
+                )
+            if not fecha_raw:
+                add_flash(request, f"Indique fecha para la cuota #{idx}.", "warning")
+                return RedirectResponse(
+                    url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                    status_code=303,
+                )
+            cuotas_data.append((idx, monto, fecha_raw))
+            suma += monto
+
+        # Validar que la suma de cuotas coincida con el monto total (tolerancia 0.01)
+        if abs(suma - monto_total) > 0.01:
+            add_flash(
+                request,
+                f"La suma de cuotas (S/ {suma:.2f}) no coincide con el monto total (S/ {monto_total:.2f}).",
+                "error",
+            )
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        observaciones = (form.get("observaciones_plan") or "").strip() or None
+        estudiante_nombre = (
+            f"{estudiante.apellido_paterno_est} {estudiante.apellido_materno_est}, {estudiante.nombres_est}"
+        )
+
+        cronograma = CronogramaPagoPension(
+            estudiante_id=estudiante_id,
+            estudiante_nombre_completo=estudiante_nombre,
+            anio_escolar=anio_actual,
+            meses_cubiertos=",".join(meses_seleccionados),
+            monto_total=monto_total,
+            numero_cuotas=len(cuotas_data),
+            estado='activo',
+            observaciones=observaciones,
+            usuario_registro=request.session.get("username"),
+        )
+        db.session.add(cronograma)
+        db.session.flush()  # obtener id
+
+        for numero, monto, fecha in cuotas_data:
+            db.session.add(
+                CuotaPagoPension(
+                    cronograma_id=cronograma.id,
+                    numero_cuota=numero,
+                    monto=monto,
+                    fecha_programada=fecha,
+                    estado='programada',
+                )
+            )
+
+        db.session.commit()
+        add_flash(
+            request,
+            f"Plan de pagos creado: S/ {monto_total:.2f} en {len(cuotas_data)} cuota(s).",
+            "success",
+        )
+        return RedirectResponse(
+            url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+            status_code=303,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al crear plan de pagos: {e}")
+        add_flash(request, "Error al crear el plan de pagos. Intente nuevamente.", "error")
+        return RedirectResponse(
+            url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+            status_code=303,
+        )
+
+
+@router.post("/cuota/{cuota_id:int}/cobrar", name="pensiones.cobrar_cuota")
+async def cobrar_cuota(request: Request, cuota_id: int, _user_id: int = Depends(get_current_user_id)):
+    """Confirma el cobro de una cuota: genera PagoPension(s) aplicando FIFO sobre los meses cubiertos."""
+    try:
+        form = await request.form()
+        if getattr(Config, "WTF_CSRF_ENABLED", True) and not csrf_ok(request, form.get("csrf_token")):
+            add_flash(request, "Sesión de seguridad expirada. Intente de nuevo.", "error")
+            return RedirectResponse(
+                url=request.headers.get("referer") or str(request.url_for("pensiones.dashboard")),
+                status_code=303,
+            )
+
+        cuota = db.session.get(CuotaPagoPension, cuota_id)
+        if not cuota:
+            raise HTTPException(status_code=404)
+
+        cronograma = cuota.cronograma
+        estudiante_id = cronograma.estudiante_id
+
+        if cuota.estado != 'programada':
+            add_flash(request, f"La cuota #{cuota.numero_cuota} ya está {cuota.estado}.", "warning")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        if cronograma.estado == 'anulado':
+            add_flash(request, "El plan de pagos está anulado.", "error")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        fecha_pago = form.get("fecha_pago_real") or cuota.fecha_programada
+        metodo_pago = form.get("metodo_pago") or "efectivo"
+        numero_operacion = (form.get("numero_operacion") or "").strip() or None
+
+        estudiante = _est_or_404(estudiante_id)
+        pension = PensionEstudiante.query.filter_by(
+            estudiante_id=estudiante_id,
+            anio_escolar=cronograma.anio_escolar,
+            activo=True,
+        ).first()
+
+        if not pension:
+            add_flash(request, "El estudiante ya no tiene pensión asignada.", "error")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        monto_mensual = float(pension.monto_mensual)
+        meses_cubiertos = [m.strip() for m in (cronograma.meses_cubiertos or "").split(",") if m.strip()]
+        saldos = obtener_saldo_por_mes(estudiante_id, cronograma.anio_escolar)
+
+        estudiante_nombre = (
+            f"{estudiante.apellido_paterno_est} {estudiante.apellido_materno_est}, {estudiante.nombres_est}"
+        )
+        pagador_nombre = (
+            f"{estudiante.apellido_paterno_apoderado or ''} {estudiante.apellido_materno_apoderado or ''}, "
+            f"{estudiante.nombres_apoderado or ''}"
+        ).strip(', ')
+
+        restante_cuota = float(cuota.monto)
+        recibos_generados = []
+
+        # Repartir FIFO sobre los meses cubiertos por el cronograma.
+        for mes in meses_cubiertos:
+            if restante_cuota <= 0:
+                break
+            saldo_mes = saldos.get(mes, {})
+            restante_mes = round(saldo_mes.get('restante', monto_mensual), 2)
+            if restante_mes <= 0:
+                continue
+            abono = round(min(restante_cuota, restante_mes), 2)
+            if abono <= 0:
+                continue
+
+            es_parcial = abono < restante_mes
+            obs = f"Cobro cuota #{cuota.numero_cuota} de plan #{cronograma.id}"
+            if es_parcial:
+                obs += f". Restará en {mes}: S/ {round(restante_mes - abono, 2):.2f}"
+
+            numero_recibo = generar_numero_recibo()
+            nuevo_pago = PagoPension(
+                numero_recibo=numero_recibo,
+                estudiante_id=estudiante_id,
+                estudiante_nombre_completo=estudiante_nombre,
+                estudiante_dni=estudiante.dni_est,
+                estudiante_nivel=estudiante.nivel,
+                estudiante_grado=estudiante.grado,
+                pagador_nombre=pagador_nombre,
+                pagador_dni=estudiante.dni_apoderado,
+                pagador_relacion=estudiante.relacion_apoderado or 'Apoderado',
+                pagador_telefono=estudiante.celular_apoderado,
+                mes_pago=mes,
+                anio_pago=cronograma.anio_escolar,
+                monto_pagado=abono,
+                fecha_pago=fecha_pago,
+                metodo_pago=metodo_pago,
+                numero_operacion=numero_operacion,
+                observaciones=obs,
+                estado='pagado',
+                usuario_registro=request.session.get("username"),
+            )
+            db.session.add(nuevo_pago)
+            recibos_generados.append(numero_recibo)
+
+            # Actualizar saldo en memoria para próxima iteración
+            saldo_mes['restante'] = round(restante_mes - abono, 2)
+            saldo_mes['pagado'] = round(saldo_mes.get('pagado', 0) + abono, 2)
+            saldos[mes] = saldo_mes
+            restante_cuota = round(restante_cuota - abono, 2)
+
+        if not recibos_generados:
+            add_flash(
+                request,
+                "No se pudo aplicar la cuota: los meses cubiertos ya están pagados. Anule el plan o ajuste meses.",
+                "warning",
+            )
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        # Si quedó remanente sin aplicar (todos los meses ya estaban cubiertos), avisamos.
+        sobrante = round(restante_cuota, 2)
+        if sobrante > 0:
+            add_flash(
+                request,
+                f"Cuota cobrada con remanente sin aplicar: S/ {sobrante:.2f} (meses ya estaban cubiertos).",
+                "warning",
+            )
+
+        cuota.estado = 'pagada'
+        cuota.fecha_pago_real = fecha_pago
+        cuota.metodo_pago = metodo_pago
+        cuota.numero_operacion = numero_operacion
+        cuota.usuario_cobro = request.session.get("username")
+        cuota.fecha_cobro = datetime.utcnow()
+        cuota.recibos_generados = ",".join(recibos_generados)
+
+        # Si ya no queda ninguna programada, marcamos cronograma como completado
+        pendientes = [c for c in cronograma.cuotas if c.id != cuota.id and c.estado == 'programada']
+        if not pendientes:
+            cronograma.estado = 'completado'
+
+        db.session.commit()
+        add_flash(
+            request,
+            f"Cuota #{cuota.numero_cuota} cobrada. Recibo(s): {', '.join(recibos_generados)}.",
+            "success",
+        )
+        return RedirectResponse(
+            url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+            status_code=303,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al cobrar cuota: {e}")
+        add_flash(request, "Error al registrar el cobro de la cuota. Intente nuevamente.", "error")
+        return RedirectResponse(
+            url=request.headers.get("referer") or str(request.url_for("pensiones.dashboard")),
+            status_code=303,
+        )
+
+
+@router.post("/cronograma/{cronograma_id:int}/anular", name="pensiones.anular_plan")
+async def anular_plan(request: Request, cronograma_id: int, _user_id: int = Depends(get_current_user_id)):
+    """Anula un plan de pagos. Solo permitido si ninguna cuota ha sido cobrada."""
+    try:
+        form = await request.form()
+        if getattr(Config, "WTF_CSRF_ENABLED", True) and not csrf_ok(request, form.get("csrf_token")):
+            add_flash(request, "Sesión de seguridad expirada. Intente de nuevo.", "error")
+            return RedirectResponse(
+                url=request.headers.get("referer") or str(request.url_for("pensiones.dashboard")),
+                status_code=303,
+            )
+
+        cronograma = db.session.get(CronogramaPagoPension, cronograma_id)
+        if not cronograma:
+            raise HTTPException(status_code=404)
+
+        estudiante_id = cronograma.estudiante_id
+        motivo = (form.get("motivo_anulacion") or "").strip()
+
+        if cronograma.estado == 'anulado':
+            add_flash(request, "Este plan ya está anulado.", "warning")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        if any(c.estado == 'pagada' for c in cronograma.cuotas):
+            add_flash(
+                request,
+                "No se puede anular: el plan ya tiene cuotas cobradas. Anule los recibos individuales primero.",
+                "error",
+            )
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        if not motivo:
+            add_flash(request, "Indique el motivo de anulación del plan.", "error")
+            return RedirectResponse(
+                url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+                status_code=303,
+            )
+
+        cronograma.estado = 'anulado'
+        cronograma.fecha_anulacion = datetime.utcnow()
+        cronograma.usuario_anulacion = request.session.get("username")
+        cronograma.motivo_anulacion = motivo
+        for c in cronograma.cuotas:
+            if c.estado == 'programada':
+                c.estado = 'anulada'
+
+        db.session.commit()
+        add_flash(request, "Plan de pagos anulado.", "success")
+        return RedirectResponse(
+            url=str(request.url_for("pensiones.asignar_form", estudiante_id=estudiante_id)),
+            status_code=303,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al anular plan: {e}")
+        add_flash(request, "Error al anular el plan. Intente nuevamente.", "error")
+        return RedirectResponse(
+            url=request.headers.get("referer") or str(request.url_for("pensiones.dashboard")),
             status_code=303,
         )
 

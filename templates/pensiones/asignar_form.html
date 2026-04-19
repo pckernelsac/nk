@@ -227,173 +227,140 @@
             </div>
         </form>
 
-        <!-- ====== SECCIÓN ADELANTAR CUOTAS (OPCIONAL) ====== -->
+        <!-- ====== SECCIÓN PLAN DE PAGOS ====== -->
         {% if pension and meses_pendientes %}
         <div class="bg-white rounded-2xl shadow-xl overflow-hidden slide-down mt-6" style="animation-delay: 0.2s">
-            <!-- Cabecera colapsable -->
-            <button type="button" onclick="toggleAdelantar()"
+            <button type="button" onclick="togglePlan()"
                     class="w-full flex items-center justify-between p-6 text-left"
-                    style="background: linear-gradient(135deg, #d97706, #b45309);">
+                    style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
                 <div class="flex items-center text-white">
-                    <i class="fas fa-forward text-2xl mr-3"></i>
+                    <i class="fas fa-list-ol text-2xl mr-3"></i>
                     <div>
-                        <h2 class="text-xl font-bold">Adelantar Cuotas (Opcional)</h2>
-                        <p class="text-amber-200 text-sm mt-1">
-                            El apoderado puede pagar uno o más meses por adelantado.
-                            Hay <strong>{{ meses_pendientes|length }}</strong> mes(es) pendiente(s).
+                        <h2 class="text-xl font-bold">Crear Plan de Pagos</h2>
+                        <p class="text-blue-100 text-sm mt-1">
+                            Selecciona meses, ingresa el monto total acordado y divídelo en cuotas con fecha.
                         </p>
                     </div>
                 </div>
-                <i id="adelantar-icon" class="fas fa-chevron-down text-white text-xl transition-transform duration-300"></i>
+                <i id="plan-icon" class="fas fa-chevron-down text-white text-xl transition-transform duration-300"></i>
             </button>
 
-            <!-- Contenido colapsable -->
-            <div id="adelantar-content" class="hidden">
-                <form method="POST" action="{{ url_for('pensiones.adelantar_cuotas', estudiante_id=estudiante.id) }}"
-                      id="form-adelantar">
+            <div id="plan-content" class="hidden">
+                <form method="POST" action="{{ url_for('pensiones.crear_plan', estudiante_id=estudiante.id) }}"
+                      id="form-plan">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                     <div class="p-8 space-y-6">
-                        <!-- Selección de meses -->
+                        <!-- 1. Meses cubiertos -->
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-4">
-                                <i class="fas fa-calendar-check text-amber-600 mr-2"></i>
-                                Seleccionar Meses a Pagar
-                                <span class="text-xs font-normal text-gray-500 ml-2">— El monto puede ser parcial o el total adeudado</span>
+                            <label class="block text-sm font-bold text-gray-700 mb-3">
+                                <i class="fas fa-calendar-check text-blue-600 mr-2"></i>
+                                1) Meses cubiertos por el plan
                             </label>
-                            <div class="space-y-3">
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {% for mes in meses_pendientes %}
                                 {% set saldo = saldos_por_mes.get(mes, {}) %}
-                                {% set pagado = saldo.get('pagado', 0) %}
                                 {% set restante = saldo.get('restante', pension.monto_mensual|float) %}
-                                {% set es_abono = pagado > 0 %}
-                                <div class="border-2 border-gray-200 rounded-xl overflow-hidden transition-all duration-200"
-                                     id="card-{{ mes }}">
-                                    <div class="flex items-center gap-4 p-4">
-                                        <!-- Checkbox -->
-                                        <input type="checkbox" name="meses_adelantar" value="{{ mes }}"
-                                               id="check-{{ mes }}"
-                                               class="w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0"
-                                               onchange="toggleMes('{{ mes }}', {{ restante }})">
-
-                                        <!-- Info del mes -->
-                                        <label for="check-{{ mes }}" class="flex-1 cursor-pointer">
-                                            <div class="flex items-center gap-2 flex-wrap">
-                                                <span class="font-bold text-gray-800 capitalize text-base">{{ mes }}</span>
-                                                {% if es_abono %}
-                                                <span class="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">
-                                                    Abono parcial
-                                                </span>
-                                                {% endif %}
-                                            </div>
-                                            {% if es_abono %}
-                                            <div class="flex gap-4 mt-1 text-xs text-gray-500">
-                                                <span class="text-green-600"><i class="fas fa-check mr-1"></i>Abonado: S/ {{ "%.2f"|format(pagado) }}</span>
-                                                <span class="text-red-600"><i class="fas fa-clock mr-1"></i>Restante: S/ {{ "%.2f"|format(restante) }}</span>
-                                            </div>
-                                            <!-- Barra de progreso -->
-                                            <div class="mt-2 w-full bg-gray-200 rounded-full h-1.5">
-                                                <div class="bg-amber-500 h-1.5 rounded-full"
-                                                     style="width: {{ ((pagado / pension.monto_mensual|float) * 100)|round(0) }}%"></div>
-                                            </div>
-                                            {% else %}
-                                            <span class="text-xs text-gray-500">Total: S/ {{ "%.2f"|format(restante) }}</span>
-                                            {% endif %}
-                                        </label>
-
-                                        <!-- Input de monto (oculto hasta marcar) -->
-                                        <div id="monto-{{ mes }}" class="hidden flex-shrink-0 text-right">
-                                            <label class="block text-xs text-gray-500 mb-1">Monto a pagar</label>
-                                            <div class="flex items-center gap-1">
-                                                <span class="text-sm font-bold text-gray-600">S/</span>
-                                                <input type="number" name="monto_mes_{{ mes }}"
-                                                       id="input-monto-{{ mes }}"
-                                                       value="{{ "%.2f"|format(restante) }}"
-                                                       min="0.01" max="{{ "%.2f"|format(restante) }}"
-                                                       step="0.01"
-                                                       data-restante="{{ restante }}"
-                                                       class="w-28 px-3 py-2 border-2 border-amber-300 rounded-lg text-right font-bold focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all"
-                                                       oninput="actualizarTotalAdelantar(); actualizarBadgeMes('{{ mes }}', parseFloat(this.value)||0, {{ restante }})">
-                                            </div>
-                                            <span id="badge-{{ mes }}"
-                                                  class="hidden text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block"></span>
-                                        </div>
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" name="meses_plan" value="{{ mes }}"
+                                           data-restante="{{ restante }}"
+                                           class="sr-only mes-plan-check peer"
+                                           onchange="actualizarTotalSugerido()">
+                                    <div class="peer-checked:border-blue-500 peer-checked:bg-blue-50
+                                                border-2 border-gray-200 rounded-xl p-3 transition-all hover:border-blue-300">
+                                        <p class="font-bold text-gray-800 capitalize">{{ mes }}</p>
+                                        <p class="text-xs text-gray-500">Restante: S/ {{ "%.2f"|format(restante) }}</p>
                                     </div>
-                                </div>
+                                </label>
                                 {% endfor %}
                             </div>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <i class="fas fa-info-circle text-blue-400 mr-1"></i>
+                                Suma sugerida del restante: <span id="suma-meses-sugerida" class="font-bold text-blue-600">S/ 0.00</span>
+                            </p>
                         </div>
 
-                        <!-- Total calculado -->
-                        <div id="resumen-adelanto" class="hidden bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
-                            <div class="flex items-center justify-between flex-wrap gap-3">
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-receipt text-amber-600 text-2xl"></i>
-                                    <div>
-                                        <p class="text-sm text-gray-600">Meses seleccionados: <strong id="count-meses">0</strong></p>
-                                        <p class="text-lg font-bold text-gray-800">Total a pagar: <span id="total-adelanto" class="text-amber-700">S/ 0.00</span></p>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-xs text-gray-500">Se genera un recibo por cada mes</p>
-                                    <p id="aviso-abono" class="hidden text-xs text-orange-600 font-semibold mt-1">
-                                        <i class="fas fa-info-circle mr-1"></i>Contiene abono(s) parcial(es)
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Detalles del pago -->
+                        <!-- 2. Monto total -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">
-                                    <i class="fas fa-calendar-day text-amber-600 mr-2"></i>
-                                    Fecha de Pago <span class="text-red-500">*</span>
+                                    <i class="fas fa-dollar-sign text-green-600 mr-2"></i>
+                                    2) Monto Total Acordado (S/) <span class="text-red-500">*</span>
                                 </label>
-                                <input type="date" name="fecha_pago_adelanto" required
-                                       value="{{ now.strftime('%Y-%m-%d') if now else '' }}"
-                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all">
+                                <input type="number" name="monto_total_plan" id="monto-total-plan"
+                                       step="0.01" min="0.01" required
+                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring focus:ring-green-200 font-bold text-2xl"
+                                       placeholder="0.00"
+                                       oninput="recalcularDiferencia()">
+                                <p class="text-xs text-gray-500 mt-1">Manual. Puede ser distinto al sugerido (descuentos, ajustes, etc.).</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">
-                                    <i class="fas fa-credit-card text-amber-600 mr-2"></i>
-                                    Método de Pago
+                                    <i class="fas fa-divide text-purple-600 mr-2"></i>
+                                    3) N° de Cuotas <span class="text-red-500">*</span>
                                 </label>
-                                <select name="metodo_pago_adelanto"
-                                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all">
-                                    <option value="efectivo">Efectivo</option>
-                                    <option value="transferencia">Transferencia</option>
-                                    <option value="yape">Yape</option>
-                                    <option value="plin">Plin</option>
-                                    <option value="deposito">Depósito</option>
-                                </select>
+                                <div class="flex items-center gap-3">
+                                    <input type="number" id="num-cuotas-plan" min="1" max="24" value="2"
+                                           class="w-24 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 font-bold text-2xl text-center">
+                                    <button type="button" onclick="generarCuotas()"
+                                            class="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow">
+                                        <i class="fas fa-cogs mr-2"></i>Generar
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Genera la tabla con montos iguales y fechas mensuales.</p>
                             </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
-                                    <i class="fas fa-hashtag text-gray-500 mr-2"></i>
-                                    N° Operación (opcional)
-                                </label>
-                                <input type="text" name="numero_operacion_adelanto" maxlength="50"
-                                       placeholder="Ej: 123456789"
-                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all">
+                        </div>
+
+                        <!-- 4. Tabla de cuotas -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-3">
+                                <i class="fas fa-table text-amber-600 mr-2"></i>
+                                4) Cuotas (monto + fecha de pago)
+                            </label>
+                            <div id="tabla-cuotas-vacia" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-400">
+                                Define el monto total y haz clic en <strong>Generar</strong> para crear las cuotas.
                             </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
-                                    <i class="fas fa-comment text-gray-500 mr-2"></i>
-                                    Observaciones (opcional)
-                                </label>
-                                <input type="text" name="observaciones_adelanto" maxlength="200"
-                                       placeholder="Ej: Pago por adelantado solicitado por el padre"
-                                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:ring focus:ring-amber-200 transition-all">
+                            <div id="tabla-cuotas-wrap" class="hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full border-2 border-gray-200 rounded-xl overflow-hidden">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600">N°</th>
+                                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600">Monto (S/)</th>
+                                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600">Fecha de Pago</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla-cuotas-body"></tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-3 flex flex-wrap gap-4 items-center">
+                                    <p class="text-sm">
+                                        Suma cuotas: <span id="suma-cuotas" class="font-bold">S/ 0.00</span>
+                                    </p>
+                                    <p class="text-sm">
+                                        Total: <span id="echo-total" class="font-bold text-blue-700">S/ 0.00</span>
+                                    </p>
+                                    <p id="diferencia-cuotas" class="text-sm font-bold"></p>
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- Observaciones -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <i class="fas fa-comment text-gray-500 mr-2"></i>
+                                Observaciones del plan (opcional)
+                            </label>
+                            <input type="text" name="observaciones_plan" maxlength="200"
+                                   placeholder="Ej: Acuerdo con apoderado, descuento por hermano, etc."
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200">
                         </div>
                     </div>
 
-                    <!-- Botón submit -->
                     <div class="px-8 pb-8">
-                        <button type="submit" id="btn-adelantar" disabled
-                                class="w-full px-6 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none">
-                            <i class="fas fa-forward mr-2"></i>Registrar Cuotas Adelantadas
+                        <button type="submit" id="btn-crear-plan" disabled
+                                class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                            <i class="fas fa-save mr-2"></i>Crear Plan de Pagos
                         </button>
                     </div>
                 </form>
@@ -405,6 +372,162 @@
             <div>
                 <p class="font-bold text-green-800">Todos los meses están al día</p>
                 <p class="text-sm text-green-700">Este estudiante no tiene cuotas pendientes para el año {{ config.anio_escolar if config else '' }}.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ====== PLANES DE PAGO EXISTENTES ====== -->
+        {% if cronogramas_activos %}
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden slide-down mt-6" style="animation-delay: 0.3s">
+            <div class="bg-gradient-to-r from-indigo-500 to-indigo-700 p-6 text-white">
+                <h2 class="text-xl font-bold flex items-center">
+                    <i class="fas fa-clipboard-list mr-3"></i>Planes de Pago
+                    <span class="ml-2 bg-white/20 text-sm px-2 py-0.5 rounded-full">{{ cronogramas_activos|length }}</span>
+                </h2>
+                <p class="text-indigo-100 text-sm mt-1">Gestiona el cobro de cada cuota cuando se haga efectiva.</p>
+            </div>
+
+            <div class="p-6 space-y-6">
+                {% for cron in cronogramas_activos %}
+                {% set total_pagadas = cron.cuotas|selectattr('estado','equalto','pagada')|list|length %}
+                <div class="border-2 {% if cron.estado == 'completado' %}border-green-300 bg-green-50/40{% else %}border-gray-200{% endif %} rounded-xl overflow-hidden">
+                    <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-gray-50">
+                        <div>
+                            <p class="font-bold text-gray-800">
+                                Plan #{{ cron.id }} ·
+                                <span class="text-blue-700">S/ {{ "%.2f"|format(cron.monto_total|float) }}</span>
+                                <span class="text-gray-500 text-sm font-normal">en {{ cron.numero_cuotas }} cuota(s)</span>
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1 capitalize">
+                                Meses: {{ cron.meses_cubiertos }}
+                            </p>
+                            {% if cron.observaciones %}
+                            <p class="text-xs text-gray-600 italic mt-1">{{ cron.observaciones }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 text-xs font-bold rounded-full
+                                {% if cron.estado == 'activo' %}bg-blue-100 text-blue-700
+                                {% elif cron.estado == 'completado' %}bg-green-100 text-green-700
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ cron.estado|capitalize }}
+                            </span>
+                            <span class="text-xs text-gray-500">{{ total_pagadas }}/{{ cron.numero_cuotas }} pagadas</span>
+                            {% if cron.estado == 'activo' and total_pagadas == 0 %}
+                            <button type="button" onclick="toggleAnular({{ cron.id }})"
+                                    class="text-xs px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-full">
+                                <i class="fas fa-ban mr-1"></i>Anular
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <table class="w-full text-sm">
+                        <thead class="bg-white border-b">
+                            <tr class="text-gray-600">
+                                <th class="px-4 py-2 text-left">N°</th>
+                                <th class="px-4 py-2 text-right">Monto</th>
+                                <th class="px-4 py-2 text-left">Fecha programada</th>
+                                <th class="px-4 py-2 text-left">Estado</th>
+                                <th class="px-4 py-2 text-left">Cobro</th>
+                                <th class="px-4 py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cuota in cron.cuotas %}
+                            <tr class="border-t">
+                                <td class="px-4 py-2 font-bold">{{ cuota.numero_cuota }}</td>
+                                <td class="px-4 py-2 text-right font-bold">S/ {{ "%.2f"|format(cuota.monto|float) }}</td>
+                                <td class="px-4 py-2">{{ cuota.fecha_programada }}</td>
+                                <td class="px-4 py-2">
+                                    {% if cuota.estado == 'pagada' %}
+                                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">Pagada</span>
+                                    {% elif cuota.estado == 'anulada' %}
+                                    <span class="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs font-bold rounded-full">Anulada</span>
+                                    {% else %}
+                                    <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">Programada</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2 text-xs text-gray-600">
+                                    {% if cuota.estado == 'pagada' %}
+                                    <div>{{ cuota.fecha_pago_real }} · {{ cuota.metodo_pago|capitalize }}</div>
+                                    {% if cuota.recibos_generados %}
+                                    <div class="text-blue-700">Recibo: {{ cuota.recibos_generados }}</div>
+                                    {% endif %}
+                                    {% else %}
+                                    —
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2 text-right">
+                                    {% if cuota.estado == 'programada' and cron.estado != 'anulado' %}
+                                    <button type="button" onclick="toggleCobro({{ cuota.id }})"
+                                            class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg">
+                                        <i class="fas fa-cash-register mr-1"></i>Cobrar
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if cuota.estado == 'programada' and cron.estado != 'anulado' %}
+                            <tr id="cobro-row-{{ cuota.id }}" class="hidden bg-emerald-50/40 border-t">
+                                <td colspan="6" class="p-4">
+                                    <form method="POST" action="{{ url_for('pensiones.cobrar_cuota', cuota_id=cuota.id) }}"
+                                          class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-600 mb-1">Fecha real de pago</label>
+                                            <input type="date" name="fecha_pago_real" required
+                                                   value="{{ cuota.fecha_programada }}"
+                                                   class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-600 mb-1">Método</label>
+                                            <select name="metodo_pago" class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg">
+                                                <option value="efectivo">Efectivo</option>
+                                                <option value="transferencia">Transferencia</option>
+                                                <option value="yape">Yape</option>
+                                                <option value="plin">Plin</option>
+                                                <option value="deposito">Depósito</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-600 mb-1">N° Operación (opcional)</label>
+                                            <input type="text" name="numero_operacion" maxlength="50"
+                                                   class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg">
+                                        </div>
+                                        <div>
+                                            <button type="submit"
+                                                    class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg">
+                                                Confirmar cobro de S/ {{ "%.2f"|format(cuota.monto|float) }}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    {% if cron.estado == 'activo' and total_pagadas == 0 %}
+                    <div id="anular-row-{{ cron.id }}" class="hidden bg-red-50 border-t p-4">
+                        <form method="POST" action="{{ url_for('pensiones.anular_plan', cronograma_id=cron.id) }}"
+                              class="flex flex-wrap gap-3 items-end">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <div class="flex-1 min-w-[200px]">
+                                <label class="block text-xs font-bold text-gray-600 mb-1">Motivo de anulación</label>
+                                <input type="text" name="motivo_anulacion" required maxlength="200"
+                                       class="w-full px-3 py-2 border-2 border-red-300 rounded-lg"
+                                       placeholder="Indique por qué se anula el plan">
+                            </div>
+                            <button type="submit"
+                                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg">
+                                <i class="fas fa-ban mr-1"></i>Confirmar anulación
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
             </div>
         </div>
         {% endif %}
@@ -470,112 +593,133 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Toggle de la sección adelantar
-function toggleAdelantar() {
-    const content = document.getElementById('adelantar-content');
-    const icon = document.getElementById('adelantar-icon');
-    if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        icon.classList.add('rotate-180');
-    } else {
-        content.classList.add('hidden');
-        icon.classList.remove('rotate-180');
-    }
+// ====== PLAN DE PAGOS ======
+
+function togglePlan() {
+    const content = document.getElementById('plan-content');
+    const icon = document.getElementById('plan-icon');
+    if (!content) return;
+    content.classList.toggle('hidden');
+    icon.classList.toggle('rotate-180');
 }
 
-// Actualiza el badge de estado de un mes (✓ completo / ⚡ parcial)
-function actualizarBadgeMes(mes, monto, restante) {
-    const badge = document.getElementById(`badge-${mes}`);
-    if (!badge) return;
-    badge.classList.remove('hidden');
-    if (monto >= restante) {
-        badge.textContent = '✓ Pago completo';
-        badge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block bg-green-100 text-green-700';
-    } else {
-        const quedara = (restante - monto).toFixed(2);
-        badge.textContent = `⚡ Parcial · Quedará: S/ ${quedara}`;
-        badge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block bg-amber-100 text-amber-700';
-    }
+function toggleCobro(cuotaId) {
+    const row = document.getElementById(`cobro-row-${cuotaId}`);
+    if (row) row.classList.toggle('hidden');
 }
 
-// Mostrar/ocultar input de monto al marcar/desmarcar mes
-function toggleMes(mes, restante) {
-    const checkbox = document.getElementById(`check-${mes}`);
-    const montoDiv = document.getElementById(`monto-${mes}`);
-    const card     = document.getElementById(`card-${mes}`);
-    const input    = document.getElementById(`input-monto-${mes}`);
-    const badge    = document.getElementById(`badge-${mes}`);
-
-    if (checkbox.checked) {
-        montoDiv.classList.remove('hidden');
-        card.classList.add('border-amber-400', 'bg-amber-50');
-        card.classList.remove('border-gray-200');
-        input.value = restante.toFixed(2);
-        actualizarBadgeMes(mes, restante, restante);
-    } else {
-        montoDiv.classList.add('hidden');
-        card.classList.remove('border-amber-400', 'bg-amber-50');
-        card.classList.add('border-gray-200');
-        if (badge) badge.classList.add('hidden');
-    }
-    actualizarTotalAdelantar();
+function toggleAnular(cronId) {
+    const row = document.getElementById(`anular-row-${cronId}`);
+    if (row) row.classList.toggle('hidden');
 }
 
-// Calcular total dinámico sumando los inputs de meses seleccionados
-function actualizarTotalAdelantar() {
-    const checkboxes = document.querySelectorAll('input[name="meses_adelantar"]:checked');
-    let total = 0;
-    let tieneAbonoParcial = false;
-
-    checkboxes.forEach(cb => {
-        const mes = cb.value;
-        const inputMonto = document.getElementById(`input-monto-${mes}`);
-        const maxMonto = parseFloat(inputMonto.max) || 0;
-        const monto = parseFloat(inputMonto.value) || 0;
-        total += monto;
-        if (monto < maxMonto - 0.001) tieneAbonoParcial = true;
+function actualizarTotalSugerido() {
+    let suma = 0;
+    document.querySelectorAll('.mes-plan-check:checked').forEach(cb => {
+        suma += parseFloat(cb.dataset.restante) || 0;
     });
-
-    const count = checkboxes.length;
-    const resumen = document.getElementById('resumen-adelanto');
-    const btnAdelantar = document.getElementById('btn-adelantar');
-    const avisoAbono = document.getElementById('aviso-abono');
-
-    if (count > 0) {
-        resumen.classList.remove('hidden');
-        document.getElementById('count-meses').textContent = count;
-        document.getElementById('total-adelanto').textContent = `S/ ${total.toFixed(2)}`;
-        btnAdelantar.disabled = false;
-        tieneAbonoParcial
-            ? avisoAbono.classList.remove('hidden')
-            : avisoAbono.classList.add('hidden');
-    } else {
-        resumen.classList.add('hidden');
-        btnAdelantar.disabled = true;
-        avisoAbono.classList.add('hidden');
+    const el = document.getElementById('suma-meses-sugerida');
+    if (el) el.textContent = `S/ ${suma.toFixed(2)}`;
+    // Si no se ha tocado el monto total, sugerirlo
+    const inputTotal = document.getElementById('monto-total-plan');
+    if (inputTotal && !inputTotal.dataset.touched) {
+        inputTotal.value = suma.toFixed(2);
+        recalcularDiferencia();
     }
 }
 
-// Validación antes de enviar
+function generarCuotas() {
+    const total = parseFloat(document.getElementById('monto-total-plan').value) || 0;
+    const n = Math.max(1, Math.min(24, parseInt(document.getElementById('num-cuotas-plan').value) || 1));
+    if (total <= 0) {
+        alert('Ingrese primero el monto total.');
+        return;
+    }
+    const tbody = document.getElementById('tabla-cuotas-body');
+    tbody.innerHTML = '';
+    const cuotaBase = Math.floor((total / n) * 100) / 100;
+    const ajusteUltima = Math.round((total - cuotaBase * (n - 1)) * 100) / 100;
+
+    const hoy = new Date();
+    for (let i = 0; i < n; i++) {
+        const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + i, hoy.getDate());
+        const fechaStr = fecha.toISOString().slice(0, 10);
+        const monto = i === n - 1 ? ajusteUltima : cuotaBase;
+        const tr = document.createElement('tr');
+        tr.className = 'border-t';
+        tr.innerHTML = `
+            <td class="px-4 py-2 font-bold">${i + 1}</td>
+            <td class="px-4 py-2">
+                <input type="number" name="cuota_monto" step="0.01" min="0.01" required
+                       value="${monto.toFixed(2)}"
+                       class="w-32 px-3 py-2 border-2 border-gray-300 rounded-lg text-right font-bold cuota-monto-input"
+                       oninput="recalcularDiferencia()">
+            </td>
+            <td class="px-4 py-2">
+                <input type="date" name="cuota_fecha" required value="${fechaStr}"
+                       class="px-3 py-2 border-2 border-gray-300 rounded-lg">
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+    document.getElementById('tabla-cuotas-vacia').classList.add('hidden');
+    document.getElementById('tabla-cuotas-wrap').classList.remove('hidden');
+    recalcularDiferencia();
+}
+
+function recalcularDiferencia() {
+    const total = parseFloat(document.getElementById('monto-total-plan').value) || 0;
+    const echo = document.getElementById('echo-total');
+    if (echo) echo.textContent = `S/ ${total.toFixed(2)}`;
+
+    let suma = 0;
+    document.querySelectorAll('.cuota-monto-input').forEach(inp => {
+        suma += parseFloat(inp.value) || 0;
+    });
+    const sumaEl = document.getElementById('suma-cuotas');
+    if (sumaEl) sumaEl.textContent = `S/ ${suma.toFixed(2)}`;
+
+    const diff = Math.round((suma - total) * 100) / 100;
+    const diffEl = document.getElementById('diferencia-cuotas');
+    const btn = document.getElementById('btn-crear-plan');
+    if (!diffEl || !btn) return;
+    if (Math.abs(diff) < 0.01 && total > 0 && suma > 0) {
+        diffEl.textContent = '✓ Cuadra';
+        diffEl.className = 'text-sm font-bold text-green-700';
+        btn.disabled = false;
+    } else if (total === 0) {
+        diffEl.textContent = '';
+        btn.disabled = true;
+    } else {
+        const signo = diff > 0 ? '+' : '';
+        diffEl.textContent = `Diferencia: ${signo}S/ ${diff.toFixed(2)}`;
+        diffEl.className = 'text-sm font-bold text-red-600';
+        btn.disabled = true;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    const formAdelantar = document.getElementById('form-adelantar');
-    if (formAdelantar) {
-        formAdelantar.addEventListener('submit', function(e) {
-            const mesesChecked = formAdelantar.querySelectorAll('input[name="meses_adelantar"]:checked');
-            if (mesesChecked.length === 0) {
+    const inputTotal = document.getElementById('monto-total-plan');
+    if (inputTotal) {
+        inputTotal.addEventListener('input', () => {
+            inputTotal.dataset.touched = '1';
+            recalcularDiferencia();
+        });
+    }
+
+    const formPlan = document.getElementById('form-plan');
+    if (formPlan) {
+        formPlan.addEventListener('submit', function(e) {
+            const meses = formPlan.querySelectorAll('input[name="meses_plan"]:checked');
+            if (meses.length === 0) {
                 e.preventDefault();
-                alert('Seleccione al menos un mes.');
+                alert('Seleccione al menos un mes que cubrirá el plan.');
                 return;
             }
-            // Validar que ningún monto sea 0 o negativo
-            let montoInvalido = false;
-            mesesChecked.forEach(cb => {
-                const input = document.getElementById(`input-monto-${cb.value}`);
-                if (!input || parseFloat(input.value) <= 0) montoInvalido = true;
-            });
-            if (montoInvalido) {
+            const cuotas = formPlan.querySelectorAll('input[name="cuota_monto"]');
+            if (cuotas.length === 0) {
                 e.preventDefault();
-                alert('Todos los montos deben ser mayores a S/ 0.00.');
+                alert('Genere las cuotas antes de guardar.');
             }
         });
     }

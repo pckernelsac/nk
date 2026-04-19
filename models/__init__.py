@@ -6,6 +6,7 @@ from .usuario import Usuario
 from .estudiante import Estudiante
 from .docente import Docente
 from .pagos import (ConfiguracionPension, PensionEstudiante, PagoPension,
+                    CronogramaPagoPension, CuotaPagoPension,
                     TipoPago, ConceptoPagoCiclo, ObligacionPagoEstudiante, PagoGeneral)
 from .asistencia import Asistencia, RegistroAsistenciaAula, DetalleAsistenciaAula, JustificacionInasistencia
 from .configuracion import ConfiguracionSistema
@@ -25,6 +26,8 @@ __all__ = [
     'ConfiguracionPension',
     'PensionEstudiante',
     'PagoPension',
+    'CronogramaPagoPension',
+    'CuotaPagoPension',
     'Asistencia',
     'RegistroAsistenciaAula',
     'DetalleAsistenciaAula',
