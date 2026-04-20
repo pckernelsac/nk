@@ -9,12 +9,143 @@
         to { opacity: 1; transform: translateY(0); }
     }
     .animate-slide-in { animation: slideInUp 0.5s ease-out; }
+
+    /* ────── Carnet moderno (simulación visual del PDF) ────── */
+    .carnet-wrap {
+        perspective: 1200px;
+    }
     .carnet-3d {
+        width: 280px;
+        height: 410px;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow:
+            0 25px 50px -12px rgba(95, 42, 93, 0.35),
+            0 10px 20px -5px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        position: relative;
         transform-style: preserve-3d;
-        transition: transform 0.6s;
+        transition: transform 0.6s cubic-bezier(.2,.8,.2,1), box-shadow 0.4s;
     }
     .carnet-3d:hover {
-        transform: rotateY(5deg) rotateX(2deg);
+        transform: rotateY(6deg) rotateX(3deg) translateY(-4px);
+        box-shadow:
+            0 35px 60px -12px rgba(95, 42, 93, 0.45),
+            0 15px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+    .carnet-header {
+        position: relative;
+        height: 110px;
+        background: linear-gradient(135deg, #3f1c3e 0%, #5F2A5D 45%, #8c508a 100%);
+        overflow: hidden;
+    }
+    .carnet-header::before,
+    .carnet-header::after {
+        content: '';
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+    }
+    .carnet-header::before { width: 70px; height: 70px; top: -20px; right: -18px; }
+    .carnet-header::after { width: 44px; height: 44px; bottom: -18px; left: -12px; background: rgba(255,255,255,0.06); }
+    .carnet-header-text {
+        position: absolute;
+        top: 18px; left: 58px;
+        color: #fff;
+        z-index: 2;
+    }
+    .carnet-logo {
+        position: absolute;
+        top: 20px; left: 14px;
+        height: 38px; width: 38px;
+        object-fit: contain;
+        z-index: 2;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+    }
+    .carnet-photo-wrap {
+        position: absolute;
+        top: 72px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 92px; height: 92px;
+        border-radius: 50%;
+        background: #fff;
+        padding: 4px;
+        box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+        z-index: 3;
+    }
+    .carnet-photo {
+        width: 100%; height: 100%;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid #5F2A5D;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(145deg, #7c3b7a 0%, #5F2A5D 100%);
+        color: #fff;
+        font-weight: 800;
+        font-size: 2rem;
+        letter-spacing: 1px;
+    }
+    .carnet-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .carnet-body {
+        padding: 60px 18px 0;
+        text-align: center;
+    }
+    .carnet-apellidos {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #1c1c2b;
+        letter-spacing: 0.3px;
+        line-height: 1.15;
+    }
+    .carnet-nombres {
+        font-size: 0.78rem;
+        color: #555;
+        margin-top: 2px;
+    }
+    .carnet-badge {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 6px 14px;
+        background: linear-gradient(135deg, #5F2A5D, #7c3b7a);
+        color: #fff;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        box-shadow: 0 3px 8px rgba(95,42,93,0.3);
+    }
+    .carnet-seccion {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.7rem;
+        color: #6b6b78;
+    }
+    .carnet-qr-card {
+        margin: 12px auto 0;
+        width: fit-content;
+        padding: 6px;
+        background: #f7f5f8;
+        border-radius: 8px;
+    }
+    .carnet-qr-label {
+        margin-top: 4px;
+        font-size: 0.58rem;
+        color: #7a7a85;
+        letter-spacing: 0.8px;
+    }
+    .carnet-footer {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        background: #5F2A5D;
+        color: #fff;
+        text-align: center;
+        padding: 8px 6px;
+        font-weight: 700;
+        font-size: 0.72rem;
+        letter-spacing: 0.8px;
     }
 </style>
 {% endblock %}
@@ -22,7 +153,7 @@
 {% block content %}
 <div class="container-fluid py-6">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-purple-600 to-purple-600 rounded-2xl shadow-xl p-8 mb-8 text-white animate-slide-in relative overflow-hidden">
+    <div class="bg-gradient-to-r from-purple-700 via-purple-600 to-fuchsia-600 rounded-2xl shadow-xl p-8 mb-8 text-white animate-slide-in relative overflow-hidden">
         <div class="absolute top-0 right-0 opacity-10 text-9xl">
             <i class="fas fa-id-card"></i>
         </div>
@@ -59,55 +190,60 @@
                 </div>
 
                 <div class="p-8">
-                    <div class="flex justify-center items-center">
-                        <div class="carnet-3d bg-white rounded-2xl shadow-2xl p-6 border-4" style="border-color: #5F2A5D; width: 280px; height: 420px;">
-                            <!-- Logo y Título -->
-                            <div class="flex justify-between items-center mb-4 px-2">
-                                <img src="{{ url_for('static', filename='img/nk.png') }}" alt="Logo" class="h-10">
-                                <div class="text-right">
-                                    <span class="block text-xs font-bold" style="color: #5F2A5D;">CARNET</span>
-                                    <span class="block text-xs font-bold" style="color: #5F2A5D;">ESTUDIANTIL</span>
+                    <div class="carnet-wrap flex justify-center items-center">
+                        <div class="carnet-3d">
+                            <!-- Header con degradado -->
+                            <div class="carnet-header">
+                                <img src="{{ url_for('static', filename='img/nk.png') }}" alt="Logo" class="carnet-logo">
+                                <div class="carnet-header-text">
+                                    <div class="text-[11px] font-extrabold tracking-wider leading-tight">NK CHAMBERGO</div>
+                                    <div class="text-[9px] opacity-90 tracking-widest">CARNET ESTUDIANTIL</div>
                                 </div>
                             </div>
 
-                            <!-- Foto -->
-                            <div class="flex justify-center mb-5">
-                                <div class="w-28 h-28 border-4 rounded-full flex items-center justify-center overflow-hidden shadow-xl" style="border-color: #5F2A5D;">
+                            <!-- Foto / Iniciales -->
+                            <div class="carnet-photo-wrap">
+                                <div class="carnet-photo">
                                     {% if estudiante.foto_perfil %}
-                                    <img src="/static/{{ estudiante.foto_perfil }}" alt="Foto" class="w-full h-full object-cover">
+                                        <img src="/static/{{ estudiante.foto_perfil }}" alt="Foto">
                                     {% else %}
-                                    <div class="w-full h-full flex items-center justify-center text-white text-3xl font-bold" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
-                                        {{ estudiante.nombres_est[0] }}{{ estudiante.apellido_paterno_est[0] }}
-                                    </div>
+                                        {% set _n = (estudiante.nombres_est or '') %}
+                                        {% set _ap = (estudiante.apellido_paterno_est or '') %}
+                                        {% set _am = (estudiante.apellido_materno_est or '') %}
+                                        {% set _ini1 = _n[0] if _n else '' %}
+                                        {% set _ini2 = (_ap[0] if _ap else (_am[0] if _am else '')) %}
+                                        <span>{{ (_ini1 ~ _ini2)|upper or '?' }}</span>
                                     {% endif %}
                                 </div>
                             </div>
 
-                            <!-- Nombres -->
-                            <div class="text-center font-bold text-gray-800 mb-4 px-3">
-                                <div class="text-base leading-tight">{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}</div>
-                                <div class="text-base leading-tight mt-1">{{ estudiante.nombres_est }}</div>
-                            </div>
+                            <!-- Cuerpo -->
+                            <div class="carnet-body">
+                                <div class="carnet-apellidos">
+                                    {{ (estudiante.apellido_paterno_est ~ ' ' ~ (estudiante.apellido_materno_est or ''))|upper|trim }}
+                                </div>
+                                <div class="carnet-nombres">{{ estudiante.nombres_est }}</div>
 
-                            <!-- Grado y Nivel -->
-                            <div class="text-center mb-4">
-                                <div class="inline-block px-5 py-2 rounded-xl text-white font-bold shadow-lg" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
-                                    <div class="text-lg">{{ estudiante.grado }}° - {{ estudiante.nivel }}</div>
-                                    {% if estudiante.seccion %}
-                                    <div class="text-xs opacity-90">Sección: {{ estudiante.seccion }}</div>
+                                <div class="carnet-badge">
+                                    {% if estudiante.grado and estudiante.grado|string|int(default=0) > 0 %}
+                                        {{ estudiante.grado }}° {{ (estudiante.nivel or '')|upper }}
+                                    {% else %}
+                                        {{ (estudiante.nivel or '-')|upper }}{% if estudiante.grado %} · {{ estudiante.grado }}{% endif %}
                                     {% endif %}
                                 </div>
+                                {% if estudiante.seccion %}
+                                    <span class="carnet-seccion">Sección: {{ estudiante.seccion }}</span>
+                                {% endif %}
+
+                                <div class="carnet-qr-card">
+                                    <div id="qrcode-preview"></div>
+                                </div>
+                                <div class="carnet-qr-label">ESCANEAR PARA VERIFICAR</div>
                             </div>
 
-                            <!-- QR Code -->
-                            <div class="flex justify-center mb-3">
-                                <div id="qrcode-preview"></div>
-                            </div>
-
-                            <!-- Código Estudiante -->
-                            <div class="text-center">
-                                <div class="text-xs text-gray-500 mb-1">Código</div>
-                                <div class="font-mono font-bold text-gray-800 text-lg">{{ estudiante.codigo_estudiante or 'Sin código' }}</div>
+                            <!-- Footer código -->
+                            <div class="carnet-footer">
+                                CÓDIGO: {{ estudiante.codigo_estudiante or 'Sin código' }}
                             </div>
                         </div>
                     </div>
@@ -117,7 +253,7 @@
                             <i class="fas fa-lightbulb text-yellow-600 text-2xl"></i>
                             <div>
                                 <h6 class="font-bold text-gray-800 mb-1">Sugerencia</h6>
-                                <p class="text-sm text-gray-600">Este es el diseño real del carnet. Se imprime en tamaño 62mm × 90mm.</p>
+                                <p class="text-sm text-gray-600">Diseño real del carnet en tamaño 62mm × 90mm. Si el estudiante no tiene foto, se generan automáticamente sus iniciales.</p>
                             </div>
                         </div>
                     </div>
@@ -138,52 +274,28 @@
                 <div class="p-6">
                     <div class="space-y-4">
                         <div class="flex items-start pb-3 border-b">
-                            <div class="w-36 flex-shrink-0">
-                                <span class="font-bold text-gray-700">Nombres:</span>
-                            </div>
-                            <div class="flex-1">
-                                <span class="text-gray-600">{{ estudiante.nombres_est }}</span>
-                            </div>
+                            <div class="w-36 flex-shrink-0"><span class="font-bold text-gray-700">Nombres:</span></div>
+                            <div class="flex-1"><span class="text-gray-600">{{ estudiante.nombres_est }}</span></div>
                         </div>
                         <div class="flex items-start pb-3 border-b">
-                            <div class="w-36 flex-shrink-0">
-                                <span class="font-bold text-gray-700">Apellidos:</span>
-                            </div>
-                            <div class="flex-1">
-                                <span class="text-gray-600">{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}</span>
-                            </div>
+                            <div class="w-36 flex-shrink-0"><span class="font-bold text-gray-700">Apellidos:</span></div>
+                            <div class="flex-1"><span class="text-gray-600">{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}</span></div>
                         </div>
                         <div class="flex items-start pb-3 border-b">
-                            <div class="w-36 flex-shrink-0">
-                                <span class="font-bold text-gray-700">DNI:</span>
-                            </div>
-                            <div class="flex-1">
-                                <span class="text-gray-600 font-mono font-bold">{{ estudiante.dni_est }}</span>
-                            </div>
+                            <div class="w-36 flex-shrink-0"><span class="font-bold text-gray-700">DNI:</span></div>
+                            <div class="flex-1"><span class="text-gray-600 font-mono font-bold">{{ estudiante.dni_est }}</span></div>
                         </div>
                         <div class="flex items-start pb-3 border-b">
-                            <div class="w-36 flex-shrink-0">
-                                <span class="font-bold text-gray-700">Grado:</span>
-                            </div>
-                            <div class="flex-1">
-                                <span class="text-gray-600">{{ estudiante.grado }}° Grado</span>
-                            </div>
+                            <div class="w-36 flex-shrink-0"><span class="font-bold text-gray-700">Grado:</span></div>
+                            <div class="flex-1"><span class="text-gray-600">{{ estudiante.grado }}° Grado</span></div>
                         </div>
                         <div class="flex items-start pb-3 border-b">
-                            <div class="w-36 flex-shrink-0">
-                                <span class="font-bold text-gray-700">Nivel:</span>
-                            </div>
-                            <div class="flex-1">
-                                <span class="text-gray-600">{{ estudiante.nivel }}</span>
-                            </div>
+                            <div class="w-36 flex-shrink-0"><span class="font-bold text-gray-700">Nivel:</span></div>
+                            <div class="flex-1"><span class="text-gray-600">{{ estudiante.nivel }}</span></div>
                         </div>
                         <div class="flex items-start">
-                            <div class="w-36 flex-shrink-0">
-                                <span class="font-bold text-gray-700">Sección:</span>
-                            </div>
-                            <div class="flex-1">
-                                <span class="text-gray-600">{{ estudiante.seccion or 'No asignada' }}</span>
-                            </div>
+                            <div class="w-36 flex-shrink-0"><span class="font-bold text-gray-700">Sección:</span></div>
+                            <div class="flex-1"><span class="text-gray-600">{{ estudiante.seccion or 'No asignada' }}</span></div>
                         </div>
                     </div>
                 </div>
@@ -213,6 +325,10 @@
                                 <i class="fas fa-check mr-2 mt-1 text-purple-600"></i>
                                 <span>Incluye código QR con el código único del estudiante</span>
                             </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check mr-2 mt-1 text-purple-600"></i>
+                                <span>Si no hay foto, se muestran automáticamente las iniciales</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -241,9 +357,9 @@
 document.addEventListener('DOMContentLoaded', function () {
     new QRCode(document.getElementById('qrcode-preview'), {
         text: '{{ estudiante.codigo_estudiante or "" }}',
-        width: 80,
-        height: 80,
-        colorDark: '#000000',
+        width: 88,
+        height: 88,
+        colorDark: '#1c1c2b',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
     });
