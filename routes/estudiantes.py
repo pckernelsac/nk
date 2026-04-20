@@ -838,13 +838,62 @@ def asistencia_pdf(request: Request, id: int, _user_id: int = Depends(get_curren
 
 @router.get("/carnets", name="estudiantes.seleccionar_carnets")
 def seleccionar_carnets(request: Request, _user_id: int = Depends(get_current_user_id)):
-    """Interfaz para seleccionar estudiantes para carnet"""
-    niveles = ["INICIAL", "PRIMARIA", "SECUNDARIA", "ACADEMIA"]
-    secciones = ["A", "B", "C", "D"]
+    """Interfaz para seleccionar estudiantes para carnet.
+
+    Los filtros (niveles, grados por nivel y secciones) se obtienen de forma
+    dinámica desde la base de datos para reflejar solo los valores realmente
+    existentes entre los estudiantes registrados.
+    """
+    niveles_rows = (
+        db.session.query(Estudiante.nivel)
+        .filter(Estudiante.nivel.isnot(None), Estudiante.nivel != "")
+        .distinct()
+        .order_by(Estudiante.nivel.asc())
+        .all()
+    )
+    niveles = [r[0] for r in niveles_rows]
+
+    secciones_rows = (
+        db.session.query(Estudiante.seccion)
+        .filter(Estudiante.seccion.isnot(None), Estudiante.seccion != "")
+        .distinct()
+        .order_by(Estudiante.seccion.asc())
+        .all()
+    )
+    secciones = [r[0] for r in secciones_rows]
+
+    pares_rows = (
+        db.session.query(Estudiante.nivel, Estudiante.grado)
+        .filter(
+            Estudiante.nivel.isnot(None), Estudiante.nivel != "",
+            Estudiante.grado.isnot(None), Estudiante.grado != "",
+        )
+        .distinct()
+        .all()
+    )
+
+    def _orden_grado(g: str):
+        g = (g or "").strip()
+        return (0, int(g)) if g.isdigit() else (1, g.lower())
+
+    grados_por_nivel: dict[str, list[dict[str, str]]] = {}
+    for nv, gr in pares_rows:
+        if not nv or not gr:
+            continue
+        key = nv.strip().lower()
+        label = f"{gr}°" if gr.strip().isdigit() else gr
+        grados_por_nivel.setdefault(key, []).append({"value": gr, "text": label})
+    for key in grados_por_nivel:
+        grados_por_nivel[key].sort(key=lambda item: _orden_grado(item["value"]))
 
     return templates.TemplateResponse(
         "carnets/seleccionar_estudiantes.html",
-        common_context(request, niveles=niveles, secciones=secciones),
+        common_context(
+            request,
+            niveles=niveles,
+            secciones=secciones,
+            grados_por_nivel=grados_por_nivel,
+        ),
     )
 
 

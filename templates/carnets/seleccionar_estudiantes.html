@@ -237,68 +237,30 @@
 </div>
 
 <script>
-// Lógica dinámica de grados según nivel
+// Los grados disponibles se inyectan desde el servidor (provienen de la BD),
+// por lo que las opciones del filtro coinciden exactamente con los datos reales.
 const nivelSelect = document.getElementById('nivelSelect');
 const gradoSelect = document.getElementById('gradoSelect');
 
-const gradosPorNivel = {
-    'inicial': [
-        { value: '3años', text: '3 años' },
-        { value: '4años', text: '4 años' },
-        { value: '5años', text: '5 años' }
-    ],
-    'primaria': [
-        { value: '1', text: '1°' },
-        { value: '2', text: '2°' },
-        { value: '3', text: '3°' },
-        { value: '4', text: '4°' },
-        { value: '5', text: '5°' },
-        { value: '6', text: '6°' }
-    ],
-    'secundaria': [
-        { value: '1', text: '1°' },
-        { value: '2', text: '2°' },
-        { value: '3', text: '3°' },
-        { value: '4', text: '4°' },
-        { value: '5', text: '5°' }
-    ],
-    'academia': [
-        { value: 'NK KIDS', text: 'NK KIDS' },
-        { value: 'CICLADO', text: 'CICLADO' },
-        { value: 'CICLADO VERANO', text: 'CICLADO VERANO' },
-        { value: 'CICLO VERANO 1', text: 'CICLO VERANO 1' },
-        { value: 'CICLO VERANO 2', text: 'CICLO VERANO 2' },
-        { value: 'CICLO VERANO 3', text: 'CICLO VERANO 3' },
-        { value: 'CICLO VERANO 4', text: 'CICLO VERANO 4' },
-        { value: 'MATE DESDE CERO', text: 'MATE DESDE CERO' },
-        { value: 'PRE PRIMERA SELECCION', text: 'PRE PRIMERA SELECCION' },
-        { value: 'SEMESTRAL', text: 'SEMESTRAL' },
-        { value: 'INTENSIVO', text: 'INTENSIVO' },
-        { value: 'PARALELO CEPRE UNCP', text: 'PARALELO CEPRE UNCP' }
-    ]
-};
+const gradosPorNivel = {{ grados_por_nivel|tojson }};
 
 nivelSelect.addEventListener('change', function() {
     const nivelSeleccionado = this.value;
 
-    // Limpiar opciones actuales
     gradoSelect.innerHTML = '<option value="todos">Todos los grados</option>';
 
-    // Si es "todos", no agregar más opciones
     if (nivelSeleccionado === 'todos') {
         return;
     }
 
-    // Agregar nuevas opciones según el nivel
-    const key = nivelSeleccionado.toLowerCase();
-    if (key && gradosPorNivel[key]) {
-        gradosPorNivel[key].forEach(function(grado) {
-            const option = document.createElement('option');
-            option.value = grado.value;
-            option.textContent = grado.text;
-            gradoSelect.appendChild(option);
-        });
-    }
+    const key = (nivelSeleccionado || '').toLowerCase();
+    const opciones = gradosPorNivel[key] || [];
+    opciones.forEach(function(grado) {
+        const option = document.createElement('option');
+        option.value = grado.value;
+        option.textContent = grado.text;
+        gradoSelect.appendChild(option);
+    });
 });
 
 // Funcionalidad para deshabilitar filtros cuando se selecciona "todos"
