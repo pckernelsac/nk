@@ -315,8 +315,9 @@
   }
 
   const canvas = document.getElementById('asistenciasChart');
+  if (canvas) {
   const ctx = canvas.getContext('2d');
-  const asistenciasData = {{ stats.asistencias_por_dia | tojson }};
+  const asistenciasData = {{ (stats.asistencias_por_dia or []) | tojson }};
 
   // Crear gradiente basado en el contenedor
   const gradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -389,5 +390,6 @@
       }
     }
   });
+  }
 </script>
 {% endblock %}

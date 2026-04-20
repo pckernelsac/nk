@@ -209,6 +209,23 @@ async def api_scan(request: Request, _user_id: int = Depends(get_current_user_id
 
 @router.get("/dashboard", name="asistencias.dashboard")
 def dashboard(request: Request, _user_id: int = Depends(get_current_user_id)):
+    hoy = date.today()
+    hace_7_dias = hoy - timedelta(days=6)
+
+    def _empty_stats():
+        return {
+            "total_estudiantes": 0,
+            "total_asistencias": 0,
+            "asistencias_hoy": 0,
+            "asistencias_entrada": 0,
+            "asistencias_salida": 0,
+            "asistencias_por_dia": [
+                {"fecha": (hoy - timedelta(days=i)).strftime("%Y-%m-%d"), "count": 0}
+                for i in range(6, -1, -1)
+            ],
+            "top_estudiantes": [],
+        }
+
     try:
         q = (request.query_params.get("q") or "").strip()
 
@@ -231,12 +248,25 @@ def dashboard(request: Request, _user_id: int = Depends(get_current_user_id)):
         paginacion = paginate_query(ordered, page=page, per_page=50, error_out=False)
         asistencias = paginacion.items
 
-        hoy = date.today()
-        hace_7_dias = hoy - timedelta(days=6)
+        # Usamos rangos de datetime (portable Postgres/SQLite) en lugar de func.date() == str(hoy),
+        # que puede fallar en Postgres por mismatch date/varchar.
+        inicio_hoy = datetime.combine(hoy, datetime.min.time())
+        inicio_manana = datetime.combine(hoy + timedelta(days=1), datetime.min.time())
 
         stats_row = db.session.query(
             func.count(Asistencia.id),
-            func.sum(case((func.date(Asistencia.fecha_hora) == str(hoy), 1), else_=0)),
+            func.sum(
+                case(
+                    (
+                        and_(
+                            Asistencia.fecha_hora >= inicio_hoy,
+                            Asistencia.fecha_hora < inicio_manana,
+                        ),
+                        1,
+                    ),
+                    else_=0,
+                )
+            ),
             func.sum(case((Asistencia.tipo == "ENTRADA", 1), else_=0)),
             func.sum(case((Asistencia.tipo == "SALIDA", 1), else_=0)),
         ).first()
@@ -244,29 +274,35 @@ def dashboard(request: Request, _user_id: int = Depends(get_current_user_id)):
         total_estudiantes = Estudiante.query.count()
 
         asistencias_agrupadas = (
-            db.session.query(func.date(Asistencia.fecha_hora).label("fecha"), func.count(Asistencia.id).label("total"))
+            db.session.query(
+                func.date(Asistencia.fecha_hora).label("fecha"),
+                func.count(Asistencia.id).label("total"),
+            )
             .filter(Asistencia.fecha_hora >= datetime.combine(hace_7_dias, datetime.min.time()))
             .group_by(func.date(Asistencia.fecha_hora))
             .all()
         )
 
-        dias_dict = {str(row.fecha): row.total for row in asistencias_agrupadas}
+        dias_dict = {}
+        for row in asistencias_agrupadas:
+            fecha_val = row.fecha
+            if hasattr(fecha_val, "strftime"):
+                key = fecha_val.strftime("%Y-%m-%d")
+            else:
+                key = str(fecha_val)
+            dias_dict[key] = row.total
+
         asistencias_por_dia = []
         for i in range(6, -1, -1):
             fecha = hoy - timedelta(days=i)
             asistencias_por_dia.append(
-                {"fecha": fecha.strftime("%Y-%m-%d"), "count": dias_dict.get(str(fecha), 0)}
+                {"fecha": fecha.strftime("%Y-%m-%d"), "count": dias_dict.get(fecha.strftime("%Y-%m-%d"), 0)}
             )
 
         top_estudiantes = (
             db.session.query(Estudiante, func.count(Asistencia.id).label("total"))
-            .join(Asistencia)
-            .group_by(
-                Estudiante.id,
-                Estudiante.nombres_est,
-                Estudiante.apellido_paterno_est,
-                Estudiante.apellido_materno_est,
-            )
+            .join(Asistencia, Asistencia.estudiante_id == Estudiante.id)
+            .group_by(Estudiante.id)
             .order_by(func.count(Asistencia.id).desc())
             .limit(5)
             .all()
@@ -297,12 +333,20 @@ def dashboard(request: Request, _user_id: int = Depends(get_current_user_id)):
         )
 
     except Exception as e:
-        print(f"Error al cargar dashboard de asistencias: {e}")
+        logger.exception("Error al cargar dashboard de asistencias: %s", e)
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
         add_flash(request, "Error al cargar el dashboard de asistencias", "error")
         return templates.TemplateResponse(
             "asistencias/dashboard.html",
             common_context(
-                request, asistencias=[], paginacion=None, stats={}, q=""
+                request,
+                asistencias=[],
+                paginacion=None,
+                stats=_empty_stats(),
+                q=(request.query_params.get("q") or "").strip(),
             ),
         )
 
