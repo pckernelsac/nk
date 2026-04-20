@@ -298,15 +298,6 @@ def _dibujar_carnet_frente(c, estudiante, x, y, ancho, alto,
         qr_x, qr_y, qr_size,
     )
 
-    # Etiqueta discreta bajo el QR
-    c.setFont("Helvetica", 4.6)
-    c.setFillColorRGB(0.4, 0.4, 0.45)
-    c.drawCentredString(
-        x + ancho / 2,
-        qr_y - 3.5 * mm,
-        "ESCANEAR PARA VERIFICAR",
-    )
-
     # 9) Footer con código ───────────────────────────────────────────────
     footer_h = 7 * mm
     c.setFillColorRGB(*color_primario)
