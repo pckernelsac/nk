@@ -176,10 +176,33 @@
                 </table>
             </div>
             {% else %}
-            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
-                <div class="flex items-center">
-                    <i class="fas fa-info-circle text-blue-500 text-2xl mr-4"></i>
-                    <p class="text-blue-700 font-medium">No hay obligaciones con los filtros aplicados.</p>
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <i class="fas fa-info-circle text-blue-500 text-3xl mt-1"></i>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-blue-900 mb-2">No hay obligaciones con los filtros aplicados</h3>
+                        {% if not conceptos %}
+                        <p class="text-blue-800 mb-3">
+                            Aún no hay <strong>conceptos de pago</strong> registrados para {{ anio_escolar }}.
+                            Crea uno primero para poder asignar obligaciones a los estudiantes.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="{{ url_for('pagos.conceptos_lista', anio_escolar=anio_escolar) }}"
+                               class="inline-flex items-center px-4 py-2 bg-white border-2 border-blue-400 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 transition-all">
+                                <i class="fas fa-file-invoice-dollar mr-2"></i>Ver Conceptos
+                            </a>
+                        </div>
+                        {% else %}
+                        <p class="text-blue-800 mb-3">
+                            Usa <strong>Asignar Obligaciones</strong> para generar obligaciones masivas
+                            por nivel/grado/sección desde un concepto existente.
+                        </p>
+                        <a href="{{ url_for('pagos.asignar_obligaciones', anio_escolar=anio_escolar) }}"
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all">
+                            <i class="fas fa-plus mr-2"></i>Asignar Obligaciones
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             {% endif %}

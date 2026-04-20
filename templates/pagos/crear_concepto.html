@@ -41,15 +41,34 @@
                     </h2>
                 </div>
                 <div class="p-8">
+                    {% if not tipos %}
+                    <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-5 mb-6">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-exclamation-triangle text-amber-600 text-2xl mt-1"></i>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-amber-900 mb-1">No hay tipos de pago registrados</h4>
+                                <p class="text-sm text-amber-800 mb-3">
+                                    Debes crear al menos un <strong>Tipo de Pago</strong> antes de poder
+                                    registrar un concepto. Cada concepto se asocia obligatoriamente a un tipo.
+                                </p>
+                                <a href="{{ url_for('pagos.tipos_lista') }}"
+                                   class="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-all">
+                                    <i class="fas fa-plus-circle mr-2"></i>Crear Tipo de Pago
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <form method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="mb-6">
                             <label class="block text-sm font-bold text-gray-700 mb-2">
                                 Tipo de Pago <span class="text-red-500">*</span>
                             </label>
-                            <select name="tipo_pago_id" required
-                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
-                                <option value="">Seleccione un tipo</option>
+                            <select name="tipo_pago_id" required {% if not tipos %}disabled{% endif %}
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                <option value="">{% if tipos %}Seleccione un tipo{% else %}Primero registra un tipo{% endif %}</option>
                                 {% for tipo in tipos %}
                                 <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
                                 {% endfor %}
@@ -126,8 +145,8 @@
                                class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200">
                                 <i class="fas fa-times mr-2"></i>Cancelar
                             </a>
-                            <button type="submit"
-                                    class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                            <button type="submit" {% if not tipos %}disabled{% endif %}
+                                    class="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                                 <i class="fas fa-check-circle mr-2"></i>Crear Concepto
                             </button>
                         </div>
