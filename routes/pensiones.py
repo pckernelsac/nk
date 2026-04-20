@@ -1,12 +1,13 @@
 # routes/pensiones.py
-from datetime import datetime
+from collections import defaultdict
+from datetime import date, datetime, timedelta
 from io import BytesIO
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from reportlab.lib.units import mm as mm_unit
 from reportlab.pdfgen import canvas
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 
 from config import Config
 from dependencies import get_current_user_id, require_roles
@@ -1601,47 +1602,157 @@ def recibo_pdf(request: Request, pago_id: int, _user_id: int = Depends(get_curre
         )
 
 
+def _parse_fecha(raw: str | None) -> date | None:
+    """Parse 'YYYY-MM-DD' (o ISO corto) a date. Devuelve None si vacío/invalido."""
+    if not raw:
+        return None
+    raw = raw.strip()
+    if not raw:
+        return None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _build_historial_query(request: Request):
+    """Construye la query filtrada del historial y devuelve también los filtros normalizados."""
+    estudiante = (request.query_params.get("estudiante") or "").strip()
+    mes = (request.query_params.get("mes") or "").strip()
+    anio = (request.query_params.get("anio") or "").strip()
+    estado = (request.query_params.get("estado") or "").strip()
+    fecha_desde = _parse_fecha(request.query_params.get("fecha_desde"))
+    fecha_hasta = _parse_fecha(request.query_params.get("fecha_hasta"))
+
+    query = PagoPension.query
+
+    if estudiante:
+        query = query.filter(
+            or_(
+                PagoPension.estudiante_nombre_completo.ilike(f"%{estudiante}%"),
+                PagoPension.estudiante_dni.ilike(f"%{estudiante}%"),
+            )
+        )
+
+    if mes:
+        query = query.filter(PagoPension.mes_pago == mes)
+
+    if anio:
+        query = query.filter(PagoPension.anio_pago == anio)
+
+    if estado:
+        query = query.filter(PagoPension.estado == estado)
+
+    if fecha_desde:
+        query = query.filter(
+            PagoPension.fecha_registro >= datetime.combine(fecha_desde, datetime.min.time())
+        )
+
+    if fecha_hasta:
+        # inclusivo: < día siguiente 00:00
+        query = query.filter(
+            PagoPension.fecha_registro < datetime.combine(fecha_hasta + timedelta(days=1), datetime.min.time())
+        )
+
+    filtros = {
+        "estudiante": estudiante,
+        "mes": mes,
+        "anio": anio,
+        "estado": estado,
+        "fecha_desde": fecha_desde.isoformat() if fecha_desde else "",
+        "fecha_hasta": fecha_hasta.isoformat() if fecha_hasta else "",
+    }
+    return query, filtros
+
+
+def _resumen_diario(pagos: list[PagoPension]) -> list[dict]:
+    """A partir de la lista de pagos (ya filtrada), agrupa por día de fecha_registro
+    con total cobrado, cantidad, anulados y desglose por concepto (mes de pensión).
+    """
+    por_dia: dict[date, dict] = defaultdict(
+        lambda: {
+            "fecha": None,
+            "total": 0.0,
+            "cantidad": 0,
+            "anulados": 0,
+            "conceptos": defaultdict(lambda: {"cantidad": 0, "monto": 0.0}),
+        }
+    )
+
+    for p in pagos:
+        if not p.fecha_registro:
+            continue
+        dia = p.fecha_registro.date()
+        bucket = por_dia[dia]
+        bucket["fecha"] = dia
+
+        if p.estado == "anulado":
+            bucket["anulados"] += 1
+            continue
+
+        monto = float(p.monto_pagado or 0)
+        bucket["cantidad"] += 1
+        bucket["total"] += monto
+
+        concepto = f"Pensión {(p.mes_pago or '').capitalize()} {p.anio_pago or ''}".strip()
+        c = bucket["conceptos"][concepto]
+        c["cantidad"] += 1
+        c["monto"] += monto
+
+    # Normalizar para el template: ordenar por fecha desc y pasar conceptos a lista ordenada
+    resumen: list[dict] = []
+    for dia in sorted(por_dia.keys(), reverse=True):
+        b = por_dia[dia]
+        conceptos = [
+            {"concepto": k, "cantidad": v["cantidad"], "monto": v["monto"]}
+            for k, v in sorted(b["conceptos"].items(), key=lambda kv: kv[1]["monto"], reverse=True)
+        ]
+        resumen.append(
+            {
+                "fecha": b["fecha"],
+                "total": b["total"],
+                "cantidad": b["cantidad"],
+                "anulados": b["anulados"],
+                "conceptos": conceptos,
+            }
+        )
+    return resumen
+
+
 @router.get("/historial", name="pensiones.historial")
 def historial(request: Request, _user_id: int = Depends(get_current_user_id)):
-    """Historial de pagos con filtros"""
+    """Historial de pagos con filtros (incluye rango de fecha de cobro y resumen diario)."""
     try:
-        estudiante = (request.query_params.get("estudiante") or "").strip()
-        mes = (request.query_params.get("mes") or "").strip()
-        anio = (request.query_params.get("anio") or "").strip()
-        estado = (request.query_params.get("estado") or "").strip()
+        query, filtros = _build_historial_query(request)
 
-        query = PagoPension.query
-
-        if estudiante:
-            query = query.filter(
-                or_(
-                    PagoPension.estudiante_nombre_completo.ilike(f"%{estudiante}%"),
-                    PagoPension.estudiante_dni.ilike(f"%{estudiante}%"),
-                )
-            )
-
-        if mes:
-            query = query.filter(PagoPension.mes_pago == mes)
-
-        if anio:
-            query = query.filter(PagoPension.anio_pago == anio)
-
-        if estado:
-            query = query.filter(PagoPension.estado == estado)
-
-        # Ordenar por fecha de registro más reciente
         pagos = query.order_by(PagoPension.fecha_registro.desc()).all()
 
-        # Lookup: "{estudiante_id}_{anio}" -> monto_mensual  (para badge completo/parcial)
         pensiones_list = PensionEstudiante.query.filter_by(activo=True).all()
         pension_lookup = {
             f"{p.estudiante_id}_{p.anio_escolar}": float(p.monto_mensual)
             for p in pensiones_list
         }
 
+        resumen_dias = _resumen_diario(pagos)
+        total_periodo = sum(d["total"] for d in resumen_dias)
+        cantidad_periodo = sum(d["cantidad"] for d in resumen_dias)
+        anulados_periodo = sum(d["anulados"] for d in resumen_dias)
+
         return templates.TemplateResponse(
             "pensiones/historial.html",
-            common_context(request, pagos=pagos, pension_lookup=pension_lookup),
+            common_context(
+                request,
+                pagos=pagos,
+                pension_lookup=pension_lookup,
+                resumen_dias=resumen_dias,
+                total_periodo=total_periodo,
+                cantidad_periodo=cantidad_periodo,
+                anulados_periodo=anulados_periodo,
+                filtros=filtros,
+                hoy_iso=date.today().isoformat(),
+            ),
         )
 
     except Exception as e:
@@ -1649,7 +1760,167 @@ def historial(request: Request, _user_id: int = Depends(get_current_user_id)):
         add_flash(request, "Error al cargar el historial de pagos", "error")
         return templates.TemplateResponse(
             "pensiones/historial.html",
-            common_context(request, pagos=[], pension_lookup={}),
+            common_context(
+                request,
+                pagos=[],
+                pension_lookup={},
+                resumen_dias=[],
+                total_periodo=0.0,
+                cantidad_periodo=0,
+                anulados_periodo=0,
+                filtros={"estudiante": "", "mes": "", "anio": "", "estado": "", "fecha_desde": "", "fecha_hasta": ""},
+                hoy_iso=date.today().isoformat(),
+            ),
+        )
+
+
+@router.get("/historial/exportar", name="pensiones.historial_exportar")
+def historial_exportar(request: Request, _user_id: int = Depends(get_current_user_id)):
+    """Exporta a Excel el historial filtrado con:
+    - Hoja 'Resumen por día' (fecha, cantidad, anulados, monto, conceptos)
+    - Hoja 'Detalle' con todos los pagos del período
+    """
+    try:
+        import openpyxl
+        from openpyxl.styles import Alignment, Font, PatternFill
+
+        query, filtros = _build_historial_query(request)
+        pagos = query.order_by(PagoPension.fecha_registro.desc()).all()
+        resumen_dias = _resumen_diario(pagos)
+
+        wb = openpyxl.Workbook()
+
+        # ---------- Hoja 1: Resumen por día ----------
+        ws = wb.active
+        ws.title = "Resumen por día"
+
+        header_fill = PatternFill(start_color="5F2A5D", end_color="5F2A5D", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+        center = Alignment(horizontal="center", vertical="center")
+
+        ws["A1"] = "Reporte de Cobros - Pensiones"
+        ws["A1"].font = Font(bold=True, size=14, color="5F2A5D")
+        ws.merge_cells("A1:F1")
+
+        filtro_txt = []
+        if filtros["fecha_desde"] or filtros["fecha_hasta"]:
+            filtro_txt.append(
+                f"Rango: {filtros['fecha_desde'] or '...'} a {filtros['fecha_hasta'] or '...'}"
+            )
+        if filtros["mes"]:
+            filtro_txt.append(f"Mes pensión: {filtros['mes']}")
+        if filtros["anio"]:
+            filtro_txt.append(f"Año: {filtros['anio']}")
+        if filtros["estado"]:
+            filtro_txt.append(f"Estado: {filtros['estado']}")
+        if filtros["estudiante"]:
+            filtro_txt.append(f"Estudiante: {filtros['estudiante']}")
+        ws["A2"] = " | ".join(filtro_txt) if filtro_txt else "Sin filtros"
+        ws.merge_cells("A2:F2")
+
+        headers = ["Fecha", "Cant. Pagos", "Anulados", "Monto Cobrado (S/)", "Conceptos (mes de pensión)", ""]
+        for col, h in enumerate(headers, start=1):
+            cell = ws.cell(row=4, column=col, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center
+
+        row_idx = 5
+        for dia in resumen_dias:
+            conceptos_str = ", ".join(
+                f"{c['concepto']} (x{c['cantidad']}, S/ {c['monto']:.2f})"
+                for c in dia["conceptos"]
+            )
+            ws.cell(row=row_idx, column=1, value=dia["fecha"].strftime("%Y-%m-%d"))
+            ws.cell(row=row_idx, column=2, value=dia["cantidad"])
+            ws.cell(row=row_idx, column=3, value=dia["anulados"])
+            ws.cell(row=row_idx, column=4, value=round(dia["total"], 2))
+            ws.cell(row=row_idx, column=5, value=conceptos_str)
+            row_idx += 1
+
+        total_periodo = sum(d["total"] for d in resumen_dias)
+        cantidad_periodo = sum(d["cantidad"] for d in resumen_dias)
+        anulados_periodo = sum(d["anulados"] for d in resumen_dias)
+        total_row = row_idx + 1
+        ws.cell(row=total_row, column=1, value="TOTAL").font = Font(bold=True)
+        ws.cell(row=total_row, column=2, value=cantidad_periodo).font = Font(bold=True)
+        ws.cell(row=total_row, column=3, value=anulados_periodo).font = Font(bold=True)
+        ws.cell(row=total_row, column=4, value=round(total_periodo, 2)).font = Font(bold=True)
+
+        widths = [14, 14, 12, 20, 70, 2]
+        for i, w in enumerate(widths, start=1):
+            ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
+
+        # ---------- Hoja 2: Detalle ----------
+        ws2 = wb.create_sheet("Detalle")
+        det_headers = [
+            "Fecha cobro",
+            "Hora",
+            "Recibo",
+            "Estudiante",
+            "DNI",
+            "Nivel",
+            "Grado",
+            "Mes pensión",
+            "Año pensión",
+            "Monto (S/)",
+            "Método",
+            "N° Operación",
+            "Estado",
+            "Pagador",
+            "Usuario registro",
+        ]
+        for col, h in enumerate(det_headers, start=1):
+            cell = ws2.cell(row=1, column=col, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center
+
+        for i, p in enumerate(pagos, start=2):
+            fr = p.fecha_registro
+            ws2.cell(row=i, column=1, value=fr.strftime("%Y-%m-%d") if fr else "")
+            ws2.cell(row=i, column=2, value=fr.strftime("%H:%M:%S") if fr else "")
+            ws2.cell(row=i, column=3, value=p.numero_recibo)
+            ws2.cell(row=i, column=4, value=p.estudiante_nombre_completo)
+            ws2.cell(row=i, column=5, value=p.estudiante_dni)
+            ws2.cell(row=i, column=6, value=p.estudiante_nivel)
+            ws2.cell(row=i, column=7, value=p.estudiante_grado)
+            ws2.cell(row=i, column=8, value=(p.mes_pago or "").capitalize())
+            ws2.cell(row=i, column=9, value=p.anio_pago)
+            ws2.cell(row=i, column=10, value=float(p.monto_pagado or 0))
+            ws2.cell(row=i, column=11, value=p.metodo_pago)
+            ws2.cell(row=i, column=12, value=p.numero_operacion or "")
+            ws2.cell(row=i, column=13, value=p.estado)
+            ws2.cell(row=i, column=14, value=p.pagador_nombre or "")
+            ws2.cell(row=i, column=15, value=p.usuario_registro or "")
+
+        det_widths = [12, 10, 16, 32, 12, 14, 14, 14, 10, 12, 14, 16, 10, 28, 18]
+        for i, w in enumerate(det_widths, start=1):
+            ws2.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
+
+        # ---------- Respuesta ----------
+        buf = BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        nombre = "reporte_cobros_pensiones"
+        if filtros["fecha_desde"] or filtros["fecha_hasta"]:
+            nombre += f"_{filtros['fecha_desde'] or 'inicio'}_{filtros['fecha_hasta'] or 'hoy'}"
+        else:
+            nombre += f"_{date.today().isoformat()}"
+        nombre += ".xlsx"
+
+        return Response(
+            content=buf.read(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+        )
+
+    except Exception as e:
+        print(f"Error al exportar historial: {e}")
+        add_flash(request, "No se pudo generar el reporte Excel", "error")
+        return RedirectResponse(
+            url=str(request.url_for("pensiones.historial")), status_code=303
         )
 
 

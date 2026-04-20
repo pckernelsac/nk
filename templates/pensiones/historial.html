@@ -15,11 +15,23 @@
 {% block content %}
 <div class="container-fluid py-6">
     <!-- Header -->
-    <div class="mb-8 slide-in">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">
-            <i class="fas fa-history text-primary mr-3"></i>Historial de Pagos
-        </h1>
-        <p class="text-gray-600">Consulta y gestiona todos los pagos registrados</p>
+    <div class="mb-8 slide-in flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-history text-primary mr-3"></i>Historial de Pagos
+            </h1>
+            <p class="text-gray-600">Consulta, revisa por día y exporta los pagos cobrados</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <a href="{{ url_for('pensiones.historial', fecha_desde=hoy_iso, fecha_hasta=hoy_iso) }}"
+               class="px-5 py-3 bg-white border-2 border-purple-300 text-purple-700 hover:bg-purple-50 font-bold rounded-xl shadow transition-all">
+                <i class="fas fa-sun mr-2"></i>Cobros de hoy
+            </a>
+            <a href="{{ url_for('pensiones.historial_exportar') }}?{{ request.url.query }}"
+               class="px-5 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-105">
+                <i class="fas fa-file-excel mr-2"></i>Exportar Excel
+            </a>
+        </div>
     </div>
 
     <!-- Panel de Filtros -->
@@ -28,30 +40,49 @@
             <h2 class="text-2xl font-bold flex items-center">
                 <i class="fas fa-filter mr-3"></i>Filtros de Búsqueda
             </h2>
+            <p class="text-white/80 text-sm mt-1">El rango de fecha aplica sobre la fecha real de cobro (registro)</p>
         </div>
         <form method="GET" class="p-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
                 <!-- Buscar Estudiante -->
                 <div class="lg:col-span-2">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-search mr-1"></i>Buscar Estudiante
                     </label>
-                    <input type="text" name="estudiante" value="{{ request.args.get('estudiante', '') }}"
+                    <input type="text" name="estudiante" value="{{ filtros.estudiante }}"
                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all"
                            placeholder="Nombre o DNI...">
+                </div>
+
+                <!-- Fecha desde -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-calendar-day mr-1"></i>Fecha desde
+                    </label>
+                    <input type="date" name="fecha_desde" value="{{ filtros.fecha_desde }}"
+                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
+                </div>
+
+                <!-- Fecha hasta -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-calendar-day mr-1"></i>Fecha hasta
+                    </label>
+                    <input type="date" name="fecha_hasta" value="{{ filtros.fecha_hasta }}"
+                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
                 </div>
 
                 <!-- Mes -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-calendar mr-1"></i>Mes
+                        <i class="fas fa-calendar mr-1"></i>Mes pensión
                     </label>
                     <select name="mes" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
                         <option value="">Todos</option>
                         {% set meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
                                         'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'] %}
                         {% for mes in meses %}
-                        <option value="{{ mes }}" {% if request.args.get('mes') == mes %}selected{% endif %}>
+                        <option value="{{ mes }}" {% if filtros.mes == mes %}selected{% endif %}>
                             {{ mes|capitalize }}
                         </option>
                         {% endfor %}
@@ -66,7 +97,7 @@
                     <select name="anio" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
                         <option value="">Todos</option>
                         {% for year in range(current_year - 2, current_year + 3) %}
-                        <option value="{{ year }}" {% if request.args.get('anio') == year|string %}selected{% endif %}>
+                        <option value="{{ year }}" {% if filtros.anio == year|string %}selected{% endif %}>
                             {{ year }}
                         </option>
                         {% endfor %}
@@ -80,14 +111,14 @@
                     </label>
                     <select name="estado" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all">
                         <option value="">Todos</option>
-                        <option value="pagado" {% if request.args.get('estado') == 'pagado' %}selected{% endif %}>Pagado</option>
-                        <option value="anulado" {% if request.args.get('estado') == 'anulado' %}selected{% endif %}>Anulado</option>
+                        <option value="pagado" {% if filtros.estado == 'pagado' %}selected{% endif %}>Pagado</option>
+                        <option value="anulado" {% if filtros.estado == 'anulado' %}selected{% endif %}>Anulado</option>
                     </select>
                 </div>
             </div>
 
             <!-- Botones -->
-            <div class="mt-6 flex gap-4">
+            <div class="mt-6 flex flex-wrap gap-4">
                 <button type="submit"
                         class="px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
                     <i class="fas fa-search mr-2"></i>Buscar
@@ -98,6 +129,106 @@
                 </a>
             </div>
         </form>
+    </div>
+
+    <!-- KPIs del período -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 slide-in" style="animation-delay: 0.05s">
+        <div class="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-emerald-500">
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-wide mb-2">Monto cobrado (período)</p>
+            <p class="text-4xl font-black text-emerald-600">S/ {{ "%.2f"|format(total_periodo|float) }}</p>
+            <p class="text-gray-400 text-xs mt-2"><i class="fas fa-info-circle mr-1"></i>Suma de pagos no anulados</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-xl p-6 border-l-4" style="border-color:#5F2A5D">
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-wide mb-2">Cantidad de pagos</p>
+            <p class="text-4xl font-black" style="color:#5F2A5D">{{ cantidad_periodo }}</p>
+            <p class="text-gray-400 text-xs mt-2"><i class="fas fa-receipt mr-1"></i>Recibos vigentes</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-xl p-6 border-l-4 border-red-400">
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-wide mb-2">Anulados</p>
+            <p class="text-4xl font-black text-red-500">{{ anulados_periodo }}</p>
+            <p class="text-gray-400 text-xs mt-2"><i class="fas fa-ban mr-1"></i>No suman al cobro</p>
+        </div>
+    </div>
+
+    <!-- Resumen por día -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden slide-in mb-6" style="animation-delay: 0.08s">
+        <div class="p-6 text-white flex justify-between items-center" style="background: linear-gradient(135deg, #5F2A5D, #7c3b7a);">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-calendar-day mr-3"></i>Resumen por día
+            </h2>
+            <span class="px-4 py-2 bg-white bg-opacity-20 rounded-full text-sm font-bold">
+                {{ resumen_dias|length }} día(s)
+            </span>
+        </div>
+
+        {% if not resumen_dias %}
+        <div class="p-10 text-center text-gray-500">
+            <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
+            <p class="font-semibold">No hay cobros en el período seleccionado</p>
+        </div>
+        {% else %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b-2 border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><i class="fas fa-calendar mr-1"></i>Fecha</th>
+                        <th class="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider"><i class="fas fa-hashtag mr-1"></i>Pagos</th>
+                        <th class="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider"><i class="fas fa-ban mr-1"></i>Anulados</th>
+                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider"><i class="fas fa-coins mr-1"></i>Monto (S/)</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"><i class="fas fa-tags mr-1"></i>Conceptos (mes de pensión cobrado)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for dia in resumen_dias %}
+                    <tr class="hover:bg-purple-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1 rounded-lg font-bold text-white" style="background:#5F2A5D">
+                                    {{ dia.fecha.strftime('%Y-%m-%d') }}
+                                </span>
+                                <span class="text-xs text-gray-500">{{ dia.fecha.strftime('%A') }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 text-purple-800 font-bold">{{ dia.cantidad }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if dia.anulados > 0 %}
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-700 font-bold">{{ dia.anulados }}</span>
+                            {% else %}
+                            <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-emerald-600 text-lg">
+                            S/ {{ "%.2f"|format(dia.total|float) }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap gap-2">
+                                {% for c in dia.conceptos %}
+                                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-sm text-purple-800"
+                                      title="{{ c.concepto }}">
+                                    <span class="font-semibold">{{ c.concepto }}</span>
+                                    <span class="text-xs text-gray-600">x{{ c.cantidad }}</span>
+                                    <span class="text-xs font-bold text-emerald-700">S/ {{ "%.2f"|format(c.monto|float) }}</span>
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50 border-t-2 border-gray-300">
+                    <tr>
+                        <td class="px-6 py-4 font-bold text-gray-800">TOTAL período</td>
+                        <td class="px-6 py-4 text-center font-bold text-gray-800">{{ cantidad_periodo }}</td>
+                        <td class="px-6 py-4 text-center font-bold text-gray-800">{{ anulados_periodo }}</td>
+                        <td class="px-6 py-4 text-right font-black text-emerald-700 text-lg">S/ {{ "%.2f"|format(total_periodo|float) }}</td>
+                        <td class="px-6 py-4"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Tabla de Historial -->
