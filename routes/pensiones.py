@@ -1679,9 +1679,40 @@ async def anular(request: Request, pago_id: int, _user_id: int = Depends(get_cur
         pago.usuario_anulacion = request.session.get("username")
         pago.motivo_anulacion = motivo
 
+        # Sincronizar cuotas del plan: si este recibo provino de cobrar una cuota,
+        # quitarlo de cuota.recibos_generados y revertir estado si quedó sin recibos vivos.
+        cuota_revertida = None
+        cuotas_relacionadas = CuotaPagoPension.query.filter(
+            CuotaPagoPension.recibos_generados.like(f"%{pago.numero_recibo}%")
+        ).all()
+        for cuota in cuotas_relacionadas:
+            recibos = [r.strip() for r in (cuota.recibos_generados or "").split(",") if r.strip()]
+            if pago.numero_recibo not in recibos:
+                continue  # falso positivo del LIKE (substring)
+            recibos.remove(pago.numero_recibo)
+            cuota.recibos_generados = ",".join(recibos) or None
+            if not recibos:
+                cuota.estado = "programada"
+                cuota.fecha_pago_real = None
+                cuota.metodo_pago = None
+                cuota.numero_operacion = None
+                cuota.usuario_cobro = None
+                cuota.fecha_cobro = None
+                cronograma = cuota.cronograma
+                if cronograma and cronograma.estado == "completado":
+                    cronograma.estado = "activo"
+                cuota_revertida = cuota
+
         db.session.commit()
 
-        add_flash(request, f"Pago {pago.numero_recibo} anulado exitosamente", "success")
+        if cuota_revertida is not None:
+            add_flash(
+                request,
+                f"Pago {pago.numero_recibo} anulado. Cuota #{cuota_revertida.numero_cuota} del plan revertida a 'programada'.",
+                "success",
+            )
+        else:
+            add_flash(request, f"Pago {pago.numero_recibo} anulado exitosamente", "success")
         return RedirectResponse(url=str(request.url_for("pensiones.historial")), status_code=303)
 
     except HTTPException:

@@ -19,6 +19,10 @@ COPY . .
 
 RUN mkdir -p instance static/uploads/estudiantes temp_pdfs academia/uploads academia/reports
 
+# Datos persistentes — declarar volúmenes para que NO se borren al rebuild.
+# El comando de arranque debe montar volúmenes nombrados o bind-mounts.
+VOLUME ["/app/instance", "/app/static/uploads", "/app/academia/uploads", "/app/academia/reports"]
+
 EXPOSE 8000
 
 # Detrás de Nginx/Caddy/Traefik: --proxy-headers y forwarded-allow-ips para cookies HTTPS y URLs correctas

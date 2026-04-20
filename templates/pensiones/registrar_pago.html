@@ -719,13 +719,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     switchPayTab('pensiones');
                 }
             } else {
+                const msg = data.message || 'No se pudo completar la búsqueda.';
                 mensajeBusqueda.innerHTML = `
                     <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-xl fade-in">
                         <div class="flex items-center">
                             <i class="fas fa-times-circle text-2xl mr-3"></i>
                             <div>
-                                <p class="font-bold">No se encontro el estudiante</p>
-                                <p class="text-sm">${data.message}</p>
+                                <p class="font-bold">${msg}</p>
                             </div>
                         </div>
                     </div>`;

@@ -1,0 +1,21 @@
+services:
+  intranet:
+    build: .
+    image: intranet-nk:latest
+    container_name: intranet-nk
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - intranet_data:/app/instance
+      - intranet_uploads:/app/static/uploads
+      - intranet_academia_uploads:/app/academia/uploads
+      - intranet_academia_reports:/app/academia/reports
+
+volumes:
+  intranet_data:
+  intranet_uploads:
+  intranet_academia_uploads:
+  intranet_academia_reports:
