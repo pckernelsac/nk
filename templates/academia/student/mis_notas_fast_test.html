@@ -8,185 +8,54 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#5F2A5D',
+                        'primary-dark': '#4a2048',
+                        'primary-light': '#8b4789',
+                    },
+                }
+            }
+        }
+    </script>
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary: #5F2A5D;
-            --primary-dark: #4a2048;
-            --primary-light: #8b4789;
-            --primary-50: #f8f0f8;
-            --primary-100: #f0ddef;
-            --primary-200: #e0bbe0;
-            --primary-accent: #7c3b7a;
-            --bg: #f7f7fa;
-            --card: #ffffff;
-            --border: #ebe5ef;
-            --text-dark: #1a1a2e;
-            --text: #4a4a5a;
-            --text-light: #8a8a9a;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text-dark);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        ::-webkit-scrollbar { width: 5px; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; color: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
 
-        /* ── Header ─────────────────────────────────── */
-        .app-header {
-            position: sticky; top: 0; z-index: 50;
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        .app-header-inner {
-            max-width: 1200px; margin: 0 auto;
-            padding: 0 1.25rem; height: 64px;
-            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-        }
-        .header-brand { display: flex; align-items: center; gap: 0.75rem; }
-        .header-logo {
-            width: 38px; height: 38px; border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(95,42,93,0.25);
-        }
-        .header-logo img { width: 24px; height: 24px; object-fit: contain; }
-        .header-title { font-weight: 700; font-size: 0.95rem; color: var(--text-dark); }
-        .header-subtitle { font-size: 0.6rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
-        .header-right { display: flex; align-items: center; gap: 0.75rem; }
-        .header-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 6px 14px; border-radius: 100px;
-            background: var(--primary-50); border: 1px solid var(--primary-200);
-            font-size: 0.7rem; font-weight: 600; color: var(--primary);
-        }
-        .btn-back {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 18px; border-radius: 10px; border: 1px solid var(--primary-200);
-            background: var(--primary-50); color: var(--primary);
-            font-size: 0.78rem; font-weight: 600; text-decoration: none;
-            transition: all 0.2s ease; font-family: 'Inter', sans-serif; cursor: pointer;
-        }
-        .btn-back:hover { background: var(--primary-100); border-color: var(--primary-light); }
-        .btn-logout {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 16px; border-radius: 10px; border: 1px solid #fecaca;
-            background: #fef2f2; color: #dc2626;
-            font-size: 0.75rem; font-weight: 600; text-decoration: none;
-            transition: all 0.2s ease; font-family: 'Inter', sans-serif; cursor: pointer;
-        }
-        .btn-logout:hover { background: #fee2e2; border-color: #fca5a5; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        .fade-in-up { animation: fadeInUp 0.6s ease-out both; }
+        .slide-in-right { animation: slideInRight 0.6s ease-out both; }
 
-        /* ── Main ────────────────────────────────────── */
-        .page-wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 3rem; flex: 1; }
-
-        .page-title-bar {
-            display: flex; align-items: center; justify-content: space-between;
-            gap: 0.75rem; flex-wrap: wrap;
-            margin-bottom: 1.5rem; padding-bottom: 1rem;
-            border-bottom: 2px solid var(--primary-100);
+        .form-input {
+            padding: 0.5rem 0.875rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: #fff;
+            color: #1a1a2e;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
         }
-        .page-title-left { display: flex; align-items: center; gap: 0.75rem; }
-        .page-title-icon {
-            width: 44px; height: 44px; border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 1.1rem;
-            box-shadow: 0 4px 12px rgba(95,42,93,0.2);
-        }
-        .page-title { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); }
-        .page-subtitle { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
-
-        /* Year selector */
-        .year-selector {
-            display: flex; align-items: center; gap: 8px;
-        }
-        .year-selector label { font-size: 0.78rem; font-weight: 600; color: var(--text); }
-        .year-selector select {
-            padding: 8px 14px; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 0.82rem; font-family: 'Inter', sans-serif;
-            color: var(--text-dark); background: var(--card);
-            cursor: pointer; transition: all 0.2s;
-        }
-        .year-selector select:focus {
-            outline: none; border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(95,42,93,0.1);
+        .form-input:focus {
+            outline: none;
+            border-color: #8b4789;
+            box-shadow: 0 0 0 3px rgba(95, 42, 93, 0.1);
         }
 
-        /* ── Cards ────────────────────────────────────── */
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            overflow: hidden;
-        }
-        .card-body { padding: 1.25rem 1.5rem; }
-
-        /* ── Flash ────────────────────────────────────── */
-        .flash {
-            padding: 0.85rem 1.25rem; border-radius: 10px;
-            font-size: 0.82rem; font-weight: 500;
-            margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
-            border-left: 4px solid;
-        }
-        .flash.success { background: #f0fdf4; color: #166534; border-color: #22c55e; }
-        .flash.error { background: #fef2f2; color: #991b1b; border-color: #ef4444; }
-        .flash.info { background: var(--primary-50); color: var(--primary-dark); border-color: var(--primary); }
-
-        /* ── Empty state ──────────────────────────────── */
-        .empty-state { text-align: center; padding: 3rem 1.5rem; }
-        .empty-state-icon {
-            width: 64px; height: 64px; border-radius: 50%;
-            background: #f3f4f6; border: 2px solid #e5e7eb;
-            display: inline-flex; align-items: center; justify-content: center;
-            margin-bottom: 1rem;
-        }
-        .empty-state-icon i { font-size: 1.5rem; color: #9ca3af; }
-        .empty-state h3 { font-size: 1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.35rem; }
-        .empty-state p { font-size: 0.82rem; color: var(--text-light); }
-
-        /* ── Student info bar ─────────────────────────── */
-        .student-info-bar {
-            display: flex; border: 1px solid var(--border); border-radius: 10px;
-            overflow: hidden; margin-bottom: 1.25rem;
-        }
-        .student-info-bar .info-cell {
-            flex: 1; padding: 0.75rem 1.25rem;
-            border-right: 1px solid var(--border);
-        }
-        .student-info-bar .info-cell:last-child { border-right: none; }
-        .info-cell-label {
-            font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.05em; color: var(--text-light);
-        }
-        .info-cell-value {
-            font-size: 0.85rem; font-weight: 700; color: var(--text-dark); margin-top: 2px;
-        }
-
-        /* Boleta header */
-        .boleta-header {
-            text-align: center; padding-bottom: 0.75rem; margin-bottom: 1rem;
-            border-bottom: 2px solid var(--border);
-        }
-        .boleta-header h3 {
-            font-size: 0.88rem; font-weight: 800; text-transform: uppercase;
-            letter-spacing: 0.06em; color: var(--text-dark);
-        }
-        .boleta-header p {
-            font-size: 0.78rem; font-weight: 600; color: var(--text-light);
-            text-transform: uppercase; margin-top: 4px;
-        }
-
-        /* ── Grade table ──────────────────────────────── */
+        /* Grade table */
         .grade-table { border-collapse: collapse; width: 100%; }
         .grade-table th, .grade-table td {
             border: 1px solid #e5e0ea;
@@ -196,11 +65,11 @@
             white-space: nowrap;
         }
         .grade-table th {
-            background: var(--primary-50);
+            background: #f8f0f8;
             font-weight: 700;
             text-transform: uppercase;
             font-size: 0.72rem;
-            color: var(--primary-dark);
+            color: #4a2048;
             letter-spacing: 0.03em;
         }
         .grade-table td.col-curso {
@@ -211,7 +80,7 @@
         }
         .grade-table td.col-prom {
             font-weight: 800;
-            background: var(--primary-50);
+            background: #f8f0f8;
         }
         .grade-table tbody tr { transition: background 0.15s; }
         .grade-table tbody tr:hover { background: #faf8fb; }
@@ -222,168 +91,198 @@
         .nota-nsp   { color: #dc2626; font-weight: 700; font-size: 0.72rem; }
         .nota-vacia { color: #c4c0c8; }
 
-        /* ── Legend & print ────────────────────────────── */
-        .legend {
-            display: flex; flex-wrap: wrap; gap: 1rem;
-            font-size: 0.72rem; color: var(--text-light);
-            margin-top: 1rem; padding-top: 0.75rem;
-            border-top: 1px solid var(--border);
-        }
-        .btn-print {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 22px; border-radius: 10px; border: none;
-            background: var(--primary); color: #fff;
-            font-size: 0.82rem; font-weight: 600; cursor: pointer;
-            transition: all 0.2s; font-family: 'Inter', sans-serif;
-            box-shadow: 0 2px 8px rgba(95,42,93,0.25);
-        }
-        .btn-print:hover { background: var(--primary-dark); transform: translateY(-1px); }
-
-        /* ── Footer ───────────────────────────────────── */
-        .app-footer {
-            text-align: center; padding: 1rem;
-            font-size: 0.75rem; color: var(--text-light);
-            border-top: 1px solid var(--border);
-        }
-
-        /* ── Print ────────────────────────────────────── */
+        /* Print */
         @media print {
             .no-print { display: none !important; }
             body { background: white !important; }
-            .app-header, .app-footer { display: none !important; }
-            .card { box-shadow: none !important; border: 2px solid #374151 !important; border-radius: 0 !important; }
-            .page-wrap { padding: 0; max-width: 100%; }
-            .page-title-bar { display: none !important; }
-        }
-
-        /* ── Responsive ───────────────────────────────── */
-        @media (max-width: 640px) {
-            .student-info-bar { flex-direction: column; }
-            .student-info-bar .info-cell { border-right: none; border-bottom: 1px solid var(--border); }
-            .student-info-bar .info-cell:last-child { border-bottom: none; }
-            .page-title-bar { flex-direction: column; align-items: flex-start; }
-            .header-right { flex-wrap: wrap; }
-            .header-badge { display: none; }
+            header, footer { display: none !important; }
+            .bg-gradient-to-r, .bg-gradient-to-br { background: white !important; color: #000 !important; }
+            .shadow-xl, .shadow-md, .shadow-lg { box-shadow: none !important; }
+            .rounded-2xl { border: 2px solid #374151 !important; border-radius: 0 !important; }
+            main { padding: 0 !important; max-width: 100% !important; }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="app-header no-print">
-        <div class="app-header-inner">
-            <div class="header-brand">
-                <div class="header-logo">
-                    <img src="{{ url_for('academia_student_auth.static', filename='img/nk.png') }}" alt="NK">
+
+    <!-- ── Header ─────────────────────────────────────────────── -->
+    <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-lg shadow-primary/25">
+                    <img src="{{ url_for('academia_student_auth.static', filename='img/nk.png') }}"
+                         onerror="this.style.display='none'" alt="NK" class="w-6 h-6 object-contain">
                 </div>
                 <div>
-                    <div class="header-title">NK Chambergo</div>
-                    <div class="header-subtitle">Centro Pre Universitario</div>
+                    <div class="text-sm font-bold text-gray-900 leading-tight">NK Chambergo</div>
+                    <div class="text-[10px] uppercase tracking-wider font-semibold text-gray-500">Mis Notas Fast Test</div>
                 </div>
             </div>
-            <div class="header-right">
-                <span class="header-badge">
-                    <i class="fas fa-user-graduate"></i> {{ g.current_student.name }}
+            <div class="flex items-center gap-2 sm:gap-3">
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-semibold text-primary">
+                    <i class="fas fa-user-graduate text-[10px]"></i>
+                    {{ g.current_student.name }}
                 </span>
-                <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-back">
-                    <i class="fas fa-arrow-left"></i> Dashboard
+                <a href="{{ url_for('academia_student_auth.dashboard') }}"
+                   class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary/30 bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-all">
+                    <i class="fas fa-arrow-left text-[11px]"></i>
+                    <span class="hidden sm:inline">Dashboard</span>
                 </a>
-                <a href="{{ url_for('academia_student_auth.logout') }}" class="btn-logout">
-                    <i class="fas fa-sign-out-alt"></i> Salir
+                <a href="{{ url_for('academia_student_auth.logout') }}"
+                   class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition-all">
+                    <i class="fas fa-arrow-right-from-bracket text-[11px]"></i>
+                    <span class="hidden sm:inline">Salir</span>
                 </a>
             </div>
         </div>
     </header>
 
-    <div class="page-wrap">
-        <!-- Page title -->
-        <div class="page-title-bar no-print">
-            <div class="page-title-left">
-                <div class="page-title-icon"><i class="fas fa-file-alt"></i></div>
-                <div>
-                    <div class="page-title">Mis Notas Fast Test</div>
-                    <div class="page-subtitle">
-                        DNI: {{ dni }}
-                        {% if estudiante %}
-                        &nbsp;|&nbsp; {{ estudiante.nivel }} — Programa: {{ estudiante.grado }}{{ ' ' + estudiante.seccion if estudiante.seccion else '' }}
-                        {% endif %}
-                    </div>
-                </div>
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
+
+        <!-- ── Hero ─────────────────────────────────────────────── -->
+        <div class="bg-gradient-to-r from-primary to-primary-dark rounded-2xl shadow-xl p-6 sm:p-8 mb-8 text-white fade-in-up relative overflow-hidden no-print">
+            <div class="absolute top-0 right-0 opacity-10 text-8xl sm:text-9xl pointer-events-none">
+                <i class="fas fa-chart-column"></i>
             </div>
-            <form method="get" class="year-selector">
-                <label>Año:</label>
-                <select name="anio_escolar" onchange="this.form.submit()">
-                    {% for a in anios %}
-                    <option value="{{ a }}" {% if a == anio_escolar %}selected{% endif %}>{{ a }}</option>
-                    {% endfor %}
-                </select>
-            </form>
+            <div class="absolute bottom-0 left-24 opacity-10 text-6xl pointer-events-none">
+                <i class="fas fa-file-pdf"></i>
+            </div>
+            <div class="flex items-center justify-between gap-4 relative z-10 flex-wrap">
+                <div class="min-w-0">
+                    <div class="flex items-center mb-2 sm:mb-3">
+                        <i class="fas fa-file-alt text-xl sm:text-2xl mr-2 sm:mr-3 animate-pulse"></i>
+                        <h1 class="text-2xl sm:text-4xl font-bold">Mis Notas Fast Test</h1>
+                    </div>
+                    <p class="text-sm sm:text-base opacity-90 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span class="inline-flex items-center"><i class="fas fa-id-badge mr-1.5"></i>DNI: {{ dni }}</span>
+                        {% if estudiante %}
+                        <span class="opacity-50 hidden sm:inline">|</span>
+                        <span class="inline-flex items-center"><i class="fas fa-layer-group mr-1.5"></i>{{ estudiante.nivel }}</span>
+                        <span class="opacity-50 hidden sm:inline">|</span>
+                        <span class="inline-flex items-center"><i class="fas fa-graduation-cap mr-1.5"></i>{{ estudiante.grado }}{{ ' ' + estudiante.seccion if estudiante.seccion else '' }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <form method="get" class="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 border border-white/20">
+                    <label class="text-xs font-semibold opacity-90">A&ntilde;o:</label>
+                    <select name="anio_escolar" onchange="this.form.submit()"
+                            class="bg-white/20 border border-white/30 text-white text-sm rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer">
+                        {% for a in anios %}
+                        <option value="{{ a }}" class="text-gray-900" {% if a == anio_escolar %}selected{% endif %}>{{ a }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
         </div>
 
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="flash {{ 'success' if category == 'success' else ('error' if category == 'error' else 'info') }} no-print">
-                    <i class="fas {{ 'fa-check-circle' if category == 'success' else ('fa-exclamation-circle' if category == 'error' else 'fa-info-circle') }}"></i>
-                    {{ message }}
-                </div>
+                    {% set cls = 'error' if category in ['error', 'danger'] else ('success' if category == 'success' else 'info') %}
+                    <div class="flash-msg flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium mb-4 border fade-in-up no-print
+                                {% if cls == 'error' %}bg-red-50 border-red-200 text-red-600
+                                {% elif cls == 'success' %}bg-green-50 border-green-200 text-green-700
+                                {% else %}bg-primary/5 border-primary/20 text-primary{% endif %}">
+                        <i class="fas {{ 'fa-circle-exclamation' if cls == 'error' else ('fa-circle-check' if cls == 'success' else 'fa-circle-info') }}"></i>
+                        <span>{{ message }}</span>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
         {% if not estudiante %}
-        <div class="card">
-            <div class="card-body">
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                    <h3>Estudiante no encontrado en el sistema</h3>
-                    <p>El DNI <strong>{{ dni }}</strong> no está registrado en el sistema principal.</p>
+        <!-- ── Sin estudiante en sistema principal ─────────────── -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in-up">
+            <div class="bg-gradient-to-r from-red-500 to-rose-600 p-5 text-white relative overflow-hidden">
+                <div class="absolute right-0 top-0 opacity-20 text-6xl pointer-events-none">
+                    <i class="fas fa-user-xmark"></i>
                 </div>
+                <h2 class="text-lg sm:text-xl font-bold flex items-center relative z-10">
+                    <i class="fas fa-triangle-exclamation mr-3"></i>Estudiante no encontrado
+                </h2>
+            </div>
+            <div class="p-10 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 border-2 border-red-200 mb-4">
+                    <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+                </div>
+                <h3 class="text-base font-bold text-gray-900 mb-1">El DNI no est&aacute; registrado en el sistema principal</h3>
+                <p class="text-sm text-gray-500">
+                    El DNI <strong>{{ dni }}</strong> no se encontr&oacute; en el sistema principal.
+                </p>
             </div>
         </div>
 
         {% elif not cursos %}
-        <div class="card">
-            <div class="card-body">
-                <!-- Boleta header (printable) -->
-                <div class="boleta-header">
-                    <h3>Control de Calificaciones Fast Test — {{ anio_escolar }}</h3>
-                    <p>{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}, {{ estudiante.nombres_est }} &nbsp;|&nbsp; DNI: {{ dni }}</p>
+        <!-- ── Sin notas para el año ───────────────────────────── -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in-up">
+            <div class="bg-gradient-to-r from-primary to-primary-dark p-5 text-white relative overflow-hidden">
+                <div class="absolute right-0 top-0 opacity-20 text-6xl pointer-events-none">
+                    <i class="fas fa-file-lines"></i>
                 </div>
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-clipboard"></i></div>
-                    <h3>Sin notas registradas para el año {{ anio_escolar }}</h3>
-                    <p>Aún no tienes evaluaciones Fast Test registradas en este período.</p>
+                <h2 class="text-lg sm:text-xl font-bold flex items-center relative z-10">
+                    <i class="fas fa-file-lines mr-3"></i>Control de Calificaciones Fast Test &mdash; {{ anio_escolar }}
+                </h2>
+            </div>
+            <div class="p-6 sm:p-8">
+                <div class="text-center py-4 mb-4 border-b-2 border-gray-200">
+                    <h3 class="text-sm font-extrabold uppercase tracking-wider text-gray-900">Control de Calificaciones Fast Test &mdash; {{ anio_escolar }}</h3>
+                    <p class="text-xs font-semibold uppercase text-gray-500 mt-1">
+                        {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}, {{ estudiante.nombres_est }} &nbsp;|&nbsp; DNI: {{ dni }}
+                    </p>
+                </div>
+                <div class="text-center py-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 mb-4">
+                        <i class="fas fa-clipboard text-2xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900 mb-1">Sin notas registradas para el a&ntilde;o {{ anio_escolar }}</h3>
+                    <p class="text-sm text-gray-500">A&uacute;n no tienes evaluaciones Fast Test registradas en este per&iacute;odo.</p>
                 </div>
             </div>
         </div>
 
         {% else %}
-        <div class="card">
-            <div class="card-body">
-                <!-- Boleta header (printable) -->
-                <div class="boleta-header">
-                    <h3>Control de Calificaciones Fast Test</h3>
-                    <p>
-                        Año Escolar {{ anio_escolar }}
+        <!-- ── Boleta ──────────────────────────────────────────── -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden slide-in-right">
+            <div class="bg-gradient-to-r from-primary to-primary-dark p-5 text-white relative overflow-hidden no-print">
+                <div class="absolute right-0 top-0 opacity-20 text-6xl pointer-events-none">
+                    <i class="fas fa-chart-column"></i>
+                </div>
+                <h2 class="text-lg sm:text-xl font-bold flex items-center relative z-10">
+                    <i class="fas fa-chart-column mr-3"></i>Control de Calificaciones Fast Test
+                    <span class="ml-3 bg-white/20 rounded-full px-3 py-0.5 text-xs font-semibold">{{ anio_escolar }}</span>
+                    {% if aula_nombre %}
+                    <span class="ml-2 bg-white/20 rounded-full px-3 py-0.5 text-xs font-semibold hidden sm:inline">{{ aula_nombre }}</span>
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="p-5 sm:p-6">
+
+                <!-- Cabecera imprimible -->
+                <div class="text-center py-4 mb-5 border-b-2 border-gray-200">
+                    <h3 class="text-sm font-extrabold uppercase tracking-wider text-gray-900">Control de Calificaciones Fast Test</h3>
+                    <p class="text-xs font-semibold uppercase text-gray-500 mt-1">
+                        A&ntilde;o Escolar {{ anio_escolar }}
                         {% if aula_nombre %}&nbsp;|&nbsp;{{ aula_nombre }}{% endif %}
                     </p>
                 </div>
 
-                <!-- Student info -->
-                <div class="student-info-bar">
-                    <div class="info-cell" style="flex: 2;">
-                        <div class="info-cell-label">Apellidos y Nombres</div>
-                        <div class="info-cell-value">{{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}, {{ estudiante.nombres_est }}</div>
+                <!-- Info del estudiante -->
+                <div class="flex flex-col sm:flex-row border border-gray-200 rounded-xl overflow-hidden mb-5">
+                    <div class="flex-[2] p-3 sm:p-4 sm:border-r border-b sm:border-b-0 border-gray-200">
+                        <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-500">Apellidos y Nombres</p>
+                        <p class="text-sm font-bold text-gray-900 mt-0.5">
+                            {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}, {{ estudiante.nombres_est }}
+                        </p>
                     </div>
-                    <div class="info-cell">
-                        <div class="info-cell-label">DNI</div>
-                        <div class="info-cell-value">{{ dni }}</div>
+                    <div class="flex-1 p-3 sm:p-4">
+                        <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-500">DNI</p>
+                        <p class="text-sm font-bold text-gray-900 mt-0.5">{{ dni }}</p>
                     </div>
                 </div>
 
-                <!-- Grade table -->
-                <div style="overflow-x: auto; margin-bottom: 1rem;">
+                <!-- Tabla de calificaciones -->
+                <div class="overflow-x-auto mb-5">
                     <table class="grade-table">
                         <thead>
                             <tr>
@@ -391,7 +290,7 @@
                                 {% for s in sesiones %}
                                 <th>{{ s }}</th>
                                 {% endfor %}
-                                <th style="background: var(--primary-100); color: var(--primary-dark);">Promedio</th>
+                                <th style="background: #f0ddef; color: #4a2048;">Promedio</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -416,10 +315,10 @@
                                             {% set ns.suma = ns.suma + val %}
                                             {% set ns.count = ns.count + 1 %}
                                         {% else %}
-                                            <td class="nota-vacia">—</td>
+                                            <td class="nota-vacia">&mdash;</td>
                                         {% endif %}
                                     {% else %}
-                                        <td class="nota-vacia">—</td>
+                                        <td class="nota-vacia">&mdash;</td>
                                     {% endif %}
                                 {% endfor %}
                                 {% if ns.count > 0 %}
@@ -428,7 +327,7 @@
                                         {{ "%.1f"|format(prom) }}
                                     </td>
                                 {% else %}
-                                    <td class="col-prom nota-vacia">—</td>
+                                    <td class="col-prom nota-vacia">&mdash;</td>
                                 {% endif %}
                             </tr>
                             {% endfor %}
@@ -436,35 +335,58 @@
                     </table>
                 </div>
 
-                <!-- Legend -->
-                <div class="legend no-print">
-                    <span class="nota-alta">● Logro (≥ 14)</span>
-                    <span class="nota-media">● En Proceso (11–13)</span>
-                    <span class="nota-baja">● Inicio (< 11)</span>
-                    <span class="nota-nsp">● N.S.P. (No se presentó)</span>
+                <!-- Leyenda -->
+                <div class="flex flex-wrap gap-3 text-xs text-gray-500 pt-3 border-t border-gray-200 no-print">
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span class="text-emerald-700 font-semibold">Logro (&ge; 14)</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                        <span class="text-amber-700 font-semibold">En Proceso (11&ndash;13)</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                        <span class="text-red-700 font-semibold">Inicio (&lt; 11)</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                        <span class="text-red-700 font-semibold">N.S.P. (No se present&oacute;)</span>
+                    </span>
                 </div>
 
-                <!-- Action buttons -->
-                <div style="text-align: right; margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem;" class="no-print">
+                <!-- Acciones -->
+                <div class="flex flex-col sm:flex-row justify-end gap-3 mt-5 no-print">
                     <a href="{{ url_for('academia_student_auth.mis_notas_fast_test_pdf', anio_escolar=anio_escolar) }}"
-                       class="btn-print" style="text-decoration: none; background: #059669;">
+                       class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
                         <i class="fas fa-file-pdf"></i> Descargar PDF
                     </a>
-                    <button onclick="window.print()" class="btn-print">
+                    <button onclick="window.print()"
+                            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-white text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
                         <i class="fas fa-print"></i> Imprimir
                     </button>
                 </div>
             </div>
         </div>
         {% endif %}
-    </div>
 
-    <footer class="app-footer no-print">
-        <p>Tu preparación merece lo mejor &copy; <span id="year"></span> NK Chambergo</p>
+    </main>
+
+    <footer class="mt-auto text-center py-6 text-xs text-gray-500 border-t border-gray-200 no-print">
+        <div class="text-primary-light italic mb-1">&iexcl;Tu preparaci&oacute;n merece lo mejor!</div>
+        &copy; <span id="year"></span> NK Chambergo &middot; Centro Pre Universitario
     </footer>
 
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
+        setTimeout(() => {
+            document.querySelectorAll('.flash-msg').forEach(msg => {
+                msg.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateY(-6px)';
+                setTimeout(() => msg.remove(), 400);
+            });
+        }, 5000);
     </script>
 </body>
 </html>

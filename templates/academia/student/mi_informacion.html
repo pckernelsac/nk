@@ -3,233 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Información - NK Chambergo</title>
+    <title>Mi Informaci&oacute;n - NK Chambergo</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#5F2A5D',
+                        'primary-dark': '#4a2048',
+                        'primary-light': '#8b4789',
+                    },
+                }
+            }
+        }
+    </script>
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary: #5F2A5D;
-            --primary-dark: #4a2048;
-            --primary-light: #8b4789;
-            --primary-50: #f8f0f8;
-            --primary-100: #f0ddef;
-            --primary-200: #e0bbe0;
-            --primary-accent: #7c3b7a;
-            --bg: #f7f7fa;
-            --card: #ffffff;
-            --border: #ebe5ef;
-            --text-dark: #1a1a2e;
-            --text: #4a4a5a;
-            --text-light: #8a8a9a;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text-dark);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        ::-webkit-scrollbar { width: 5px; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; color: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
 
-        /* ── Header ─────────────────────────────────── */
-        .app-header {
-            position: sticky; top: 0; z-index: 50;
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        .app-header-inner {
-            max-width: 1200px; margin: 0 auto;
-            padding: 0 1.25rem; height: 64px;
-            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-        }
-        .header-brand { display: flex; align-items: center; gap: 0.75rem; }
-        .header-logo {
-            width: 38px; height: 38px; border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(95,42,93,0.25);
-        }
-        .header-logo img { width: 24px; height: 24px; object-fit: contain; }
-        .header-title { font-weight: 700; font-size: 0.95rem; color: var(--text-dark); }
-        .header-subtitle { font-size: 0.6rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
-        .btn-back {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 18px; border-radius: 10px; border: 1px solid var(--primary-200);
-            background: var(--primary-50); color: var(--primary);
-            font-size: 0.78rem; font-weight: 600; text-decoration: none;
-            transition: all 0.2s ease; font-family: 'Inter', sans-serif; cursor: pointer;
-        }
-        .btn-back:hover { background: var(--primary-100); border-color: var(--primary-light); }
-
-        /* ── Main ────────────────────────────────────── */
-        .page-wrap { max-width: 900px; margin: 0 auto; padding: 2rem 1.25rem 3rem; flex: 1; }
-
-        /* Page title */
-        .page-title-bar {
-            display: flex; align-items: center; gap: 0.75rem;
-            margin-bottom: 1.5rem; padding-bottom: 1rem;
-            border-bottom: 2px solid var(--primary-100);
-        }
-        .page-title-icon {
-            width: 44px; height: 44px; border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 1.1rem;
-            box-shadow: 0 4px 12px rgba(95,42,93,0.2);
-        }
-        .page-title { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); }
-        .page-subtitle { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
-
-        /* ── Cards ────────────────────────────────────── */
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            overflow: hidden;
-        }
-        .card + .card { margin-top: 1.25rem; }
-
-        .card-header {
-            display: flex; align-items: center; gap: 0.6rem;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            background: var(--primary-50);
-        }
-        .card-header i { color: var(--primary); font-size: 1rem; }
-        .card-header h3 { font-size: 0.9rem; font-weight: 700; color: var(--text-dark); }
-
-        .card-body { padding: 1.25rem 1.5rem; }
-
-        /* Data grid */
-        .data-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1rem;
-        }
-        .data-item { }
-        .data-item.full { grid-column: 1 / -1; }
-        .data-label {
-            display: block;
-            font-size: 0.7rem; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.05em;
-            color: var(--text-light); margin-bottom: 4px;
-        }
-        .data-value {
-            font-size: 0.88rem; font-weight: 500;
-            color: var(--text-dark);
-        }
-        .data-value.empty { color: var(--text-light); font-style: italic; }
-
-        /* Parent cards */
-        .parent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .parent-card {
-            border-radius: 12px; padding: 1.25rem;
-        }
-        .parent-card.father { background: #eff6ff; border: 1px solid #bfdbfe; }
-        .parent-card.mother { background: #fdf2f8; border: 1px solid #fbcfe8; }
-        .parent-card h4 {
-            font-size: 0.82rem; font-weight: 700; margin-bottom: 0.75rem;
-        }
-        .parent-card.father h4 { color: #1e3a8a; }
-        .parent-card.mother h4 { color: #9d174d; }
-        .parent-card .data-label { color: #6b7280; }
-        .parent-card .data-value { font-size: 0.84rem; }
-
-        /* ── Not registered state ─────────────────────── */
-        .empty-state {
-            text-align: center; padding: 3rem 1.5rem;
-        }
-        .empty-state-icon {
-            width: 80px; height: 80px; border-radius: 50%;
-            background: #fef3c7; border: 3px solid #fde68a;
-            display: inline-flex; align-items: center; justify-content: center;
-            margin-bottom: 1.25rem;
-        }
-        .empty-state-icon i { font-size: 2rem; color: #d97706; }
-        .empty-state h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.5rem; }
-        .empty-state p { font-size: 0.85rem; color: var(--text); max-width: 500px; margin: 0 auto; line-height: 1.6; }
-        .empty-state .dni-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: var(--primary-50); border: 1px solid var(--primary-200);
-            padding: 6px 16px; border-radius: 100px;
-            font-size: 0.82rem; font-weight: 600; color: var(--primary);
-            margin: 1rem 0;
-        }
-
-        /* ── Buttons ──────────────────────────────────── */
-        .btn-primary {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 24px; border-radius: 10px; border: none;
-            background: var(--primary); color: #fff;
-            font-size: 0.82rem; font-weight: 600;
-            text-decoration: none; cursor: pointer;
-            transition: all 0.2s; font-family: 'Inter', sans-serif;
-            box-shadow: 0 2px 8px rgba(95,42,93,0.25);
-        }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(95,42,93,0.35); }
-
-        .actions-bar {
-            display: flex; justify-content: flex-end;
-            padding-top: 1.25rem; margin-top: 1.25rem;
-            border-top: 1px solid var(--border);
-        }
-
-        /* ── Flash ────────────────────────────────────── */
-        .flash {
-            padding: 0.85rem 1.25rem; border-radius: 10px;
-            font-size: 0.82rem; font-weight: 500;
-            margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
-            border-left: 4px solid;
-        }
-        .flash.success { background: #f0fdf4; color: #166534; border-color: #22c55e; }
-        .flash.error { background: #fef2f2; color: #991b1b; border-color: #ef4444; }
-        .flash.info { background: var(--primary-50); color: var(--primary-dark); border-color: var(--primary); }
-
-        /* ── Responsive ───────────────────────────────── */
-        @media (max-width: 640px) {
-            .parent-grid { grid-template-columns: 1fr; }
-            .data-grid { grid-template-columns: 1fr; }
-            .app-header-inner { padding: 0 1rem; }
-            .page-wrap { padding: 1.25rem 1rem 2rem; }
-        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .fade-in-up { animation: fadeInUp 0.6s ease-out both; }
+        .slide-in-right { animation: slideInRight 0.6s ease-out both; }
+        .scale-in { animation: scaleIn 0.5s ease-out both; }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="app-header">
-        <div class="app-header-inner">
-            <div class="header-brand">
-                <div class="header-logo">
-                    <img src="{{ url_for('academia_student_auth.static', filename='img/nk.png') }}" alt="NK">
+
+    <!-- ── Header ─────────────────────────────────────────────── -->
+    <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-lg shadow-primary/25">
+                    <img src="{{ url_for('academia_student_auth.static', filename='img/nk.png') }}"
+                         onerror="this.style.display='none'" alt="NK" class="w-6 h-6 object-contain">
                 </div>
                 <div>
-                    <div class="header-title">NK Chambergo</div>
-                    <div class="header-subtitle">Mi Información</div>
+                    <div class="text-sm font-bold text-gray-900 leading-tight">NK Chambergo</div>
+                    <div class="text-[10px] uppercase tracking-wider font-semibold text-gray-500">Mi Informaci&oacute;n</div>
                 </div>
             </div>
-            <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            <a href="{{ url_for('academia_student_auth.dashboard') }}"
+               class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary/30 bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-all">
+                <i class="fas fa-arrow-left text-[11px]"></i>
+                <span class="hidden sm:inline">Volver al Dashboard</span>
+                <span class="sm:hidden">Volver</span>
             </a>
         </div>
     </header>
 
-    <div class="page-wrap">
-        <!-- Page title -->
-        <div class="page-title-bar">
-            <div class="page-title-icon"><i class="fas fa-user"></i></div>
-            <div>
-                <div class="page-title">Mi Información Personal</div>
-                <div class="page-subtitle">Información de contacto y datos personales</div>
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6">
+
+        <!-- ── Hero ─────────────────────────────────────────────── -->
+        <div class="bg-gradient-to-r from-primary to-primary-dark rounded-2xl shadow-xl p-6 sm:p-8 mb-8 text-white fade-in-up relative overflow-hidden">
+            <div class="absolute top-0 right-0 opacity-10 text-8xl sm:text-9xl pointer-events-none">
+                <i class="fas fa-id-card"></i>
+            </div>
+            <div class="absolute bottom-0 left-24 opacity-10 text-6xl pointer-events-none">
+                <i class="fas fa-address-book"></i>
+            </div>
+            <div class="flex items-center justify-between gap-4 relative z-10">
+                <div class="min-w-0">
+                    <div class="flex items-center mb-2 sm:mb-3">
+                        <i class="fas fa-user-circle text-xl sm:text-2xl mr-2 sm:mr-3 animate-pulse"></i>
+                        <h1 class="text-2xl sm:text-4xl font-bold">Mi Informaci&oacute;n Personal</h1>
+                    </div>
+                    <p class="text-sm sm:text-base opacity-90 flex items-center">
+                        <i class="fas fa-address-card mr-2"></i>
+                        Datos personales y de contacto
+                    </p>
+                </div>
+                <div class="hidden md:block flex-shrink-0">
+                    <div class="bg-white/20 rounded-full p-5 hover:bg-white/30 transition-all duration-300">
+                        <i class="fas fa-user text-5xl"></i>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -237,122 +99,238 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="flash {{ 'success' if category == 'success' else ('error' if category == 'error' else 'info') }}">
-                    <i class="fas {{ 'fa-check-circle' if category == 'success' else ('fa-exclamation-circle' if category == 'error' else 'fa-info-circle') }}"></i>
-                    {{ message }}
-                </div>
+                    {% set cls = 'error' if category in ['error', 'danger'] else ('success' if category == 'success' else 'info') %}
+                    <div class="flash-msg flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium mb-4 border fade-in-up
+                                {% if cls == 'error' %}bg-red-50 border-red-200 text-red-600
+                                {% elif cls == 'success' %}bg-green-50 border-green-200 text-green-700
+                                {% else %}bg-primary/5 border-primary/20 text-primary{% endif %}">
+                        <i class="fas {{ 'fa-circle-exclamation' if cls == 'error' else ('fa-circle-check' if cls == 'success' else 'fa-circle-info') }}"></i>
+                        <span>{{ message }}</span>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
         {% if not estudiante %}
-        <!-- Not registered -->
-        <div class="card">
-            <div class="card-body">
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-user-clock"></i></div>
-                    <h3>Aún no estás registrado en el sistema principal</h3>
-                    <div class="dni-badge"><i class="fas fa-id-card"></i> DNI: {{ dni }}</div>
-                    <p>Tu perfil completo aún no ha sido creado en el sistema principal. Completa tu inscripción formal para acceder a toda tu información.</p>
-                    <div style="margin-top: 1.5rem;">
-                        <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-primary">
-                            <i class="fas fa-arrow-left"></i> Volver al Dashboard
-                        </a>
-                    </div>
+        <!-- ── Not registered ───────────────────────────────────── -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in-up">
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-5 sm:p-6 text-white relative overflow-hidden">
+                <div class="absolute right-0 top-0 opacity-20 text-7xl pointer-events-none">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold flex items-center relative z-10">
+                    <i class="fas fa-triangle-exclamation mr-3 animate-pulse"></i>Pendiente de registro
+                </h2>
+            </div>
+            <div class="p-10 text-center">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-100 border-[3px] border-amber-200 mb-5">
+                    <i class="fas fa-user-clock text-3xl text-amber-600"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">A&uacute;n no est&aacute;s registrado en el sistema principal</h3>
+                <div class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-3">
+                    <i class="fas fa-id-card"></i> DNI: {{ dni }}
+                </div>
+                <p class="text-sm text-gray-600 max-w-xl mx-auto leading-relaxed">
+                    Tu perfil completo a&uacute;n no ha sido creado en el sistema principal.
+                    Completa tu inscripci&oacute;n formal para acceder a toda tu informaci&oacute;n.
+                </p>
+                <div class="mt-6">
+                    <a href="{{ url_for('academia_student_auth.dashboard') }}"
+                       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold shadow-lg shadow-primary/25 hover:bg-primary-dark hover:shadow-xl transition-all">
+                        <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                    </a>
                 </div>
             </div>
         </div>
 
         {% else %}
-        <!-- Student data -->
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-user"></i>
-                <h3>Datos del Estudiante</h3>
-            </div>
-            <div class="card-body">
-                <div class="data-grid">
-                    <div class="data-item">
-                        <span class="data-label">Nombre Completo</span>
-                        <span class="data-value">{{ estudiante.nombres_est }} {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">DNI</span>
-                        <span class="data-value">{{ estudiante.dni_est }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Nivel</span>
-                        <span class="data-value">{{ estudiante.nivel }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Programa</span>
-                        <span class="data-value">{{ estudiante.grado }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Correo</span>
-                        <span class="data-value {{ 'empty' if not estudiante.correo_est else '' }}">{{ estudiante.correo_est or 'No registrado' }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Celular</span>
-                        <span class="data-value {{ 'empty' if not estudiante.numero_celular_est else '' }}">{{ estudiante.numero_celular_est or 'No registrado' }}</span>
-                    </div>
-                    <div class="data-item full">
-                        <span class="data-label">Dirección</span>
-                        <span class="data-value {{ 'empty' if not estudiante.direccion_est else '' }}">{{ estudiante.direccion_est or 'No registrado' }}</span>
+
+        <!-- ── Quick info (nivel / programa / DNI) ──────────────── -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl shadow-xl p-5 text-white scale-in relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 opacity-10"><i class="fas fa-id-badge text-6xl"></i></div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/20 rounded-full p-3"><i class="fas fa-id-badge text-xl"></i></div>
+                        <div>
+                            <p class="text-[10px] uppercase tracking-wider font-semibold opacity-80">DNI</p>
+                            <p class="text-xl font-bold">{{ estudiante.dni_est }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Parents contact -->
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-users"></i>
-                <h3>Contacto de Padres</h3>
-            </div>
-            <div class="card-body">
-                <div class="parent-grid">
-                    <div class="parent-card father">
-                        <h4><i class="fas fa-male" style="margin-right: 6px;"></i>Padre</h4>
-                        <div style="display: flex; flex-direction: column; gap: 0.6rem;">
-                            <div>
-                                <span class="data-label">Celular</span>
-                                <span class="data-value {{ 'empty' if not estudiante.celular_padre else '' }}">{{ estudiante.celular_padre or 'No registrado' }}</span>
-                            </div>
-                            <div>
-                                <span class="data-label">Correo</span>
-                                <span class="data-value {{ 'empty' if not estudiante.correo_padre else '' }}">{{ estudiante.correo_padre or 'No registrado' }}</span>
-                            </div>
+            <div class="bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl shadow-xl p-5 text-white scale-in relative overflow-hidden" style="animation-delay:0.08s;">
+                <div class="absolute -right-4 -top-4 opacity-10"><i class="fas fa-layer-group text-6xl"></i></div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/20 rounded-full p-3"><i class="fas fa-layer-group text-xl"></i></div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] uppercase tracking-wider font-semibold opacity-80">Nivel</p>
+                            <p class="text-base sm:text-lg font-bold truncate">{{ estudiante.nivel }}</p>
                         </div>
                     </div>
-                    <div class="parent-card mother">
-                        <h4><i class="fas fa-female" style="margin-right: 6px;"></i>Madre</h4>
-                        <div style="display: flex; flex-direction: column; gap: 0.6rem;">
-                            <div>
-                                <span class="data-label">Celular</span>
-                                <span class="data-value {{ 'empty' if not estudiante.celular_madre else '' }}">{{ estudiante.celular_madre or 'No registrado' }}</span>
-                            </div>
-                            <div>
-                                <span class="data-label">Correo</span>
-                                <span class="data-value {{ 'empty' if not estudiante.correo_madre else '' }}">{{ estudiante.correo_madre or 'No registrado' }}</span>
-                            </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl shadow-xl p-5 text-white scale-in relative overflow-hidden" style="animation-delay:0.16s;">
+                <div class="absolute -right-4 -top-4 opacity-10"><i class="fas fa-graduation-cap text-6xl"></i></div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/20 rounded-full p-3"><i class="fas fa-graduation-cap text-xl"></i></div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] uppercase tracking-wider font-semibold opacity-80">Programa</p>
+                            <p class="text-base sm:text-lg font-bold truncate">{{ estudiante.grado }}</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Edit button -->
-        <div class="card" style="margin-top: 1.25rem;">
-            <div class="card-body">
-                <div class="actions-bar" style="border-top: none; margin-top: 0; padding-top: 0;">
-                    <a href="{{ url_for('academia_student_auth.editar_perfil') }}" class="btn-primary">
-                        <i class="fas fa-edit"></i> Editar Mi Información
-                    </a>
+        <!-- ── Datos del Estudiante ─────────────────────────────── -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 slide-in-right">
+            <div class="bg-gradient-to-r from-primary to-primary-dark p-5 text-white relative overflow-hidden">
+                <div class="absolute right-0 top-0 opacity-20 text-6xl pointer-events-none">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h2 class="text-lg sm:text-xl font-bold flex items-center relative z-10">
+                    <i class="fas fa-user mr-3"></i>Datos del Estudiante
+                </h2>
+            </div>
+            <div class="p-5 sm:p-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                    <div class="sm:col-span-2">
+                        <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 mb-1">Nombre Completo</p>
+                        <p class="text-sm font-semibold text-gray-900">
+                            {{ estudiante.nombres_est }} {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 mb-1">Correo</p>
+                        <p class="text-sm font-semibold {% if not estudiante.correo_est %}text-gray-400 italic{% else %}text-gray-900{% endif %}">
+                            <i class="fas fa-envelope mr-1.5 text-primary-light"></i>
+                            {{ estudiante.correo_est or 'No registrado' }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 mb-1">Celular</p>
+                        <p class="text-sm font-semibold {% if not estudiante.numero_celular_est %}text-gray-400 italic{% else %}text-gray-900{% endif %}">
+                            <i class="fas fa-mobile-alt mr-1.5 text-primary-light"></i>
+                            {{ estudiante.numero_celular_est or 'No registrado' }}
+                        </p>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 mb-1">Direcci&oacute;n</p>
+                        <p class="text-sm font-semibold {% if not estudiante.direccion_est %}text-gray-400 italic{% else %}text-gray-900{% endif %}">
+                            <i class="fas fa-map-marker-alt mr-1.5 text-primary-light"></i>
+                            {{ estudiante.direccion_est or 'No registrado' }}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- ── Contacto de Padres ──────────────────────────────── -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 slide-in-right" style="animation-delay:0.1s;">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 text-white relative overflow-hidden">
+                <div class="absolute right-0 top-0 opacity-20 text-6xl pointer-events-none">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h2 class="text-lg sm:text-xl font-bold flex items-center relative z-10">
+                    <i class="fas fa-users mr-3"></i>Contacto de Padres
+                </h2>
+            </div>
+            <div class="p-5 sm:p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5">
+                        <h4 class="text-sm font-bold text-blue-900 mb-3 flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-2">
+                                <i class="fas fa-mars text-xs"></i>
+                            </div>
+                            Padre
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-[10px] uppercase tracking-wider font-semibold text-blue-700/70 mb-0.5">Celular</p>
+                                <p class="text-sm font-semibold {% if not estudiante.celular_padre %}text-gray-400 italic{% else %}text-gray-900{% endif %}">
+                                    <i class="fas fa-mobile-alt mr-1.5 text-blue-500"></i>
+                                    {{ estudiante.celular_padre or 'No registrado' }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] uppercase tracking-wider font-semibold text-blue-700/70 mb-0.5">Correo</p>
+                                <p class="text-sm font-semibold {% if not estudiante.correo_padre %}text-gray-400 italic{% else %}text-gray-900{% endif %}">
+                                    <i class="fas fa-envelope mr-1.5 text-blue-500"></i>
+                                    {{ estudiante.correo_padre or 'No registrado' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-200 rounded-xl p-5">
+                        <h4 class="text-sm font-bold text-pink-900 mb-3 flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center mr-2">
+                                <i class="fas fa-venus text-xs"></i>
+                            </div>
+                            Madre
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-[10px] uppercase tracking-wider font-semibold text-pink-700/70 mb-0.5">Celular</p>
+                                <p class="text-sm font-semibold {% if not estudiante.celular_madre %}text-gray-400 italic{% else %}text-gray-900{% endif %}">
+                                    <i class="fas fa-mobile-alt mr-1.5 text-pink-500"></i>
+                                    {{ estudiante.celular_madre or 'No registrado' }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] uppercase tracking-wider font-semibold text-pink-700/70 mb-0.5">Correo</p>
+                                <p class="text-sm font-semibold {% if not estudiante.correo_madre %}text-gray-400 italic{% else %}text-gray-900{% endif %}">
+                                    <i class="fas fa-envelope mr-1.5 text-pink-500"></i>
+                                    {{ estudiante.correo_madre or 'No registrado' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── CTA Editar ──────────────────────────────────────── -->
+        <a href="{{ url_for('academia_student_auth.editar_perfil') }}"
+           class="group block bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white relative overflow-hidden fade-in-up hover:shadow-2xl transform hover:scale-[1.01] transition-all">
+            <div class="absolute right-0 top-0 opacity-15 text-7xl pointer-events-none">
+                <i class="fas fa-pen-to-square"></i>
+            </div>
+            <div class="flex items-center justify-between relative z-10">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/20 rounded-full p-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-pen-to-square text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg sm:text-xl font-bold">Editar Mi Informaci&oacute;n</h3>
+                        <p class="text-xs sm:text-sm opacity-90">Actualiza tus datos de contacto y contrase&ntilde;a</p>
+                    </div>
+                </div>
+                <i class="fas fa-arrow-right text-xl opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
+            </div>
+        </a>
+
         {% endif %}
-    </div>
+
+    </main>
+
+    <footer class="mt-auto text-center py-6 text-xs text-gray-500 border-t border-gray-200">
+        <div class="text-primary-light italic mb-1">&iexcl;Tu preparaci&oacute;n merece lo mejor!</div>
+        &copy; <span id="year"></span> NK Chambergo &middot; Centro Pre Universitario
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        setTimeout(() => {
+            document.querySelectorAll('.flash-msg').forEach(msg => {
+                msg.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateY(-6px)';
+                setTimeout(() => msg.remove(), 400);
+            });
+        }, 5000);
+    </script>
 </body>
 </html>

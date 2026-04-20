@@ -8,279 +8,108 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#5F2A5D',
+                        'primary-dark': '#4a2048',
+                        'primary-light': '#8b4789',
+                    },
+                }
+            }
+        }
+    </script>
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary: #5F2A5D;
-            --primary-dark: #4a2048;
-            --primary-light: #8b4789;
-            --primary-50: #f8f0f8;
-            --primary-100: #f0ddef;
-            --primary-200: #e0bbe0;
-            --primary-accent: #7c3b7a;
-            --bg: #f7f7fa;
-            --card: #ffffff;
-            --border: #ebe5ef;
-            --text-dark: #1a1a2e;
-            --text: #4a4a5a;
-            --text-light: #8a8a9a;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text-dark);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        ::-webkit-scrollbar { width: 5px; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; color: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
 
-        /* ── Header ─────────────────────────────────── */
-        .app-header {
-            position: sticky; top: 0; z-index: 50;
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        .app-header-inner {
-            max-width: 1200px; margin: 0 auto;
-            padding: 0 1.25rem; height: 64px;
-            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-        }
-        .header-brand { display: flex; align-items: center; gap: 0.75rem; }
-        .header-logo {
-            width: 38px; height: 38px; border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(95,42,93,0.25);
-        }
-        .header-logo img { width: 24px; height: 24px; object-fit: contain; }
-        .header-title { font-weight: 700; font-size: 0.95rem; color: var(--text-dark); }
-        .header-subtitle { font-size: 0.6rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
-        .btn-back {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 18px; border-radius: 10px; border: 1px solid var(--primary-200);
-            background: var(--primary-50); color: var(--primary);
-            font-size: 0.78rem; font-weight: 600; text-decoration: none;
-            transition: all 0.2s ease; font-family: 'Inter', sans-serif; cursor: pointer;
-        }
-        .btn-back:hover { background: var(--primary-100); border-color: var(--primary-light); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        .fade-in-up { animation: fadeInUp 0.6s ease-out both; }
+        .slide-in-right { animation: slideInRight 0.6s ease-out both; }
 
-        /* ── Main ────────────────────────────────────── */
-        .page-wrap { max-width: 900px; margin: 0 auto; padding: 2rem 1.25rem 3rem; flex: 1; }
-
-        .page-title-bar {
-            display: flex; align-items: center; gap: 0.75rem;
-            margin-bottom: 1.5rem; padding-bottom: 1rem;
-            border-bottom: 2px solid var(--primary-100);
-        }
-        .page-title-icon {
-            width: 44px; height: 44px; border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 1.1rem;
-            box-shadow: 0 4px 12px rgba(95,42,93,0.2);
-        }
-        .page-title { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); }
-        .page-subtitle { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
-
-        /* ── Cards ────────────────────────────────────── */
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            overflow: hidden;
-        }
-        .card + .card { margin-top: 1.25rem; }
-
-        .card-header {
-            display: flex; align-items: center; gap: 0.6rem;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            background: var(--primary-50);
-        }
-        .card-header i { color: var(--primary); font-size: 1rem; }
-        .card-header h3 { font-size: 0.9rem; font-weight: 700; color: var(--text-dark); }
-
-        .card-body { padding: 1.25rem 1.5rem; }
-
-        /* Data grid (read only) */
-        .data-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1rem;
-        }
-        .data-label {
-            display: block;
-            font-size: 0.7rem; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.05em;
-            color: var(--text-light); margin-bottom: 4px;
-        }
-        .data-value {
-            font-size: 0.88rem; font-weight: 500;
-            color: var(--text-dark);
-        }
-
-        /* ── Form fields ──────────────────────────────── */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.25rem;
-        }
-        .form-group { }
-        .form-group.full { grid-column: 1 / -1; }
-        .form-group label {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 0.78rem; font-weight: 600;
-            color: var(--text); margin-bottom: 6px;
-        }
-        .form-group label i { color: var(--primary-light); font-size: 0.75rem; }
-        .form-group input {
-            width: 100%; padding: 10px 14px;
-            border: 1px solid var(--border); border-radius: 10px;
-            font-size: 0.85rem; font-family: 'Inter', sans-serif;
-            color: var(--text-dark); background: var(--card);
+        /* Inputs */
+        .form-input {
+            width: 100%;
+            padding: 0.6rem 0.875rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.625rem;
+            background: #fff;
+            color: #1a1a2e;
+            font-size: 0.875rem;
+            font-family: 'Inter', sans-serif;
             transition: all 0.2s;
         }
-        .form-group input:focus {
-            outline: none; border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(95,42,93,0.1);
+        .form-input::placeholder { color: #c4c4d0; }
+        .form-input:focus {
+            outline: none;
+            border-color: #8b4789;
+            box-shadow: 0 0 0 3px rgba(95, 42, 93, 0.1);
         }
-        .form-group input::placeholder { color: #c4c4d0; }
-
-        /* Parent sections */
-        .parent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .parent-card { border-radius: 12px; padding: 1.25rem; }
-        .parent-card.father { background: #eff6ff; border: 1px solid #bfdbfe; }
-        .parent-card.mother { background: #fdf2f8; border: 1px solid #fbcfe8; }
-        .parent-card h4 { font-size: 0.82rem; font-weight: 700; margin-bottom: 1rem; }
-        .parent-card.father h4 { color: #1e3a8a; }
-        .parent-card.mother h4 { color: #9d174d; }
-        .parent-card .form-group + .form-group { margin-top: 1rem; }
-
-        /* ── Info banner ──────────────────────────────── */
-        .info-banner {
-            display: flex; align-items: flex-start; gap: 0.75rem;
-            padding: 1rem 1.25rem; border-radius: 12px;
-            background: var(--primary-50); border: 1px solid var(--primary-200);
-            margin-bottom: 1.25rem;
-        }
-        .info-banner i { color: var(--primary); font-size: 1rem; margin-top: 2px; }
-        .info-banner p { font-size: 0.8rem; color: var(--primary-dark); line-height: 1.5; }
-        .info-banner strong { font-weight: 600; }
-
-        /* ── Empty state ──────────────────────────────── */
-        .empty-state { text-align: center; padding: 3rem 1.5rem; }
-        .empty-state-icon {
-            width: 80px; height: 80px; border-radius: 50%;
-            background: #fef3c7; border: 3px solid #fde68a;
-            display: inline-flex; align-items: center; justify-content: center;
-            margin-bottom: 1.25rem;
-        }
-        .empty-state-icon i { font-size: 2rem; color: #d97706; }
-        .empty-state h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.75rem; }
-        .empty-state p { font-size: 0.85rem; color: var(--text); max-width: 540px; margin: 0 auto; line-height: 1.6; }
-
-        .info-list { list-style: none; padding: 0; margin: 1.25rem auto; max-width: 460px; text-align: left; }
-        .info-list li {
-            display: flex; align-items: flex-start; gap: 8px;
-            font-size: 0.82rem; color: var(--text); padding: 6px 0;
-        }
-        .info-list li i { margin-top: 2px; font-size: 0.82rem; }
-        .info-list li i.green { color: #16a34a; }
-        .info-list li i.red { color: #dc2626; }
-        .info-list li i.yellow { color: #d97706; }
-
-        /* ── Buttons ──────────────────────────────────── */
-        .btn-primary {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 24px; border-radius: 10px; border: none;
-            background: var(--primary); color: #fff;
-            font-size: 0.82rem; font-weight: 600;
-            text-decoration: none; cursor: pointer;
-            transition: all 0.2s; font-family: 'Inter', sans-serif;
-            box-shadow: 0 2px 8px rgba(95,42,93,0.25);
-        }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(95,42,93,0.35); }
-
-        .btn-secondary {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 24px; border-radius: 10px; border: 1px solid var(--border);
-            background: var(--card); color: var(--text);
-            font-size: 0.82rem; font-weight: 600;
-            text-decoration: none; cursor: pointer;
-            transition: all 0.2s; font-family: 'Inter', sans-serif;
-        }
-        .btn-secondary:hover { background: #f5f5f5; border-color: #d1d1d8; }
-
-        .actions-bar {
-            display: flex; justify-content: flex-end; gap: 0.75rem;
-            padding-top: 1.25rem; margin-top: 0.5rem;
-            border-top: 1px solid var(--border);
-        }
-
-        /* ── Flash ────────────────────────────────────── */
-        .flash {
-            padding: 0.85rem 1.25rem; border-radius: 10px;
-            font-size: 0.82rem; font-weight: 500;
-            margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
-            border-left: 4px solid;
-        }
-        .flash.success { background: #f0fdf4; color: #166534; border-color: #22c55e; }
-        .flash.error { background: #fef2f2; color: #991b1b; border-color: #ef4444; }
-        .flash.warning { background: #fffbeb; color: #92400e; border-color: #f59e0b; }
-        .flash.info { background: var(--primary-50); color: var(--primary-dark); border-color: var(--primary); }
-
-        /* ── Last modified ────────────────────────────── */
-        .last-modified {
-            text-align: center; font-size: 0.75rem; color: var(--text-light);
-            margin-top: 1rem; padding: 0.75rem;
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: 10px;
-        }
-        .last-modified i { margin-right: 4px; }
-
-        /* ── Responsive ───────────────────────────────── */
-        @media (max-width: 640px) {
-            .parent-grid { grid-template-columns: 1fr; }
-            .form-grid { grid-template-columns: 1fr; }
-            .data-grid { grid-template-columns: 1fr; }
-            .actions-bar { flex-direction: column; }
-            .actions-bar a, .actions-bar button { width: 100%; justify-content: center; }
-        }
+        .form-input[readonly], .form-input:disabled { background: #f9fafb; color: #6b7280; }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="app-header">
-        <div class="app-header-inner">
-            <div class="header-brand">
-                <div class="header-logo">
-                    <img src="{{ url_for('academia_student_auth.static', filename='img/nk.png') }}" alt="NK">
+
+    <!-- ── Header ─────────────────────────────────────────────── -->
+    <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-lg shadow-primary/25">
+                    <img src="{{ url_for('academia_student_auth.static', filename='img/nk.png') }}"
+                         onerror="this.style.display='none'" alt="NK" class="w-6 h-6 object-contain">
                 </div>
                 <div>
-                    <div class="header-title">NK Chambergo</div>
-                    <div class="header-subtitle">Editar Perfil</div>
+                    <div class="text-sm font-bold text-gray-900 leading-tight">NK Chambergo</div>
+                    <div class="text-[10px] uppercase tracking-wider font-semibold text-gray-500">Editar Perfil</div>
                 </div>
             </div>
-            <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            <a href="{{ url_for('academia_student_auth.dashboard') }}"
+               class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary/30 bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-all">
+                <i class="fas fa-arrow-left text-[11px]"></i>
+                <span class="hidden sm:inline">Volver al Dashboard</span>
+                <span class="sm:hidden">Volver</span>
             </a>
         </div>
     </header>
 
-    <div class="page-wrap">
-        <!-- Page title -->
-        <div class="page-title-bar">
-            <div class="page-title-icon"><i class="fas fa-user-edit"></i></div>
-            <div>
-                <div class="page-title">Editar Mi Información</div>
-                <div class="page-subtitle">Actualiza tus datos de contacto</div>
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6">
+
+        <!-- ── Hero ─────────────────────────────────────────────── -->
+        <div class="bg-gradient-to-r from-primary to-primary-dark rounded-2xl shadow-xl p-6 sm:p-8 mb-8 text-white fade-in-up relative overflow-hidden">
+            <div class="absolute top-0 right-0 opacity-10 text-8xl sm:text-9xl pointer-events-none">
+                <i class="fas fa-pen-to-square"></i>
+            </div>
+            <div class="absolute bottom-0 left-24 opacity-10 text-6xl pointer-events-none">
+                <i class="fas fa-user-gear"></i>
+            </div>
+            <div class="flex items-center justify-between gap-4 relative z-10">
+                <div class="min-w-0">
+                    <div class="flex items-center mb-2 sm:mb-3">
+                        <i class="fas fa-user-pen text-xl sm:text-2xl mr-2 sm:mr-3 animate-pulse"></i>
+                        <h1 class="text-2xl sm:text-4xl font-bold">Editar Mi Informaci&oacute;n</h1>
+                    </div>
+                    <p class="text-sm sm:text-base opacity-90 flex items-center">
+                        <i class="fas fa-pen mr-2"></i>
+                        Actualiza tus datos de contacto y seguridad
+                    </p>
+                </div>
+                <div class="hidden md:block flex-shrink-0">
+                    <div class="bg-white/20 rounded-full p-5 hover:bg-white/30 transition-all duration-300">
+                        <i class="fas fa-user-gear text-5xl"></i>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -288,225 +117,310 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="flash {{ category if category in ['success', 'error', 'warning'] else 'info' }}">
-                    <i class="fas {{ 'fa-check-circle' if category == 'success' else ('fa-exclamation-circle' if category == 'error' else ('fa-exclamation-triangle' if category == 'warning' else 'fa-info-circle')) }}"></i>
-                    {{ message }}
-                </div>
+                    {% set cls = category if category in ['success', 'error', 'warning'] else ('error' if category == 'danger' else 'info') %}
+                    <div class="flash-msg flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium mb-4 border fade-in-up
+                                {% if cls == 'error' %}bg-red-50 border-red-200 text-red-600
+                                {% elif cls == 'success' %}bg-green-50 border-green-200 text-green-700
+                                {% elif cls == 'warning' %}bg-amber-50 border-amber-200 text-amber-700
+                                {% else %}bg-primary/5 border-primary/20 text-primary{% endif %}">
+                        <i class="fas {{ 'fa-circle-exclamation' if cls == 'error' else ('fa-circle-check' if cls == 'success' else ('fa-triangle-exclamation' if cls == 'warning' else 'fa-circle-info')) }}"></i>
+                        <span>{{ message }}</span>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
         {% if not estudiante %}
-        <!-- Not registered -->
-        <div class="card">
-            <div class="card-body">
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-user-clock"></i></div>
-                    <h3>Aún no estás registrado en el sistema principal</h3>
-                    <p>Tu información académica está disponible (DNI: <strong>{{ dni }}</strong>), pero tu perfil completo aún no ha sido creado en el sistema principal.</p>
+        <!-- ── Not registered ───────────────────────────────────── -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in-up">
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-5 sm:p-6 text-white relative overflow-hidden">
+                <div class="absolute right-0 top-0 opacity-20 text-7xl pointer-events-none">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold flex items-center relative z-10">
+                    <i class="fas fa-triangle-exclamation mr-3 animate-pulse"></i>Pendiente de registro
+                </h2>
+            </div>
+            <div class="p-10 text-center">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-100 border-[3px] border-amber-200 mb-5">
+                    <i class="fas fa-user-clock text-3xl text-amber-600"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">A&uacute;n no est&aacute;s registrado en el sistema principal</h3>
+                <p class="text-sm text-gray-600 max-w-xl mx-auto leading-relaxed">
+                    Tu informaci&oacute;n acad&eacute;mica est&aacute; disponible (DNI: <strong>{{ dni }}</strong>),
+                    pero tu perfil completo a&uacute;n no ha sido creado en el sistema principal.
+                </p>
 
-                    <ul class="info-list">
-                        <li><i class="fas fa-check-circle green"></i><span><strong>Puedes ver tus reportes académicos</strong> normalmente desde el dashboard</span></li>
-                        <li><i class="fas fa-times-circle red"></i><span><strong>No puedes editar tu información</strong> hasta que seas registrado por el administrador</span></li>
-                        <li><i class="fas fa-clock yellow"></i><span><strong>Esto es temporal:</strong> Una vez que completes tu inscripción formal, podrás actualizar tus datos</span></li>
-                    </ul>
+                <ul class="max-w-md mx-auto mt-5 space-y-2 text-left">
+                    <li class="flex items-start gap-2 text-sm text-gray-700">
+                        <i class="fas fa-circle-check text-green-600 mt-0.5"></i>
+                        <span><strong>Puedes ver tus reportes acad&eacute;micos</strong> normalmente desde el dashboard</span>
+                    </li>
+                    <li class="flex items-start gap-2 text-sm text-gray-700">
+                        <i class="fas fa-circle-xmark text-red-600 mt-0.5"></i>
+                        <span><strong>No puedes editar tu informaci&oacute;n</strong> hasta que seas registrado por el administrador</span>
+                    </li>
+                    <li class="flex items-start gap-2 text-sm text-gray-700">
+                        <i class="fas fa-clock text-amber-600 mt-0.5"></i>
+                        <span><strong>Esto es temporal:</strong> una vez que completes tu inscripci&oacute;n formal, podr&aacute;s actualizar tus datos</span>
+                    </li>
+                </ul>
 
-                    <div style="margin-top: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
-                        <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-primary">
-                            <i class="fas fa-arrow-left"></i> Volver al Dashboard
-                        </a>
-                        <span style="font-size: 0.75rem; color: var(--text-light);">
-                            <i class="fas fa-question-circle" style="margin-right: 4px;"></i>Si crees que esto es un error, contacta a la administración
-                        </span>
-                    </div>
+                <div class="mt-6 flex flex-col items-center gap-2">
+                    <a href="{{ url_for('academia_student_auth.dashboard') }}"
+                       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold shadow-lg shadow-primary/25 hover:bg-primary-dark transition-all">
+                        <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                    </a>
+                    <span class="text-xs text-gray-500">
+                        <i class="fas fa-circle-question mr-1"></i>Si crees que esto es un error, contacta a la administraci&oacute;n
+                    </span>
                 </div>
             </div>
         </div>
 
         {% else %}
-        <!-- Info banner -->
-        <div class="info-banner">
-            <i class="fas fa-info-circle"></i>
-            <div>
-                <p><strong>Información importante:</strong> Solo puedes editar tus datos de contacto. Si necesitas modificar otros datos, contacta a la administración.</p>
-                <p style="margin-top: 6px;"><strong>Nota:</strong> Si ves un mensaje de error sobre cambios simultáneos, significa que alguien más (o tú desde otro dispositivo) modificó estos datos recientemente. Recarga la página para ver los cambios más recientes.</p>
+
+        <!-- ── Info banner ──────────────────────────────────────── -->
+        <div class="flex items-start gap-3 p-4 sm:p-5 rounded-xl bg-primary/5 border border-primary/20 mb-6 fade-in-up">
+            <i class="fas fa-circle-info text-primary text-lg mt-0.5"></i>
+            <div class="text-sm text-primary-dark leading-relaxed">
+                <p><strong>Informaci&oacute;n importante:</strong> solo puedes editar tus datos de contacto. Si necesitas modificar otros datos, contacta a la administraci&oacute;n.</p>
+                <p class="mt-1.5"><strong>Nota:</strong> si ves un mensaje de error sobre cambios simult&aacute;neos, significa que alguien m&aacute;s (o t&uacute; desde otro dispositivo) modific&oacute; estos datos recientemente. Recarga la p&aacute;gina para ver los cambios m&aacute;s recientes.</p>
             </div>
         </div>
 
-        <!-- Contraseña del portal (formulario aparte) — al inicio -->
-        <form method="POST" action="{{ url_for('academia_student_auth.editar_perfil') }}" id="passwordForm" class="card" style="margin-top: 1.25rem;">
+        <!-- ── Contraseña del portal ────────────────────────────── -->
+        <form method="POST" action="{{ url_for('academia_student_auth.editar_perfil') }}" id="passwordForm"
+              class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6 slide-in-right">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="accion" value="cambiar_password">
-            <div class="card-header">
-                <i class="fas fa-lock"></i>
-                <h3>Contraseña del portal Academia</h3>
+            <div class="bg-gradient-to-r from-rose-500 to-red-600 p-5 text-white relative overflow-hidden">
+                <div class="absolute right-0 top-0 opacity-20 text-6xl pointer-events-none">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2 class="text-lg sm:text-xl font-bold flex items-center relative z-10">
+                    <i class="fas fa-shield-halved mr-3"></i>Contrase&ntilde;a del portal Academia
+                </h2>
             </div>
-            <div class="card-body">
-                <p style="font-size: 0.82rem; color: var(--text); margin-bottom: 1rem; line-height: 1.5;">
+            <div class="p-5 sm:p-6">
+                <p class="text-sm text-gray-600 leading-relaxed mb-4">
                     {% if tiene_password_personalizada %}
-                    Ya definiste una contraseña personal. Para cambiarla, escribe la <strong>contraseña actual</strong> y la nueva (mínimo 8 caracteres).
+                    Ya definiste una contrase&ntilde;a personal. Para cambiarla, escribe la <strong>contrase&ntilde;a actual</strong> y la nueva (m&iacute;nimo 8 caracteres).
                     {% else %}
-                    Por defecto, tu contraseña es tu <strong>DNI</strong> (mismo valor que en &laquo;Student ID&raquo;). Puedes definir una contraseña segura aquí.
+                    Por defecto, tu contrase&ntilde;a es tu <strong>DNI</strong> (mismo valor que en &laquo;Student ID&raquo;). Puedes definir una contrase&ntilde;a segura aqu&iacute;.
                     {% endif %}
                 </p>
-                <div class="form-grid">
-                    <div class="form-group full">
-                        <label for="password_actual"><i class="fas fa-key"></i> Contraseña actual</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label for="password_actual" class="flex items-center text-xs font-semibold text-gray-700 mb-1.5">
+                            <i class="fas fa-key text-primary-light mr-1.5 text-[11px]"></i> Contrase&ntilde;a actual
+                        </label>
                         <input type="password" id="password_actual" name="password_actual" autocomplete="current-password"
-                               placeholder="{% if tiene_password_personalizada %}Tu contraseña actual{% else %}Tu DNI (contraseña actual){% endif %}">
+                               class="form-input"
+                               placeholder="{% if tiene_password_personalizada %}Tu contrase&ntilde;a actual{% else %}Tu DNI (contrase&ntilde;a actual){% endif %}">
                     </div>
-                    <div class="form-group">
-                        <label for="password_nuevo"><i class="fas fa-lock"></i> Nueva contraseña</label>
+                    <div>
+                        <label for="password_nuevo" class="flex items-center text-xs font-semibold text-gray-700 mb-1.5">
+                            <i class="fas fa-lock text-primary-light mr-1.5 text-[11px]"></i> Nueva contrase&ntilde;a
+                        </label>
                         <input type="password" id="password_nuevo" name="password_nuevo" autocomplete="new-password"
-                               minlength="8" placeholder="Mínimo 8 caracteres">
+                               minlength="8" class="form-input" placeholder="M&iacute;nimo 8 caracteres">
                     </div>
-                    <div class="form-group">
-                        <label for="password_confirm"><i class="fas fa-lock"></i> Confirmar nueva</label>
+                    <div>
+                        <label for="password_confirm" class="flex items-center text-xs font-semibold text-gray-700 mb-1.5">
+                            <i class="fas fa-lock text-primary-light mr-1.5 text-[11px]"></i> Confirmar nueva
+                        </label>
                         <input type="password" id="password_confirm" name="password_confirm" autocomplete="new-password"
-                               minlength="8" placeholder="Repite la nueva contraseña">
+                               minlength="8" class="form-input" placeholder="Repite la nueva contrase&ntilde;a">
                     </div>
                 </div>
-                <div class="actions-bar" style="border-top: 1px solid var(--border); margin-top: 1.25rem; padding-top: 1.25rem;">
-                    <button type="submit" class="btn-primary" style="width: auto;">
-                        <i class="fas fa-shield-alt"></i> Actualizar contraseña
+                <div class="flex justify-end pt-5 mt-5 border-t border-gray-200">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white text-sm font-semibold shadow-lg shadow-rose-500/25 hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+                        <i class="fas fa-shield-halved"></i> Actualizar contrase&ntilde;a
                     </button>
                 </div>
             </div>
         </form>
 
-        <form method="POST" action="{{ url_for('academia_student_auth.editar_perfil') }}" id="editForm">
+        <!-- ── Datos del estudiante + contacto + padres (form) ──── -->
+        <form method="POST" action="{{ url_for('academia_student_auth.editar_perfil') }}" id="editForm" class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="version" value="{{ estudiante.version }}">
 
-            <!-- Read-only student data -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-user"></i>
-                    <h3>Datos del Estudiante (Solo lectura)</h3>
+            <!-- Read-only datos -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden slide-in-right" style="animation-delay:0.05s;">
+                <div class="bg-gradient-to-r from-primary to-primary-dark p-5 text-white relative overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-20 text-6xl pointer-events-none">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-bold flex items-center relative z-10">
+                        <i class="fas fa-user mr-3"></i>Datos del Estudiante
+                        <span class="ml-3 bg-white/20 rounded-full px-3 py-0.5 text-xs font-semibold">Solo lectura</span>
+                    </h2>
                 </div>
-                <div class="card-body">
-                    <div class="data-grid">
-                        <div>
-                            <span class="data-label">Nombre Completo</span>
-                            <span class="data-value">{{ estudiante.nombres_est }} {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}</span>
+                <div class="p-5 sm:p-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                        <div class="sm:col-span-2">
+                            <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 mb-1">Nombre Completo</p>
+                            <p class="text-sm font-semibold text-gray-900">
+                                {{ estudiante.nombres_est }} {{ estudiante.apellido_paterno_est }} {{ estudiante.apellido_materno_est }}
+                            </p>
                         </div>
                         <div>
-                            <span class="data-label">DNI</span>
-                            <span class="data-value">{{ estudiante.dni_est }}</span>
+                            <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 mb-1">DNI</p>
+                            <p class="text-sm font-semibold text-gray-900">{{ estudiante.dni_est }}</p>
                         </div>
                         <div>
-                            <span class="data-label">Nivel / Programa</span>
-                            <span class="data-value">{{ estudiante.nivel }} - {{ estudiante.grado }}</span>
+                            <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 mb-1">Nivel / Programa</p>
+                            <p class="text-sm font-semibold text-gray-900">{{ estudiante.nivel }} &mdash; {{ estudiante.grado }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Editable contact data -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-phone"></i>
-                    <h3>Tus Datos de Contacto</h3>
+            <!-- Contacto editable -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden slide-in-right" style="animation-delay:0.1s;">
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 text-white relative overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-20 text-6xl pointer-events-none">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-bold flex items-center relative z-10">
+                        <i class="fas fa-phone mr-3"></i>Tus Datos de Contacto
+                    </h2>
                 </div>
-                <div class="card-body">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="correo_est"><i class="fas fa-envelope"></i> Correo Electrónico *</label>
-                            <input type="email" id="correo_est" name="correo_est"
+                <div class="p-5 sm:p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                        <div>
+                            <label for="correo_est" class="flex items-center text-xs font-semibold text-gray-700 mb-1.5">
+                                <i class="fas fa-envelope text-primary-light mr-1.5 text-[11px]"></i> Correo Electr&oacute;nico *
+                            </label>
+                            <input type="email" id="correo_est" name="correo_est" class="form-input"
                                    value="{{ estudiante.correo_est or '' }}" placeholder="tu@correo.com">
                         </div>
-                        <div class="form-group">
-                            <label for="numero_celular_est"><i class="fas fa-mobile-alt"></i> Número de Celular *</label>
-                            <input type="tel" id="numero_celular_est" name="numero_celular_est"
+                        <div>
+                            <label for="numero_celular_est" class="flex items-center text-xs font-semibold text-gray-700 mb-1.5">
+                                <i class="fas fa-mobile-alt text-primary-light mr-1.5 text-[11px]"></i> N&uacute;mero de Celular *
+                            </label>
+                            <input type="tel" id="numero_celular_est" name="numero_celular_est" class="form-input"
                                    value="{{ estudiante.numero_celular_est or '' }}" placeholder="999999999" maxlength="15">
                         </div>
-                        <div class="form-group full">
-                            <label for="direccion_est"><i class="fas fa-map-marker-alt"></i> Dirección</label>
-                            <input type="text" id="direccion_est" name="direccion_est"
-                                   value="{{ estudiante.direccion_est or '' }}" placeholder="Dirección completa">
+                        <div class="md:col-span-2">
+                            <label for="direccion_est" class="flex items-center text-xs font-semibold text-gray-700 mb-1.5">
+                                <i class="fas fa-map-marker-alt text-primary-light mr-1.5 text-[11px]"></i> Direcci&oacute;n
+                            </label>
+                            <input type="text" id="direccion_est" name="direccion_est" class="form-input"
+                                   value="{{ estudiante.direccion_est or '' }}" placeholder="Direcci&oacute;n completa">
                         </div>
-                        <div class="form-group">
-                            <label for="distrito_est">Distrito</label>
-                            <input type="text" id="distrito_est" name="distrito_est"
+                        <div>
+                            <label for="distrito_est" class="text-xs font-semibold text-gray-700 mb-1.5 block">Distrito</label>
+                            <input type="text" id="distrito_est" name="distrito_est" class="form-input"
                                    value="{{ estudiante.distrito_est or '' }}">
                         </div>
-                        <div class="form-group">
-                            <label for="provincia_est">Provincia</label>
-                            <input type="text" id="provincia_est" name="provincia_est"
+                        <div>
+                            <label for="provincia_est" class="text-xs font-semibold text-gray-700 mb-1.5 block">Provincia</label>
+                            <input type="text" id="provincia_est" name="provincia_est" class="form-input"
                                    value="{{ estudiante.provincia_est or '' }}">
                         </div>
-                        <div class="form-group full">
-                            <label for="referencia_est">Referencia</label>
-                            <input type="text" id="referencia_est" name="referencia_est"
+                        <div class="md:col-span-2">
+                            <label for="referencia_est" class="text-xs font-semibold text-gray-700 mb-1.5 block">Referencia</label>
+                            <input type="text" id="referencia_est" name="referencia_est" class="form-input"
                                    value="{{ estudiante.referencia_est or '' }}" placeholder="Referencias para ubicar tu domicilio">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Parents contact -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-users"></i>
-                    <h3>Datos de Contacto de Padres</h3>
+            <!-- Padres -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden slide-in-right" style="animation-delay:0.15s;">
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 text-white relative overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-20 text-6xl pointer-events-none">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-bold flex items-center relative z-10">
+                        <i class="fas fa-users mr-3"></i>Datos de Contacto de Padres
+                    </h2>
                 </div>
-                <div class="card-body">
-                    <div class="parent-grid">
-                        <div class="parent-card father">
-                            <h4><i class="fas fa-male" style="margin-right: 6px;"></i>Padre</h4>
-                            <div class="form-group">
-                                <label for="celular_padre">Celular</label>
-                                <input type="tel" id="celular_padre" name="celular_padre"
-                                       value="{{ estudiante.celular_padre or '' }}" maxlength="15">
-                            </div>
-                            <div class="form-group" style="margin-top: 1rem;">
-                                <label for="correo_padre">Correo</label>
-                                <input type="email" id="correo_padre" name="correo_padre"
-                                       value="{{ estudiante.correo_padre or '' }}">
+                <div class="p-5 sm:p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Padre -->
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5">
+                            <h4 class="text-sm font-bold text-blue-900 mb-4 flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-2">
+                                    <i class="fas fa-mars text-xs"></i>
+                                </div>
+                                Padre
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="celular_padre" class="text-xs font-semibold text-blue-800 mb-1.5 block">Celular</label>
+                                    <input type="tel" id="celular_padre" name="celular_padre" class="form-input"
+                                           value="{{ estudiante.celular_padre or '' }}" maxlength="15">
+                                </div>
+                                <div>
+                                    <label for="correo_padre" class="text-xs font-semibold text-blue-800 mb-1.5 block">Correo</label>
+                                    <input type="email" id="correo_padre" name="correo_padre" class="form-input"
+                                           value="{{ estudiante.correo_padre or '' }}">
+                                </div>
                             </div>
                         </div>
-                        <div class="parent-card mother">
-                            <h4><i class="fas fa-female" style="margin-right: 6px;"></i>Madre</h4>
-                            <div class="form-group">
-                                <label for="celular_madre">Celular</label>
-                                <input type="tel" id="celular_madre" name="celular_madre"
-                                       value="{{ estudiante.celular_madre or '' }}" maxlength="15">
-                            </div>
-                            <div class="form-group" style="margin-top: 1rem;">
-                                <label for="correo_madre">Correo</label>
-                                <input type="email" id="correo_madre" name="correo_madre"
-                                       value="{{ estudiante.correo_madre or '' }}">
+                        <!-- Madre -->
+                        <div class="bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-200 rounded-xl p-5">
+                            <h4 class="text-sm font-bold text-pink-900 mb-4 flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center mr-2">
+                                    <i class="fas fa-venus text-xs"></i>
+                                </div>
+                                Madre
+                            </h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="celular_madre" class="text-xs font-semibold text-pink-800 mb-1.5 block">Celular</label>
+                                    <input type="tel" id="celular_madre" name="celular_madre" class="form-input"
+                                           value="{{ estudiante.celular_madre or '' }}" maxlength="15">
+                                </div>
+                                <div>
+                                    <label for="correo_madre" class="text-xs font-semibold text-pink-800 mb-1.5 block">Correo</label>
+                                    <input type="email" id="correo_madre" name="correo_madre" class="form-input"
+                                           value="{{ estudiante.correo_madre or '' }}">
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Actions -->
-            <div class="card" style="margin-top: 1.25rem;">
-                <div class="card-body">
-                    <div class="actions-bar" style="border-top: none; margin-top: 0; padding-top: 0;">
-                        <a href="{{ url_for('academia_student_auth.dashboard') }}" class="btn-secondary">
-                            <i class="fas fa-times"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-save"></i> Guardar Cambios
-                        </button>
-                    </div>
-                </div>
+            <!-- Acciones -->
+            <div class="flex flex-col sm:flex-row justify-end gap-3">
+                <a href="{{ url_for('academia_student_auth.dashboard') }}"
+                   class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-all">
+                    <i class="fas fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-white text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
             </div>
         </form>
 
         {% if estudiante and estudiante.fecha_ultima_modificacion %}
-        <div class="last-modified">
-            <i class="fas fa-clock"></i>
-            Última actualización: {{ estudiante.fecha_ultima_modificacion.strftime('%d/%m/%Y %H:%M') if estudiante.fecha_ultima_modificacion else 'No disponible' }}
+        <div class="mt-5 text-center text-xs text-gray-500 p-3 bg-white border border-gray-200 rounded-xl">
+            <i class="fas fa-clock mr-1"></i>
+            &Uacute;ltima actualizaci&oacute;n: {{ estudiante.fecha_ultima_modificacion.strftime('%d/%m/%Y %H:%M') if estudiante.fecha_ultima_modificacion else 'No disponible' }}
         </div>
         {% endif %}
+
         {% endif %}
-    </div>
+
+    </main>
+
+    <footer class="mt-auto text-center py-6 text-xs text-gray-500 border-t border-gray-200">
+        <div class="text-primary-light italic mb-1">&iexcl;Tu preparaci&oacute;n merece lo mejor!</div>
+        &copy; <span id="year"></span> NK Chambergo &middot; Centro Pre Universitario
+    </footer>
 
     <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
         let formModified = false;
         const form = document.getElementById('editForm');
         if (form) {
@@ -527,21 +441,30 @@
                 const c = document.getElementById('password_confirm');
                 if (!a.value.trim() || !n.value.trim() || !c.value.trim()) {
                     e.preventDefault();
-                    alert('Completa contraseña actual, nueva y confirmación.');
+                    alert('Completa contrase\u00f1a actual, nueva y confirmaci\u00f3n.');
                     return;
                 }
                 if (n.value.length < 8) {
                     e.preventDefault();
-                    alert('La nueva contraseña debe tener al menos 8 caracteres.');
+                    alert('La nueva contrase\u00f1a debe tener al menos 8 caracteres.');
                     return;
                 }
                 if (n.value !== c.value) {
                     e.preventDefault();
-                    alert('La confirmación no coincide con la nueva contraseña.');
+                    alert('La confirmaci\u00f3n no coincide con la nueva contrase\u00f1a.');
                     return;
                 }
             });
         }
+
+        setTimeout(() => {
+            document.querySelectorAll('.flash-msg').forEach(msg => {
+                msg.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateY(-6px)';
+                setTimeout(() => msg.remove(), 400);
+            });
+        }, 6000);
     </script>
 </body>
 </html>
