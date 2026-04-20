@@ -1,6 +1,7 @@
 # utils/helpers.py
 from models import db, ConfiguracionPension, PagoPension, PensionEstudiante, Estudiante
 from datetime import datetime as dt
+from sqlalchemy import extract, func
 
 
 def generar_numero_recibo():
@@ -110,54 +111,60 @@ def obtener_saldo_por_mes(estudiante_id, anio):
 
 
 def calcular_estadisticas_pensiones():
-    """Calcula las estadísticas del dashboard de pensiones"""
+    """Calcula las estadísticas del dashboard de pensiones.
+
+    "Recaudado" y "Pagos de este mes" se computan por ``fecha_registro``
+    (cuándo se cobró realmente), no por ``mes_pago`` (mes al que corresponde
+    la pensión). Esto evita discrepancias por diferencias de capitalización
+    o acentos en el valor de ``mes_pago``, y coincide con lo que el usuario
+    entiende por "lo que cobré este mes".
+    """
     # Obtener configuración activa
     config = ConfiguracionPension.query.filter_by(activo=True).first()
     anio_actual = config.anio_escolar if config else str(dt.now().year)
 
-    # Mes actual
-    mes_actual = dt.now().strftime('%B').lower()
-    meses_es = {
-        'january': 'enero', 'february': 'febrero', 'march': 'marzo',
-        'april': 'abril', 'may': 'mayo', 'june': 'junio',
-        'july': 'julio', 'august': 'agosto', 'september': 'septiembre',
-        'october': 'octubre', 'november': 'noviembre', 'december': 'diciembre'
-    }
-    mes_actual_es = meses_es.get(mes_actual, 'marzo')
+    ahora = dt.now()
+    mes_actual_num = ahora.month
+    anio_actual_num = ahora.year
 
-    # Estadísticas
     total_estudiantes = Estudiante.query.count()
 
-    # Pagos del mes actual
-    pagos_mes = PagoPension.query.filter_by(
-        mes_pago=mes_actual_es,
-        anio_pago=anio_actual,
-        estado='pagado'
-    ).count()
+    # Pagos cobrados este mes calendario (por fecha de registro)
+    pagos_mes = (
+        PagoPension.query
+        .filter(
+            extract('month', PagoPension.fecha_registro) == mes_actual_num,
+            extract('year', PagoPension.fecha_registro) == anio_actual_num,
+            PagoPension.estado == 'pagado',
+        )
+        .count()
+    )
 
-    # Monto recaudado este mes
-    monto_recaudado = db.session.query(
-        db.func.sum(PagoPension.monto_pagado)
-    ).filter_by(
-        mes_pago=mes_actual_es,
-        anio_pago=anio_actual,
-        estado='pagado'
-    ).scalar() or 0
+    # Monto recaudado este mes calendario (por fecha de registro)
+    monto_recaudado = (
+        db.session.query(func.coalesce(func.sum(PagoPension.monto_pagado), 0))
+        .filter(
+            extract('month', PagoPension.fecha_registro) == mes_actual_num,
+            extract('year', PagoPension.fecha_registro) == anio_actual_num,
+            PagoPension.estado == 'pagado',
+        )
+        .scalar()
+    ) or 0
 
-    # Estudiantes con pensión asignada
+    # Estudiantes con pensión asignada en el año escolar activo
     estudiantes_con_pension = PensionEstudiante.query.filter_by(
         anio_escolar=anio_actual,
-        activo=True
+        activo=True,
     ).count()
 
-    # Pagos pendientes (estudiantes con pensión - pagos realizados del mes)
+    # Aproximación de pagos pendientes del mes en curso
     pagos_pendientes = max(0, estudiantes_con_pension - pagos_mes)
 
     return {
         'total_estudiantes': total_estudiantes,
         'pagos_mes': pagos_mes,
         'pagos_pendientes': pagos_pendientes,
-        'monto_recaudado': float(monto_recaudado)
+        'monto_recaudado': float(monto_recaudado),
     }
 
 
