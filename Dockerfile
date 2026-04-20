@@ -17,11 +17,12 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p instance static/uploads/estudiantes temp_pdfs academia/uploads academia/reports
+RUN mkdir -p static/uploads/estudiantes temp_pdfs academia/uploads academia/reports
 
 # Datos persistentes — declarar volúmenes para que NO se borren al rebuild.
 # El comando de arranque debe montar volúmenes nombrados o bind-mounts.
-VOLUME ["/app/instance", "/app/static/uploads", "/app/academia/uploads", "/app/academia/reports"]
+# La BD vive en PostgreSQL (servicio aparte), no en el contenedor.
+VOLUME ["/app/static/uploads", "/app/academia/uploads", "/app/academia/reports"]
 
 EXPOSE 8000
 

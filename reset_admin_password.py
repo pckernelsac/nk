@@ -1,5 +1,6 @@
 """
-Restablece la contraseña del usuario 'admin' en la misma BD que usa la app (escuela.db).
+Restablece la contraseña del usuario 'admin' en la BD PostgreSQL configurada
+(usa la misma URI que la app, resuelta desde ``config.Config``).
 
 Uso (desde la raíz del proyecto, mismo cwd que al ejecutar python app.py):
     python reset_admin_password.py

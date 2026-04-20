@@ -1,8 +1,9 @@
 # models/academia.py
 """
 Modelos SQLAlchemy para el módulo de Academia.
-Estas tablas reemplazan la base de datos separada academia/database.db
-y ahora viven en la base de datos principal (instance/escuela.db).
+
+Estas tablas viven en la misma base de datos PostgreSQL del proyecto (módulo
+unificado, ya no hay ``academia/database.db`` separada).
 """
 
 from .database import db

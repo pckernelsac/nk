@@ -12,12 +12,68 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return str(v).strip().lower() in ("1", "true", "yes", "on")
 
 
-# Ruta absoluta a instance/escuela.db — única BD del sistema (ORM principal + Academia).
-# Usar ruta absoluta para que no dependa del cwd desde donde se arranque la app.
-_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-_INSTANCE_DIR = os.path.join(_BASE_DIR, 'instance')
-os.makedirs(_INSTANCE_DIR, exist_ok=True)
-_DB_PATH = os.path.join(_INSTANCE_DIR, 'escuela.db')
+def _env_int(name: str, default: int) -> int:
+    try:
+        v = os.environ.get(name)
+        return int(v) if v not in (None, "") else default
+    except (TypeError, ValueError):
+        return default
+
+
+def _normalize_pg_uri(dsn: str) -> str:
+    """Normaliza la URI de PostgreSQL al driver psycopg v3."""
+    if dsn.startswith("postgres://"):
+        return "postgresql+psycopg://" + dsn[len("postgres://"):]
+    if dsn.startswith("postgresql://"):
+        return "postgresql+psycopg://" + dsn[len("postgresql://"):]
+    return dsn
+
+
+def _build_database_uri() -> str:
+    """Resuelve la URI PostgreSQL desde variables de entorno.
+
+    Prioridad:
+      1) ``SQLALCHEMY_DATABASE_URI``.
+      2) ``DATABASE_URL`` (convención Heroku/Render/Railway; se normaliza a psycopg3).
+      3) Variables separadas ``POSTGRES_HOST``/``POSTGRES_DB``/``POSTGRES_USER``.
+
+    Si no hay ninguna configurada se lanza ``RuntimeError``: la app es
+    PostgreSQL-only, no hay fallback a SQLite ni valores por defecto ocultos.
+    """
+    uri = os.environ.get("SQLALCHEMY_DATABASE_URI")
+    if uri:
+        return _normalize_pg_uri(uri)
+
+    dsn = os.environ.get("DATABASE_URL")
+    if dsn:
+        return _normalize_pg_uri(dsn)
+
+    pg_host = os.environ.get("POSTGRES_HOST")
+    pg_db = os.environ.get("POSTGRES_DB")
+    pg_user = os.environ.get("POSTGRES_USER")
+    if pg_host and pg_db and pg_user:
+        pg_pass = os.environ.get("POSTGRES_PASSWORD", "")
+        pg_port = os.environ.get("POSTGRES_PORT", "5432")
+        auth = f"{pg_user}:{pg_pass}" if pg_pass else pg_user
+        return f"postgresql+psycopg://{auth}@{pg_host}:{pg_port}/{pg_db}"
+
+    raise RuntimeError(
+        "No se encontró configuración de base de datos PostgreSQL. "
+        "Define SQLALCHEMY_DATABASE_URI o DATABASE_URL (postgresql+psycopg://user:pass@host:5432/db) "
+        "o bien las variables POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER (y opcionalmente "
+        "POSTGRES_PASSWORD, POSTGRES_PORT) en el entorno o en el archivo .env."
+    )
+
+
+def _build_engine_options() -> dict:
+    """Opciones de pool/conexión para PostgreSQL (psycopg v3)."""
+    return {
+        'pool_size': _env_int('DB_POOL_SIZE', 10),
+        'max_overflow': _env_int('DB_MAX_OVERFLOW', 20),
+        'pool_pre_ping': True,
+        'pool_recycle': _env_int('DB_POOL_RECYCLE', 1800),
+        'pool_timeout': _env_int('DB_POOL_TIMEOUT', 30),
+    }
 
 
 class Config:
@@ -29,24 +85,12 @@ class Config:
         "SESSION_COOKIE_SECURE",
         default=(os.environ.get("APP_ENV", "development") == "production"),
     )
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'SQLALCHEMY_DATABASE_URI',
-        f'sqlite:///{_DB_PATH}',
-    )
+    SQLALCHEMY_DATABASE_URI = _build_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED = True
 
-    # SQLite optimizado para concurrencia (20-100 usuarios)
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 5,
-        'max_overflow': 10,
-        'pool_pre_ping': True,
-        'pool_recycle': 3600,
-        'connect_args': {
-            'timeout': 30,
-            'check_same_thread': False,
-        },
-    }
+    # Opciones de motor para PostgreSQL (psycopg v3).
+    SQLALCHEMY_ENGINE_OPTIONS = _build_engine_options()
 
     # Configuración de la aplicación
     APP_NAME = 'Sistema de Gestión Escolar'
@@ -100,8 +144,7 @@ class Config:
     MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', 'False') == 'True'
     MAIL_DEBUG = os.environ.get('MAIL_DEBUG', 'False') == 'True'
 
-    # Configuración de Academia (sistema integrado - misma base de datos)
-    ACADEMIA_DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'escuela.db')
+    # Configuración de Academia (sistema integrado - misma base de datos PostgreSQL)
     ACADEMIA_UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'academia', 'uploads')
     ACADEMIA_REPORTS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'academia', 'reports')
     ACADEMIA_STATIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'academia', 'static')

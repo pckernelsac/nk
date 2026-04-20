@@ -1,8 +1,13 @@
 """
-Inicializa la base SQLite (mismas tablas que la app FastAPI).
-Ejecutar una vez desde la raíz del proyecto:
+Inicializa la base de datos PostgreSQL de la app FastAPI.
+
+Ejecutar una vez desde la raíz del proyecto con ``SQLALCHEMY_DATABASE_URI``
+(o ``DATABASE_URL`` / variables ``POSTGRES_*``) apuntando a una BD vacía::
 
     python init_db.py
+
+ADVERTENCIA: el script ejecuta ``drop_all()`` antes de crear las tablas.
+Solo úsalo en entornos de desarrollo o en una BD recién creada.
 
 Credenciales por defecto: admin / Kevin@2025
 """

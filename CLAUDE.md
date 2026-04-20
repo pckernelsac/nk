@@ -4,9 +4,11 @@ Guía para asistentes de código al trabajar en este repositorio.
 
 ## Visión general
 
-Intranet escolar en **FastAPI** con plantillas **Jinja2**, sesiones vía **Starlette SessionMiddleware**, **SQLAlchemy** y base **SQLite** (`instance/escuela.db`). Despliegue típico con **Passenger** usando `passenger_wsgi.py` (ASGI vía middleware).
+Intranet escolar en **FastAPI** con plantillas **Jinja2**, sesiones vía **Starlette SessionMiddleware**, **SQLAlchemy** y base **PostgreSQL** (driver `psycopg` v3). Despliegue típico con **Passenger** usando `passenger_wsgi.py` (ASGI vía middleware) o Docker Compose.
 
-No hay Firebase/Firestore en el flujo principal de datos: el modelo persistido es relacional en SQLite.
+La app es PostgreSQL-only: `config.Config` lanza `RuntimeError` al importar si no hay URI configurada (no hay fallback a SQLite ni BD embebida).
+
+No hay Firebase/Firestore en el flujo principal de datos: el modelo persistido es relacional.
 
 ## Comandos
 
@@ -20,9 +22,9 @@ pip install -r requirements.txt
 python app.py
 ```
 
-`app.py` arranca **uvicorn** con reload apuntando a `main:app`.
+`app.py` arranca **uvicorn** con reload apuntando a `main:app`. Exige una BD PostgreSQL accesible (ver variables en `.env.example`).
 
-**BD inicial (desarrollo; borra y recrea tablas):**
+**BD inicial (desarrollo; borra y recrea tablas en la BD PostgreSQL destino):**
 
 ```bash
 python init_db.py
@@ -43,7 +45,7 @@ Credenciales por defecto tras `init_db`: ver comentario en `init_db.py` (usuario
 | `models/` | Modelos SQLAlchemy; `models/database.py` motor, sesión y compat tipo `db.Model` / `Model.query` |
 | `templates/` | Jinja2; `template_helpers.py` unifica `TemplateResponse` y utilidades de sesión/CSRF |
 | `static/` | Activos globales; academia tiene estáticos bajo ruta dedicada |
-| `config.py` | Configuración (SECRET_KEY, URI SQLite, email SMTP, etc.) |
+| `config.py` | Configuración (SECRET_KEY, URI PostgreSQL, email SMTP, etc.) |
 
 ## Autenticación
 
@@ -53,8 +55,11 @@ Credenciales por defecto tras `init_db`: ver comentario en `init_db.py` (usuario
 
 ## Base de datos
 
-- URI típica: `sqlite:///instance/escuela.db` (ver `config.Config`).
+- URI resuelta en `config._build_database_uri` (orden): `SQLALCHEMY_DATABASE_URI` → `DATABASE_URL` (se normaliza a `postgresql+psycopg://`) → variables `POSTGRES_HOST`/`POSTGRES_DB`/`POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_PORT`. Si ninguna está definida, `RuntimeError`.
+- Opciones del pool en `config._build_engine_options` (tuning por env: `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_RECYCLE`, `DB_POOL_TIMEOUT`).
 - Patrones: `Usuario.query.filter_by(...)`, `db.session.add/commit`, etc., vía capa de compat en `models/database.py`.
+- Migración de datos desde un volcado legacy SQLite: `python migrate_sqlite_to_postgres.py --source sqlite:///ruta/escuela.db --target postgresql+psycopg://...`.
+- Tests: definir `TEST_DATABASE_URL` (BD dedicada); cada fixture `db` hace `DROP SCHEMA public CASCADE` + `CREATE SCHEMA public`.
 
 ## Seguridad (formularios)
 

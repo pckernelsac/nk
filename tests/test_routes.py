@@ -105,8 +105,9 @@ class TestConfiguracion:
 
         assert Config.WTF_CSRF_ENABLED is False
 
-    def test_database_en_memoria(self, app):
-        """La base de datos de test usa SQLite en memoria."""
+    def test_database_postgres(self, app):
+        """La base de datos de test es una PostgreSQL dedicada."""
         from config import Config
 
-        assert ":memory:" in (getattr(Config, "SQLALCHEMY_DATABASE_URI", "") or "")
+        uri = getattr(Config, "SQLALCHEMY_DATABASE_URI", "") or ""
+        assert uri.startswith("postgresql"), f"Se esperaba una URI PostgreSQL, llegó {uri!r}"

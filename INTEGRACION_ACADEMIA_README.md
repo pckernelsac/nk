@@ -360,8 +360,8 @@ tail -50 stderr.log | grep ERROR
 - ✅ Base de datos con 10,000+ estudiantes
 
 **Bottlenecks Potenciales:**
-- SQLite en modo WAL: máx ~1000 writes/segundo
-- **Recomendación para >1000 usuarios:** Migrar a PostgreSQL o MySQL
+- Plan de pool de PostgreSQL (ajustable vía `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`).
+- **Para >1000 usuarios:** escalar la instancia PostgreSQL (recursos, índices y replicación de lectura) y aumentar el pool de la app.
 
 ---
 

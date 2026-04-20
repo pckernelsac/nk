@@ -4,6 +4,7 @@ python-multipart
 a2wsgi
 Werkzeug==3.0.1
 SQLAlchemy>=2.0
+psycopg[binary]>=3.1
 python-dotenv==1.0.0
 reportlab==4.0.7
 Pillow==10.1.0

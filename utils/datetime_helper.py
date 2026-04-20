@@ -11,11 +11,13 @@ LIMA_TZ = pytz.timezone('America/Lima')
 
 def now_lima():
     """
-    Retorna la fecha y hora actual en zona horaria de Lima, Perú
-    Retorna un datetime "naive" (sin timezone) para compatibilidad con SQLite
+    Retorna la fecha y hora actual en zona horaria de Lima, Perú.
+
+    Devuelve un ``datetime`` "naive" (sin tzinfo) para mantener la convención
+    histórica de los modelos del proyecto (columnas ``DateTime`` sin timezone).
 
     Returns:
-        datetime: Fecha y hora actual en Lima (GMT-5) sin timezone info
+        datetime: Fecha y hora actual en Lima (GMT-5) sin timezone info.
     """
     return datetime.now(LIMA_TZ).replace(tzinfo=None)
 

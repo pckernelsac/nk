@@ -30,15 +30,6 @@ wheels/
 .pytest_cache/
 *.pyc
 
-# Flask
-instance/
-.webassets-cache
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
 # Cursor / Claude local
 .claude/
 

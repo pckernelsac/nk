@@ -8,10 +8,6 @@ __pycache__
 .env
 .env.*
 !.env.example
-instance
-*.db
-*.sqlite
-*.sqlite3
 static/uploads
 !static/uploads/.gitkeep
 temp_pdfs

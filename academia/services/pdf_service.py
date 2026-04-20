@@ -6,7 +6,6 @@ Este módulo encapsula toda la lógica relacionada con la creación de informes
 en PDF utilizando la librería FPDF.
 """
 
-import sqlite3 # Importar sqlite3 para manejo de errores específico si es necesario
 import fpdf
 import os
 import datetime
