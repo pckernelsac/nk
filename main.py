@@ -80,8 +80,10 @@ async def lifespan(app: FastAPI):
         db_facade.session.commit()
 
     from utils.bootstrap_admin import ensure_bootstrap_admin
+    from utils.bootstrap_tipos_pago import ensure_tipos_pago_base
 
     ensure_bootstrap_admin(logger)
+    ensure_tipos_pago_base(logger)
 
     yield
 
