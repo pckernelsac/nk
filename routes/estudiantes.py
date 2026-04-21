@@ -1201,6 +1201,10 @@ async def upload_excel(request: Request, _user_id: int = Depends(get_current_use
             db.session.query(Estudiante.dni_est).filter(Estudiante.dni_est.isnot(None)).all()
         )
 
+        # Códigos únicos en el lote: generar_codigo_estudiante() solo ve la BD,
+        # no los pendientes de commit; sin esto todas las filas repiten el mismo código.
+        prefijo_cod, num_codigo = Estudiante.siguiente_codigo_estudiante_inicial()
+
         print(f"Procesando filas desde la 2 hasta la {ws.max_row}...")
         for row_num in range(2, ws.max_row + 1):
             try:
@@ -1230,7 +1234,7 @@ async def upload_excel(request: Request, _user_id: int = Depends(get_current_use
                 dnis_existentes.add(dni)
 
                 nuevo_estudiante = Estudiante(
-                    codigo_estudiante=Estudiante.generar_codigo_estudiante(),
+                    codigo_estudiante=f"{prefijo_cod}{num_codigo:05d}",
                     apellido_paterno_est=str(apellido_paterno).strip(),
                     apellido_materno_est=str(apellido_materno).strip(),
                     nombres_est=str(nombres).strip(),
@@ -1245,6 +1249,7 @@ async def upload_excel(request: Request, _user_id: int = Depends(get_current_use
                 )
 
                 db.session.add(nuevo_estudiante)
+                num_codigo += 1
                 estudiantes_creados += 1
 
             except Exception as e:

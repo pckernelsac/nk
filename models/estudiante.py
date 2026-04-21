@@ -120,11 +120,16 @@ class Estudiante(db.Model):
     academia_portal_password_hash = db.Column(db.String(255), nullable=True)
 
     @staticmethod
-    def generar_codigo_estudiante():
-        """Genera un código único de estudiante con formato EST202600001"""
+    def siguiente_codigo_estudiante_inicial() -> tuple[str, int]:
+        """Retorna (prefijo, siguiente_número) según la BD.
+
+        Útil para asignar códigos únicos en un mismo lote (p. ej. import Excel)
+        sin commit entre filas: incrementar el número en memoria tras cada fila.
+
+        Para un solo alta, usar ``generar_codigo_estudiante()``.
+        """
         anio = datetime.utcnow().year
         prefijo = f"EST{anio}"
-        # Buscar el último código del año actual
         ultimo = db.session.query(Estudiante).filter(
             Estudiante.codigo_estudiante.like(f"{prefijo}%")
         ).order_by(Estudiante.codigo_estudiante.desc()).first()
@@ -135,7 +140,12 @@ class Estudiante(db.Model):
                 ultimo_num = 0
         else:
             ultimo_num = 0
-        nuevo_num = ultimo_num + 1
+        return prefijo, ultimo_num + 1
+
+    @staticmethod
+    def generar_codigo_estudiante():
+        """Genera un código único de estudiante con formato EST202600001"""
+        prefijo, nuevo_num = Estudiante.siguiente_codigo_estudiante_inicial()
         return f"{prefijo}{nuevo_num:05d}"
 
     def __repr__(self):
