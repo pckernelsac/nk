@@ -14,6 +14,11 @@ Uso típico:
     # Modo de prueba (no escribe nada):
     python migrate_sqlite_to_postgres.py --target <uri> --dry-run
 
+    # Solo la tabla estudiantes (no copia asistencias, pensiones, etc.):
+    python migrate_sqlite_to_postgres.py --target <uri> --only estudiantes
+    # Si la tabla destino ya tiene filas y quieres reemplazarla por la de SQLite:
+    python migrate_sqlite_to_postgres.py --target <uri> --only estudiantes --truncate
+
 Si se omiten ``--source``/``--target`` se leen de las variables de entorno
 ``SOURCE_DATABASE_URL`` y ``TARGET_DATABASE_URL``. Si tampoco están definidas,
 se usa la URI de SQLite por defecto del proyecto como fuente.
@@ -30,6 +35,9 @@ Recomendaciones:
   * Haz backup de ``instance/escuela.db`` antes de ejecutar.
   * Usa una BD PostgreSQL vacía. Si ya tiene datos, pasa ``--truncate`` para
     vaciar las tablas destino antes de insertar.
+  * Con ``--only estudiantes``, ``--truncate`` solo afecta a ``estudiantes``.
+    Si en Postgres ya hay estudiantes y no usas ``--truncate``, los ``INSERT``
+    pueden fallar por ``id`` o ``codigo_estudiante`` duplicados.
   * Si la BD SQLite tiene columnas que faltan en el ORM actual, primero
     ejecuta los scripts incrementales de ``migrations/`` o la app una vez
     (el ``lifespan`` aplica ``ALTER TABLE ADD COLUMN`` donde corresponde).
@@ -92,7 +100,7 @@ def _parse_args() -> argparse.Namespace:
         nargs="*",
         default=None,
         metavar="TABLA",
-        help="Migra solo las tablas indicadas (por nombre).",
+        help='Migra solo las tablas indicadas (por nombre), ej. "estudiantes".',
     )
     parser.add_argument(
         "--skip",

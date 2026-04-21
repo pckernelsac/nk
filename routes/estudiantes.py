@@ -33,6 +33,20 @@ def _qp_int(qp, key: str, default: int | None = None) -> int | None:
         return default
 
 
+def _excel_upload_from_form(form) -> UploadFile | None:
+    """Obtiene el archivo Excel del multipart (nombre de campo puede variar)."""
+    for key in ("excel_file", "file", "excel"):
+        f = form.get(key)
+        if f is None:
+            continue
+        if isinstance(f, UploadFile):
+            return f
+        # Fallback si el tipo no coincide (versiones distintas de Starlette/multipart)
+        if getattr(f, "filename", None) is not None and callable(getattr(f, "read", None)):
+            return f  # type: ignore[return-value]
+    return None
+
+
 def allowed_file(filename: str | None) -> bool:
     if not filename or "." not in filename:
         return False
@@ -1133,11 +1147,15 @@ async def upload_excel(request: Request, _user_id: int = Depends(get_current_use
 
         print("=== INICIO DE UPLOAD EXCEL ===")
 
-        file = form.get("excel_file")
-        if not isinstance(file, UploadFile):
-            print("ERROR: No se encontró 'excel_file' en el formulario")
+        file = _excel_upload_from_form(form)
+        if file is None:
+            keys = list(form.keys())
+            print(f"ERROR: sin archivo en multipart. Claves recibidas: {keys}")
             return JSONResponse(
-                {"success": False, "message": "No se envió ningún archivo"},
+                {
+                    "success": False,
+                    "message": "No se recibió el archivo. Seleccione un .xlsx o .xls e intente de nuevo.",
+                },
                 status_code=400,
             )
 

@@ -479,7 +479,15 @@ document.getElementById('uploadModal').addEventListener('click', function(e) {
 document.getElementById('uploadForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
+    const excelInput = document.getElementById('excelFile');
+    if (!excelInput || !excelInput.files || excelInput.files.length === 0) {
+        alert('Seleccione un archivo Excel (.xlsx o .xls) antes de cargar.');
+        return;
+    }
+
     const formData = new FormData(this);
+    // Asegurar que el archivo va en el multipart (algunos navegadores/XHR omiten el campo si iba vacío)
+    formData.set('excel_file', excelInput.files[0], excelInput.files[0].name);
     const uploadBtn = document.getElementById('uploadBtn');
     const progressDiv = document.getElementById('uploadProgress');
     const progressBar = document.getElementById('progressBar');
