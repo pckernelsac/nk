@@ -3,6 +3,13 @@
 .env.local
 .env.*.local
 
+# Bases de datos locales / respaldos (en producción solo PostgreSQL; no subir .db)
+*.db
+*.db-journal
+instance/
+escuela.db
+*_sqlite*.xlsx
+
 # Python
 __pycache__/
 *.py[cod]

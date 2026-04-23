@@ -112,6 +112,35 @@ class AcademiaStudent(db.Model):
         return d
 
 
+class ExamenPreguntasConfig(db.Model):
+    """
+    Cantidad de preguntas del examen (import CSV / cálculo PDF) según contexto.
+    - Niveles escolares: 'grado' concreto (p. ej. "5", "3años") o '*' para todo el nivel.
+    - Academia: por área (academic_area_id) o fila con area NULL como valor por defecto
+      si no hay registro específico.
+    Valores habituales: 20, 50, 80, 100.
+    """
+    __tablename__ = 'examen_preguntas_config'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nivel = db.Column(db.String(20), nullable=False, index=True)
+    grado = db.Column(db.String(30), nullable=False, default='*', index=True)
+    academic_area_id = db.Column(db.Integer, db.ForeignKey('academic_areas.id'), nullable=True, index=True)
+    max_questions = db.Column(db.Integer, nullable=False, default=20)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nivel': self.nivel,
+            'grado': self.grado,
+            'academic_area_id': self.academic_area_id,
+            'max_questions': self.max_questions,
+        }
+
+    def __repr__(self):
+        return f'<ExamenPreguntasConfig {self.nivel} g={self.grado} a={self.academic_area_id} max={self.max_questions}>'
+
+
 class QuestionWeight(db.Model):
     """Ponderaciones de preguntas por área académica, materia y nivel."""
     __tablename__ = 'question_weights'

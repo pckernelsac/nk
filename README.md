@@ -33,7 +33,10 @@ Base inicial (desarrollo; recrea tablas): `python init_db.py`. Usuario por defec
 
 ## Producción
 
+Guía detallada (respaldo, `DATABASE_URL`, Docker vs PostgreSQL remoto, tablas nuevas): **[DEPLOY.md](DEPLOY.md)**.
+
 - **Variable crítica:** `SECRET_KEY` aleatoria y distinta de la de ejemplo.
+- **Base de datos:** solo **PostgreSQL**; las tablas nuevas se crean al arrancar la app (`create_all`); haga **dump de respaldo** antes de actualizar en producción.
 - **HTTPS:** con `APP_ENV=production`, la cookie de sesión usa `Secure` por defecto. Tras un proxy, usar Uvicorn con `--proxy-headers` (ver `Dockerfile`) o el equivalente en tu proceso manager.
 - **Datos persistentes:** PostgreSQL gestiona la BD; monta volúmenes para `static/uploads/`, `temp_pdfs/`, `academia/uploads/` y `academia/reports/` si aplica.
 

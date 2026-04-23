@@ -20,6 +20,8 @@ from academia.routes.main_routes import init_routes as init_main_routes
 from academia.routes.report_routes import init_routes as init_report_routes
 from academia.routes.student_auth_routes import init_routes as init_student_auth_routes
 from academia.routes.student_routes import init_routes as init_student_routes
+from academia.routes.weights_routes import init_weights_routes
+from academia.routes.cupo_preguntas_routes import init_cupo_preguntas_routes
 
 from config import Config
 
@@ -40,6 +42,7 @@ def init_academia_module() -> dict:
     academic_service = AcademicService()
     academic_service.initialize_academic_areas()
     academic_service.initialize_question_weights()
+    academic_service.initialize_examen_preguntas_config()
 
     student_service = StudentService(academic_service)
 
@@ -99,10 +102,15 @@ def build_academia_routers():
     )
     eta_router = eta_routes_module.router
 
+    weights_router = init_weights_routes(services["academic_service"])
+    cupo_router = init_cupo_preguntas_routes(services["academic_service"])
+
     return [
         (main_router, "/academia"),
         (student_router, "/academia"),
         (report_router, "/academia"),
+        (weights_router, "/academia"),
+        (cupo_router, "/academia"),
         (student_auth_router, "/academia/estudiante"),
         (eta_router, "/academia/eta"),
     ]

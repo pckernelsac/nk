@@ -14,7 +14,7 @@ from .auditlog import AuditLog
 from .aula import Aula
 from .matricula import Matricula
 from .academico import PeriodoAcademico, Curso, DocenteCursoAula, FastTest, NotaFastTest
-from .academia import AcademicArea, AcademiaStudent, QuestionWeight
+from .academia import AcademicArea, AcademiaStudent, ExamenPreguntasConfig, QuestionWeight
 
 __all__ = [
     'Base',
@@ -48,4 +48,5 @@ __all__ = [
     'AcademicArea',
     'AcademiaStudent',
     'QuestionWeight',
+    'ExamenPreguntasConfig',
 ]

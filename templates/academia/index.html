@@ -51,22 +51,16 @@
                         <p>El campo <span class="font-semibold">QuizClass</span> del CSV se interpreta según el nivel seleccionado:</p>
                         <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <p class="font-semibold text-xs uppercase tracking-wide mb-1">ACADEMIA (50 preguntas)</p>
+                                <p class="font-semibold text-xs uppercase tracking-wide mb-1">ACADEMIA (cupo: 50 / 80 / 100 en &laquo;Cupo de preguntas&raquo;)</p>
                                 <ul class="list-disc pl-5 space-y-0.5 text-xs">
-                                    <li>"1" → Ciencias de la Salud</li>
-                                    <li>"2" → Ingenierías</li>
-                                    <li>"3" → Administrativas</li>
-                                    <li>"4" → Educación</li>
-                                    <li>"5" → Agrarias</li>
+                                    <li>QuizClass "1"&ndash;"5" &rarr; &aacute;rea; el n&uacute;mero de columnas Stu1&hellip;N depende del cupo del &aacute;rea</li>
                                 </ul>
                             </div>
                             <div>
-                                <p class="font-semibold text-xs uppercase tracking-wide mb-1">INICIAL / PRIMARIA / SECUNDARIA (20 preguntas)</p>
+                                <p class="font-semibold text-xs uppercase tracking-wide mb-1">INICIAL / PRIMARIA / SECUNDARIA (cupo en &laquo;Cupo de preguntas&raquo;)</p>
                                 <ul class="list-disc pl-5 space-y-0.5 text-xs">
-                                    <li>QuizClass = Grado del estudiante</li>
-                                    <li>Inicial: 3, 4, 5 años</li>
-                                    <li>Primaria: 1ro a 6to</li>
-                                    <li>Secundaria: 1ro a 5to</li>
+                                    <li>QuizClass = grado (ej. 3, 1, 5) seg&uacute;n el nivel</li>
+                                    <li>Por defecto suelen leerse 20 columnas; 5.&deg; sec. o ACADEMIA: 50, 80 o 100 seg&uacute;n config.</li>
                                 </ul>
                             </div>
                         </div>
@@ -128,6 +122,37 @@
                     </form>
                 </div>
             </div>
+
+            {% if session.get('rol') == 'administrador' %}
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Cupo de preguntas</h3>
+                            <p class="text-sm text-gray-600">20, 50, 80 o 100… según nivel, grado y área (CSV / PDFs).</p>
+                        </div>
+                        <a href="{{ url_for('academia_cupo.index') }}"
+                           class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-white text-sm font-semibold shadow shrink-0"
+                           style="background-color: #4f46e5;">
+                            <i class="fas fa-list-ol mr-2"></i>Configurar
+                        </a>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Ponderaciones (PDFs)</h3>
+                            <p class="text-sm text-gray-600">Pesos por rango: asignaturas y nivel (Básico, etc.).</p>
+                        </div>
+                        <a href="{{ url_for('academia_weights.index') }}"
+                           class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-white text-sm font-semibold shadow shrink-0"
+                           style="background-color: #5F2A5D;">
+                            <i class="fas fa-sliders-h mr-2"></i>Ponderar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
 {% endblock %}
 

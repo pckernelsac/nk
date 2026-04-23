@@ -5,8 +5,9 @@ Usa SQLAlchemy ORM (models/academia.py).
 """
 
 from typing import Any, Dict, List, Tuple, Optional
+from sqlalchemy import or_
 from models import db
-from models.academia import AcademicArea, QuestionWeight
+from models.academia import AcademicArea, ExamenPreguntasConfig, QuestionWeight
 
 
 class AcademicService:
@@ -56,9 +57,16 @@ class AcademicService:
     def get_weights_by_area(self, area_id: int) -> Dict[Tuple[int, int], Tuple[str, str, float]]:
         weights_map = {}
         try:
-            weights = QuestionWeight.query.filter_by(
-                academic_area_id=area_id
-            ).order_by(QuestionWeight.question_start).all()
+            # Solo filas de ACADEMIA (excluir ponderaciones de nivel escolar con mismo area_id)
+            weights = (
+                QuestionWeight.query.filter(
+                    QuestionWeight.academic_area_id == area_id,
+                    or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
+                    or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
+                )
+                .order_by(QuestionWeight.question_start)
+                .all()
+            )
 
             for w in weights:
                 weights_map[(w.question_start, w.question_end)] = (w.subject, w.level, w.weight)
@@ -175,6 +183,144 @@ class AcademicService:
             db.session.rollback()
             print(f"Error al verificar/inicializar ponderaciones: {e}")
 
+    def initialize_examen_preguntas_config(self) -> None:
+        """Crea filas por defecto para el máximo de preguntas por contexto (si la tabla está vacía)."""
+        try:
+            if ExamenPreguntasConfig.query.count() > 0:
+                return
+            # Grados escolares: 20; 5.° sec. y academia: 50 por defecto (configurable en /academia/cupo-preguntas)
+            defaults: List[Tuple[str, str, Optional[int], int]] = [
+                ("INICIAL", "*", None, 20),
+                ("PRIMARIA", "*", None, 20),
+                ("SECUNDARIA", "*", None, 20),
+                ("SECUNDARIA", "5", None, 50),
+            ]
+            for aid in range(1, 6):
+                defaults.append(("ACADEMIA", "*", aid, 50))
+            defaults.append(("ACADEMIA", "*", None, 50))
+            for niv, gr, area, mx in defaults:
+                db.session.add(
+                    ExamenPreguntasConfig(
+                        nivel=niv, grado=gr, academic_area_id=area, max_questions=mx
+                    )
+                )
+            db.session.commit()
+            print("Configuración de cupo de preguntas (examen_preguntas_config) inicializada.")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error al inicializar examen_preguntas_config: {e}")
+
+    def get_max_questions(
+        self,
+        nivel: str,
+        grado: Optional[str] = None,
+        academic_area_id: Optional[int] = None,
+    ) -> int:
+        """
+        Resuelve el número máximo de preguntas (Stu1..N en CSV) según BD.
+        - ACADEMIA: primero por academic_area_id, luego regla global (área NULL).
+        - INICIAL/PRIMARIA/SECUNDARIA: primero (nivel, grado exacto), luego (nivel, '*').
+        """
+        n = (nivel or "ACADEMIA").strip().upper()
+        if n not in ("INICIAL", "PRIMARIA", "SECUNDARIA", "ACADEMIA"):
+            n = "ACADEMIA"
+        g = (grado or "").strip()
+        try:
+            if n == "ACADEMIA":
+                if academic_area_id is not None:
+                    row = (
+                        ExamenPreguntasConfig.query.filter_by(
+                            nivel="ACADEMIA", grado="*", academic_area_id=int(academic_area_id)
+                        ).first()
+                    )
+                    if row and row.max_questions > 0:
+                        return int(row.max_questions)
+                row = (
+                    ExamenPreguntasConfig.query.filter_by(
+                        nivel="ACADEMIA", grado="*", academic_area_id=None
+                    ).first()
+                )
+                if row and row.max_questions > 0:
+                    return int(row.max_questions)
+                return 50
+            if g:
+                row = ExamenPreguntasConfig.query.filter_by(
+                    nivel=n, grado=g, academic_area_id=None
+                ).first()
+                if row and row.max_questions > 0:
+                    return int(row.max_questions)
+            row = ExamenPreguntasConfig.query.filter_by(
+                nivel=n, grado="*", academic_area_id=None
+            ).first()
+            if row and row.max_questions > 0:
+                return int(row.max_questions)
+            return 20
+        except Exception as e:
+            print(f"get_max_questions: {e}")
+            return 50 if n == "ACADEMIA" else 20
+
+    def list_examen_preguntas_configs(self) -> List[Dict[str, Any]]:
+        try:
+            rows = (
+                ExamenPreguntasConfig.query.order_by(
+                    ExamenPreguntasConfig.nivel,
+                    ExamenPreguntasConfig.grado,
+                    ExamenPreguntasConfig.academic_area_id,
+                )
+                .all()
+            )
+            return [r.to_dict() for r in rows]
+        except Exception as e:
+            print(f"list_examen_preguntas_configs: {e}")
+            return []
+
+    def replace_examen_preguntas_configs(self, rows: List[Dict[str, Any]]) -> Optional[str]:
+        """Sustituye toda la tabla de cupos. Validado en aplicación (sin traslapes de clave lógica)."""
+        if not rows:
+            return "Debe quedar al menos una regla o use los valores por defecto."
+        parsed: List[Tuple[str, str, Optional[int], int]] = []
+        seen: set = set()
+        for r in rows:
+            n = (r.get("nivel") or "").strip().upper()
+            if n not in ("INICIAL", "PRIMARIA", "SECUNDARIA", "ACADEMIA"):
+                return f"Nivel no válido: {n}."
+            g = (r.get("grado") or "*").strip() or "*"
+            try:
+                mx = int(r["max_questions"])
+            except (KeyError, TypeError, ValueError):
+                return "Cada fila requiere un máximo de preguntas (entero)."
+            if mx < 1 or mx > 200:
+                return "El máximo de preguntas debe estar entre 1 y 200."
+            area_raw = r.get("academic_area_id")
+            area: Optional[int] = None
+            if area_raw not in (None, "", "None", "0", 0):
+                try:
+                    area = int(area_raw)
+                except (TypeError, ValueError):
+                    return "Área académica no válida."
+            if n != "ACADEMIA" and area is not None:
+                return "Solo el nivel ACADEMIA utiliza 'Área' en esta tabla."
+            if n == "ACADEMIA" and g != "*":
+                return "En ACADEMIA el grado debe ser '*' (el cupo aplica al área)."
+            k = (n, g, area)
+            if k in seen:
+                return f"Fila duplicada: {n} / grado {g} / área {area}."
+            seen.add(k)
+            parsed.append((n, g, area, mx))
+        try:
+            ExamenPreguntasConfig.query.delete(synchronize_session=False)
+            for n, g, area, mx in parsed:
+                db.session.add(
+                    ExamenPreguntasConfig(
+                        nivel=n, grado=g, academic_area_id=area, max_questions=mx
+                    )
+                )
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return f"Error al guardar: {e}"
+        return None
+
     def get_area_id_for_nivel(self, quiz_class: Optional[str], nivel: str) -> Optional[int]:
         """Retorna academic_area_id para ACADEMIA, None para niveles escolares."""
         if nivel == 'ACADEMIA':
@@ -211,3 +357,151 @@ class AcademicService:
         except Exception as e:
             print(f"Error al obtener área académica por ID {area_id}: {e}")
             return None
+
+    def list_question_weights_for_area(self, area_id: int) -> List[Dict[str, Any]]:
+        """Filas de ponderación ACADEMIA para un área (para edición manual)."""
+        wmap = self.get_weights_by_area(area_id)
+        out: List[Dict[str, Any]] = []
+        for (q_start, q_end), (subject, level, weight) in sorted(
+            wmap.items(), key=lambda x: (x[0][0], x[0][1])
+        ):
+            out.append(
+                {
+                    "question_start": q_start,
+                    "question_end": q_end,
+                    "subject": subject,
+                    "level": level,
+                    "weight": weight,
+                }
+            )
+        return out
+
+    def list_question_weights_for_nivel_grado(self, nivel: str, grado: str) -> List[Dict[str, Any]]:
+        wmap = self.get_weights_by_nivel_grado(nivel, grado)
+        out: List[Dict[str, Any]] = []
+        for (q_start, q_end), (subject, level, weight) in sorted(
+            wmap.items(), key=lambda x: (x[0][0], x[0][1])
+        ):
+            out.append(
+                {
+                    "question_start": q_start,
+                    "question_end": q_end,
+                    "subject": subject,
+                    "level": level,
+                    "weight": weight,
+                }
+            )
+        return out
+
+    @staticmethod
+    def _validate_weight_rows(
+        rows: List[Dict[str, Any]], max_q: int
+    ) -> Optional[str]:
+        """Valida rangos 1..max_q, sin traslapes, peso > 0. None si ok."""
+        cap = min(max(int(max_q or 50), 1), 200)
+        parsed: List[Tuple[int, int, str, str, float]] = []
+        for r in rows:
+            try:
+                a = int(r["question_start"])
+                b = int(r["question_end"])
+            except (KeyError, TypeError, ValueError):
+                return "Cada rango requiere números enteros de pregunta inicio y fin."
+            if a < 1 or b < 1 or a > cap or b > cap or a > b:
+                return f"Rango de preguntas inválido: {a}–{b} (límite 1–{cap} según cupo, inicio ≤ fin)."
+            subj = (r.get("subject") or "").strip()
+            lev = (r.get("level") or "").strip()
+            if not subj or not lev:
+                return "Asignatura y nivel (curso) no pueden estar vacíos en cada fila con datos."
+            try:
+                wv = float(r["weight"])
+            except (KeyError, TypeError, ValueError):
+                return "Cada fila requiere un peso numérico válido."
+            if wv <= 0:
+                return "El peso debe ser mayor que cero."
+            parsed.append((a, b, subj, lev, wv))
+        parsed.sort(key=lambda x: x[0])
+        for i in range(1, len(parsed)):
+            if parsed[i][0] <= parsed[i - 1][1]:
+                return (
+                    f"Los rangos de preguntas no deben superponerse: "
+                    f"{parsed[i-1][0]}-{parsed[i-1][1]} y {parsed[i][0]}-{parsed[i][1]}"
+                )
+        return None
+
+    def replace_weights_for_academic_area(self, area_id: int, rows: List[Dict[str, Any]]) -> Optional[str]:
+        """
+        Sustituye todas las ponderaciones de ACADEMIA para un área.
+        Lista vacía elimina todas las ponderaciones del área (ACADEMIA).
+        Retorna mensaje de error o None si ok.
+        """
+        if not db.session.get(AcademicArea, area_id):
+            return "El área académica no existe."
+        if rows:
+            max_q = self.get_max_questions("ACADEMIA", None, area_id)
+            err = self._validate_weight_rows(rows, max_q)
+            if err:
+                return err
+        try:
+            (
+                QuestionWeight.query.filter(
+                    QuestionWeight.academic_area_id == area_id,
+                    or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
+                    or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
+                ).delete(synchronize_session=False)
+            )
+            for r in rows:
+                db.session.add(
+                    QuestionWeight(
+                        academic_area_id=area_id,
+                        question_start=int(r["question_start"]),
+                        question_end=int(r["question_end"]),
+                        subject=(r.get("subject") or "").strip(),
+                        level=(r.get("level") or "").strip(),
+                        weight=float(r["weight"]),
+                        nivel="ACADEMIA",
+                        grado=None,
+                    )
+                )
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return f"Error al guardar: {e}"
+        return None
+
+    def replace_weights_for_nivel_grado(
+        self, nivel: str, grado: str, rows: List[Dict[str, Any]]
+    ) -> Optional[str]:
+        if nivel not in ("INICIAL", "PRIMARIA", "SECUNDARIA"):
+            return "Nivel escolar no válido."
+        gr = (grado or "").strip()
+        if not gr:
+            return "Debe indicar el grado."
+        if rows:
+            max_q = self.get_max_questions(nivel, gr, None)
+            err = self._validate_weight_rows(rows, max_q)
+            if err:
+                return err
+        try:
+            (
+                QuestionWeight.query.filter(
+                    QuestionWeight.nivel == nivel, QuestionWeight.grado == gr
+                ).delete(synchronize_session=False)
+            )
+            for r in rows:
+                db.session.add(
+                    QuestionWeight(
+                        academic_area_id=None,
+                        question_start=int(r["question_start"]),
+                        question_end=int(r["question_end"]),
+                        subject=(r.get("subject") or "").strip(),
+                        level=(r.get("level") or "").strip(),
+                        weight=float(r["weight"]),
+                        nivel=nivel,
+                        grado=gr,
+                    )
+                )
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return f"Error al guardar: {e}"
+        return None

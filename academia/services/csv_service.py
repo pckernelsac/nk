@@ -96,15 +96,16 @@ class CSVService:
             points = []
             marks = []
 
-            # 50 preguntas para ACADEMIA, 20 para niveles escolares
-            max_questions = 50 if nivel == 'ACADEMIA' else 20
+            academic_area_id = self.academic_service.get_area_id_for_nivel(quiz_class, nivel)
+            grado_csv = (quiz_class or "").strip() if nivel != "ACADEMIA" else None
+            max_questions = self.academic_service.get_max_questions(
+                nivel, grado_csv, academic_area_id if nivel == "ACADEMIA" else None
+            )
             for i in range(1, max_questions + 1):
                 responses.append(str(row.get(f'Stu{i}', '')))
                 pri_keys.append(str(row.get(f'PriKey{i}', '')))
                 points.append(str(row.get(f'Points{i}', '0'))) # Guardar como string
                 marks.append(str(row.get(f'Mark{i}', '')))
-
-            academic_area_id = self.academic_service.get_area_id_for_nivel(quiz_class, nivel)
 
             # Buscar estudiante del sistema principal por DNI para vincular y resolver nombres
             estudiante_id = None

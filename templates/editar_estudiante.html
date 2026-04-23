@@ -18,6 +18,16 @@
 </style>
 {% endblock %}
 
+{# Convierte fechas guardadas como AAAA-MM-DD al mostrar en DD/MM/AAAA #}
+{% macro fmt_fecha(v) -%}
+{%- if not v -%}
+{%- elif v|length == 10 and v[4:5] == '-' -%}
+{{ v[8:10] }}/{{ v[5:7] }}/{{ v[0:4] }}
+{%- else -%}
+{{ v }}
+{%- endif -%}
+{%- endmacro %}
+
 {% block content %}
 <div class="container-fluid py-6">
     <!-- Header con Botón Volver -->
@@ -145,7 +155,9 @@
                         <!-- Fecha Nacimiento -->
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
-                            <input type="date" name="fecha_nacimiento_est" value="{{ estudiante.fecha_nacimiento_est or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                            <input type="text" name="fecha_nacimiento_est" inputmode="numeric" placeholder="DD/MM/AAAA" maxlength="10" title="Formato: DD/MM/AAAA" value="{{ fmt_fecha(estudiante.fecha_nacimiento_est) }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all fecha-nac-text">
+                            <p class="text-xs text-gray-500 mt-1">Puede escribir la fecha con el teclado (d&iacute;a/mes/a&ntilde;o).</p>
                         </div>
 
                         <!-- Foto del Estudiante -->
@@ -316,7 +328,8 @@
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
-                            <input type="date" name="fecha_nacimiento_padre" value="{{ estudiante.fecha_nacimiento_padre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                            <input type="text" name="fecha_nacimiento_padre" inputmode="numeric" placeholder="DD/MM/AAAA" maxlength="10" title="Formato: DD/MM/AAAA" value="{{ fmt_fecha(estudiante.fecha_nacimiento_padre) }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all fecha-nac-text">
                         </div>
                         <div class="md:col-span-3">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
@@ -418,7 +431,8 @@
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
-                            <input type="date" name="fecha_nacimiento_madre" value="{{ estudiante.fecha_nacimiento_madre or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                            <input type="text" name="fecha_nacimiento_madre" inputmode="numeric" placeholder="DD/MM/AAAA" maxlength="10" title="Formato: DD/MM/AAAA" value="{{ fmt_fecha(estudiante.fecha_nacimiento_madre) }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all fecha-nac-text">
                         </div>
                         <div class="md:col-span-3">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
@@ -560,7 +574,8 @@
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
-                            <input type="date" name="fecha_nacimiento_apoderado" value="{{ estudiante.fecha_nacimiento_apoderado or '' }}" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all">
+                            <input type="text" name="fecha_nacimiento_apoderado" inputmode="numeric" placeholder="DD/MM/AAAA" maxlength="10" title="Formato: DD/MM/AAAA" value="{{ fmt_fecha(estudiante.fecha_nacimiento_apoderado) }}"
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-primary focus:ring focus:ring-purple-200 transition-all fecha-nac-text">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Dirección</label>
@@ -664,6 +679,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/fecha_nacimiento_pe.js') }}"></script>
 <script>
 // Pre-seleccionar nivel y grado
 window.addEventListener('DOMContentLoaded', function() {
@@ -836,24 +852,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Validación de fecha de nacimiento
-    const fechaNacimientoInputs = form.querySelectorAll('input[type="date"]');
-    fechaNacimientoInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            const fechaIngresada = new Date(this.value);
-            const fechaActual = new Date();
-            const edadMinima = new Date(fechaActual.getFullYear() - 100, fechaActual.getMonth(), fechaActual.getDate());
-            const edadMaxima = new Date(fechaActual.getFullYear() - 1, fechaActual.getMonth(), fechaActual.getDate());
-
-            if (fechaIngresada > edadMaxima || fechaIngresada < edadMinima) {
-                this.setCustomValidity('Fecha de nacimiento inválida');
-                this.reportValidity();
-            } else {
-                this.setCustomValidity('');
-            }
-        });
-    });
-
     // Validación general del formulario
     form.addEventListener('submit', function(event) {
         event.preventDefault();
@@ -885,7 +883,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (camposFaltantes.length > 0) {
             mostrarModalCamposFaltantes(camposFaltantes);
         } else {
-            // Todos los campos están completos, enviar formulario
+            if (typeof normalizarFechasNacimientoEnFormulario === 'function' && !normalizarFechasNacimientoEnFormulario(form)) {
+                return;
+            }
             form.submit();
         }
     });
