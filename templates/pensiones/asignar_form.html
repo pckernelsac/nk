@@ -168,25 +168,41 @@
                                 </p>
                             </div>
 
-                            <!-- ACADEMIA: monto total del paquete -->
+                            <!-- ACADEMIA: monto total del paquete + selector de cuotas -->
                             <div id="campo-monto-academia" class="{% if not pension or pension.tipo != 'academia' %}hidden{% endif %}">
                                 <label class="block text-sm font-bold text-gray-700 mb-3">
                                     <i class="fas fa-coins text-blue-600 mr-2"></i>
                                     Monto Total del Paquete (S/) <span class="text-red-500">*</span>
                                 </label>
-                                <div class="relative">
-                                    <span class="absolute left-5 top-5 text-gray-500 font-bold text-xl">S/</span>
-                                    <input type="number" name="monto_total_academia" id="input-monto-total-academia"
-                                           step="0.01" min="0.01"
-                                           {% if pension and pension.tipo == 'academia' %}required{% endif %}
-                                           value="{% if pension and pension.tipo == 'academia' and meses_academia_actuales %}{{ '%.2f' % (pension.monto_mensual|float * (meses_academia_actuales|length)) }}{% endif %}"
-                                           class="w-full pl-16 pr-6 py-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all font-bold text-2xl"
-                                           placeholder="1200.00"
-                                           oninput="actualizarEjemplo()">
+                                <div class="flex gap-3 items-stretch">
+                                    <div class="relative flex-1">
+                                        <span class="absolute left-5 top-5 text-gray-500 font-bold text-xl">S/</span>
+                                        <input type="number" name="monto_total_academia" id="input-monto-total-academia"
+                                               step="0.01" min="0.01"
+                                               {% if pension and pension.tipo == 'academia' %}required{% endif %}
+                                               value="{% if pension and pension.tipo == 'academia' and meses_academia_actuales %}{{ '%.2f' % (pension.monto_mensual|float * (meses_academia_actuales|length)) }}{% endif %}"
+                                               class="w-full pl-16 pr-6 py-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all font-bold text-2xl"
+                                               placeholder="1200.00"
+                                               oninput="actualizarEjemplo()">
+                                    </div>
+                                    <div class="w-40 flex-shrink-0">
+                                        <label class="block text-[11px] font-bold text-gray-600 mb-1 text-center">
+                                            <i class="fas fa-divide text-purple-600 mr-1"></i>Dividir en
+                                        </label>
+                                        <select id="input-num-cuotas-academia" onchange="actualizarEjemplo()"
+                                                class="w-full px-2 py-3 border-2 border-purple-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all font-bold text-lg text-center bg-purple-50">
+                                            <option value="1">1 cuota</option>
+                                        </select>
+                                        <p class="text-[10px] text-gray-500 mt-1 text-center">
+                                            Máx.: <span id="max-cuotas-hint" class="font-bold">0</span> meses
+                                        </p>
+                                    </div>
                                 </div>
                                 <p class="text-xs text-gray-500 mt-2">
                                     <i class="fas fa-info-circle text-blue-500 mr-1"></i>
-                                    Total del ciclo. Se dividirá entre los meses seleccionados:
+                                    Por cuota (<span id="academia-num-cuotas-echo" class="font-bold">1</span>):
+                                    <span id="academia-por-cuota-calc" class="font-bold text-purple-700">S/ 0.00</span>
+                                    &nbsp;·&nbsp; Prorrateo mensual (<span id="academia-num-meses-echo" class="font-bold">0</span>):
                                     <span id="academia-mensual-calc" class="font-bold text-blue-700">S/ 0.00</span>/mes
                                 </p>
                             </div>
@@ -588,6 +604,30 @@ function onTipoChange() {
     actualizarEjemplo();
 }
 
+function sincronizarSelectorCuotas(numMeses) {
+    const sel = document.getElementById('input-num-cuotas-academia');
+    if (!sel) return 1;
+    const maxCuotas = Math.max(1, numMeses);
+    const previo = parseInt(sel.value) || 1;
+
+    if (sel.options.length !== maxCuotas) {
+        sel.innerHTML = '';
+        for (let i = 1; i <= maxCuotas; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = i === 1 ? '1 cuota' : `${i} cuotas`;
+            sel.appendChild(opt);
+        }
+    }
+    const nuevo = Math.min(previo, maxCuotas);
+    sel.value = String(nuevo || 1);
+
+    const hint = document.getElementById('max-cuotas-hint');
+    if (hint) hint.textContent = numMeses;
+    sel.disabled = numMeses === 0;
+    return parseInt(sel.value) || 1;
+}
+
 function actualizarEjemplo() {
     const esAcademia = document.getElementById('tipo-academia').checked;
     let monto, numMeses;
@@ -601,10 +641,22 @@ function actualizarEjemplo() {
         const total = parseFloat(document.getElementById('input-monto-total-academia').value) || 0;
         monto = numMeses > 0 ? (total / numMeses) : 0;
 
+        const numCuotas = sincronizarSelectorCuotas(numMeses);
+        const porCuota = numCuotas > 0 ? (total / numCuotas) : 0;
+
         const calcEl = document.getElementById('academia-mensual-calc');
         if (calcEl) calcEl.textContent = `S/ ${monto.toFixed(2)}`;
+        const porCuotaEl = document.getElementById('academia-por-cuota-calc');
+        if (porCuotaEl) porCuotaEl.textContent = `S/ ${porCuota.toFixed(2)}`;
+        const echoCuotas = document.getElementById('academia-num-cuotas-echo');
+        if (echoCuotas) echoCuotas.textContent = numCuotas;
+        const echoMeses = document.getElementById('academia-num-meses-echo');
+        if (echoMeses) echoMeses.textContent = numMeses;
 
-        document.getElementById('ejemplo-mensual').textContent = `S/ ${monto.toFixed(2)}`;
+        document.getElementById('ejemplo-mensual').textContent = `S/ ${porCuota.toFixed(2)}`;
+        document.getElementById('ejemplo-meses').textContent = numMeses > 0
+            ? `${numCuotas} cuota(s) · ${numMeses} mes(es)`
+            : '—';
         document.getElementById('ejemplo-total').textContent = numMeses > 0
             ? `S/ ${total.toFixed(2)}`
             : '—';
