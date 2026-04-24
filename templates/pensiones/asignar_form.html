@@ -174,8 +174,8 @@
                                     <i class="fas fa-coins text-blue-600 mr-2"></i>
                                     Monto Total del Paquete (S/) <span class="text-red-500">*</span>
                                 </label>
-                                <div class="flex flex-wrap gap-3 items-stretch">
-                                    <div class="relative flex-1 min-w-[200px]">
+                                <div class="flex gap-3 items-stretch">
+                                    <div class="relative flex-1">
                                         <span class="absolute left-5 top-5 text-gray-500 font-bold text-xl">S/</span>
                                         <input type="number" name="monto_total_academia" id="input-monto-total-academia"
                                                step="0.01" min="0.01"
@@ -183,38 +183,34 @@
                                                value="{% if pension and pension.tipo == 'academia' and meses_academia_actuales %}{{ '%.2f' % (pension.monto_mensual|float * (meses_academia_actuales|length)) }}{% endif %}"
                                                class="w-full pl-16 pr-6 py-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all font-bold text-2xl"
                                                placeholder="1200.00"
-                                               oninput="onChangeCuotasInput('total')">
+                                               oninput="actualizarEjemplo()">
                                     </div>
-                                    <div class="w-32 flex-shrink-0">
-                                        <label class="block text-[11px] font-bold text-gray-600 mb-1 text-center">
-                                            <i class="fas fa-divide text-purple-600 mr-1"></i>N° Cuotas
-                                        </label>
-                                        <input type="number" id="input-num-cuotas-academia"
-                                               min="1" step="1" value="1"
-                                               oninput="onChangeCuotasInput('n')"
-                                               class="w-full px-2 py-3 border-2 border-purple-300 rounded-xl focus:border-purple-500 focus:ring focus:ring-purple-200 transition-all font-bold text-xl text-center bg-purple-50">
-                                        <p class="text-[10px] text-gray-500 mt-1 text-center">Manual</p>
-                                    </div>
-                                    <div class="w-40 flex-shrink-0">
-                                        <label class="block text-[11px] font-bold text-gray-600 mb-1 text-center">
-                                            <i class="fas fa-money-bill text-green-600 mr-1"></i>Monto / Cuota
-                                        </label>
-                                        <div class="relative">
-                                            <span class="absolute left-3 top-3 text-gray-500 font-bold text-sm">S/</span>
-                                            <input type="number" id="input-monto-cuota-academia"
-                                                   step="0.01" min="0"
-                                                   oninput="onChangeCuotasInput('cuota')"
-                                                   class="w-full pl-9 pr-2 py-3 border-2 border-green-300 rounded-xl focus:border-green-500 focus:ring focus:ring-green-200 transition-all font-bold text-xl text-center bg-green-50"
-                                                   placeholder="0.00">
-                                        </div>
-                                        <p class="text-[10px] text-gray-500 mt-1 text-center">Editable</p>
-                                    </div>
+                                    <button type="button" onclick="agregarCuotaAcademia()"
+                                            title="Agregar cuota"
+                                            class="flex-shrink-0 px-5 py-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg transform hover:scale-105 transition-all flex items-center gap-2">
+                                        <i class="fas fa-plus-circle text-xl"></i>
+                                        <span class="hidden sm:inline">Agregar cuota</span>
+                                    </button>
                                 </div>
+
+                                <!-- Lista dinamica de cuotas -->
+                                <div id="lista-cuotas-academia" class="mt-4 space-y-2 hidden">
+                                    <div class="flex items-center justify-between bg-purple-50 border-2 border-purple-200 rounded-xl px-4 py-2">
+                                        <span class="text-xs font-bold text-purple-700">
+                                            <i class="fas fa-list-ol mr-1"></i>Cuotas agregadas:
+                                            <span id="cuotas-count-echo">0</span>
+                                        </span>
+                                        <span class="text-xs font-bold text-purple-700">
+                                            Suma: <span id="cuotas-suma-echo" class="text-purple-900">S/ 0.00</span>
+                                            <span id="cuotas-diff-echo" class="ml-2"></span>
+                                        </span>
+                                    </div>
+                                    <div id="cuotas-rows-academia" class="space-y-2"></div>
+                                </div>
+
                                 <p class="text-xs text-gray-500 mt-2">
                                     <i class="fas fa-info-circle text-blue-500 mr-1"></i>
-                                    <span id="academia-num-cuotas-echo" class="font-bold">1</span> cuota(s) de
-                                    <span id="academia-por-cuota-calc" class="font-bold text-purple-700">S/ 0.00</span>
-                                    &nbsp;·&nbsp; Prorrateo mensual (<span id="academia-num-meses-echo" class="font-bold">0</span>):
+                                    Total del ciclo. Prorrateo mensual (<span id="academia-num-meses-echo" class="font-bold">0</span> meses):
                                     <span id="academia-mensual-calc" class="font-bold text-blue-700">S/ 0.00</span>/mes
                                 </p>
                             </div>
@@ -616,29 +612,78 @@ function onTipoChange() {
     actualizarEjemplo();
 }
 
-// Actualiza los 3 campos (total, n° cuotas, monto/cuota) al editar uno de ellos
-function onChangeCuotasInput(origen) {
-    const inpTotal = document.getElementById('input-monto-total-academia');
-    const inpN = document.getElementById('input-num-cuotas-academia');
-    const inpCuota = document.getElementById('input-monto-cuota-academia');
-    if (!inpTotal || !inpN || !inpCuota) return;
+// ===== CUOTAS DINAMICAS (academia) =====
+function agregarCuotaAcademia() {
+    const cont = document.getElementById('cuotas-rows-academia');
+    const lista = document.getElementById('lista-cuotas-academia');
+    if (!cont || !lista) return;
 
-    let total = parseFloat(inpTotal.value) || 0;
-    let n = parseInt(inpN.value) || 0;
-    let cuota = parseFloat(inpCuota.value) || 0;
+    lista.classList.remove('hidden');
 
-    if (origen === 'cuota' && n > 0 && cuota > 0) {
-        total = +(cuota * n).toFixed(2);
-        inpTotal.value = total.toFixed(2);
-    } else if (origen === 'n' && n > 0 && total > 0) {
-        cuota = +(total / n).toFixed(2);
-        inpCuota.value = cuota.toFixed(2);
-    } else if (origen === 'total' && n > 0 && total > 0) {
-        cuota = +(total / n).toFixed(2);
-        inpCuota.value = cuota.toFixed(2);
-    } else if (origen === 'init' && n > 0 && total > 0) {
-        cuota = +(total / n).toFixed(2);
-        inpCuota.value = cuota.toFixed(2);
+    const numero = cont.children.length + 1;
+    const total = parseFloat(document.getElementById('input-monto-total-academia').value) || 0;
+    const sugerido = (total > 0 && numero > 0) ? (total / numero).toFixed(2) : '';
+
+    const row = document.createElement('div');
+    row.className = 'flex gap-2 items-center bg-white border-2 border-purple-100 rounded-xl p-2';
+    row.innerHTML = `
+        <span class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-100 text-purple-700 font-bold flex items-center justify-center cuota-num">${numero}</span>
+        <div class="flex-1 relative">
+            <span class="absolute left-3 top-3 text-gray-500 font-bold">S/</span>
+            <input type="number" step="0.01" min="0.01"
+                   placeholder="Monto de la cuota"
+                   value="${sugerido}"
+                   oninput="actualizarResumenCuotasAcademia()"
+                   class="cuota-monto-academia w-full pl-10 pr-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring focus:ring-purple-200 font-bold text-lg">
+        </div>
+        <button type="button" onclick="this.closest('div').parentElement.remove(); renumerarCuotasAcademia(); actualizarResumenCuotasAcademia();"
+                title="Quitar cuota"
+                class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-all">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    cont.appendChild(row);
+    actualizarResumenCuotasAcademia();
+}
+
+function renumerarCuotasAcademia() {
+    const cont = document.getElementById('cuotas-rows-academia');
+    if (!cont) return;
+    Array.from(cont.children).forEach((row, idx) => {
+        const span = row.querySelector('.cuota-num');
+        if (span) span.textContent = idx + 1;
+    });
+    const lista = document.getElementById('lista-cuotas-academia');
+    if (lista && cont.children.length === 0) lista.classList.add('hidden');
+}
+
+function actualizarResumenCuotasAcademia() {
+    const cont = document.getElementById('cuotas-rows-academia');
+    if (!cont) return;
+    let suma = 0;
+    const inputs = cont.querySelectorAll('.cuota-monto-academia');
+    inputs.forEach(inp => { suma += parseFloat(inp.value) || 0; });
+    const count = inputs.length;
+
+    const countEl = document.getElementById('cuotas-count-echo');
+    if (countEl) countEl.textContent = count;
+    const sumaEl = document.getElementById('cuotas-suma-echo');
+    if (sumaEl) sumaEl.textContent = `S/ ${suma.toFixed(2)}`;
+
+    const total = parseFloat(document.getElementById('input-monto-total-academia').value) || 0;
+    const diffEl = document.getElementById('cuotas-diff-echo');
+    if (diffEl) {
+        const diff = Math.round((suma - total) * 100) / 100;
+        if (count === 0 || total === 0) {
+            diffEl.textContent = '';
+        } else if (Math.abs(diff) < 0.01) {
+            diffEl.innerHTML = '<i class="fas fa-check text-green-600"></i> Cuadra';
+            diffEl.className = 'ml-2 text-green-700';
+        } else {
+            const signo = diff > 0 ? '+' : '';
+            diffEl.textContent = `Dif: ${signo}S/ ${diff.toFixed(2)}`;
+            diffEl.className = 'ml-2 text-red-600';
+        }
     }
     actualizarEjemplo();
 }
@@ -655,19 +700,21 @@ function actualizarEjemplo() {
         const total = parseFloat(document.getElementById('input-monto-total-academia').value) || 0;
         monto = numMeses > 0 ? (total / numMeses) : 0;
 
-        const numCuotas = parseInt(document.getElementById('input-num-cuotas-academia').value) || 0;
-        const porCuota = parseFloat(document.getElementById('input-monto-cuota-academia').value) || 0;
+        const cont = document.getElementById('cuotas-rows-academia');
+        const numCuotas = cont ? cont.children.length : 0;
+        let sumaCuotas = 0;
+        if (cont) {
+            cont.querySelectorAll('.cuota-monto-academia').forEach(inp => {
+                sumaCuotas += parseFloat(inp.value) || 0;
+            });
+        }
 
         const calcEl = document.getElementById('academia-mensual-calc');
         if (calcEl) calcEl.textContent = `S/ ${monto.toFixed(2)}`;
-        const porCuotaEl = document.getElementById('academia-por-cuota-calc');
-        if (porCuotaEl) porCuotaEl.textContent = `S/ ${porCuota.toFixed(2)}`;
-        const echoCuotas = document.getElementById('academia-num-cuotas-echo');
-        if (echoCuotas) echoCuotas.textContent = numCuotas;
         const echoMeses = document.getElementById('academia-num-meses-echo');
         if (echoMeses) echoMeses.textContent = numMeses;
 
-        document.getElementById('ejemplo-mensual').textContent = `S/ ${porCuota.toFixed(2)}`;
+        document.getElementById('ejemplo-mensual').textContent = `S/ ${monto.toFixed(2)}`;
         document.getElementById('ejemplo-meses').textContent = (numCuotas > 0 || numMeses > 0)
             ? `${numCuotas} cuota(s) · ${numMeses} mes(es)`
             : '—';
@@ -693,12 +740,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const inputTotal = document.getElementById('input-monto-total-academia');
 
     if (inputMensual) inputMensual.addEventListener('input', actualizarEjemplo);
-    // Inicializa monto/cuota si ya hay total precargado
-    if (inputTotal && inputTotal.value) {
-        onChangeCuotasInput('init');
-    } else {
-        actualizarEjemplo();
-    }
+    if (inputTotal) inputTotal.addEventListener('input', actualizarResumenCuotasAcademia);
+    actualizarEjemplo();
 
     form.addEventListener('submit', function(event) {
         if (!form.checkValidity()) {
