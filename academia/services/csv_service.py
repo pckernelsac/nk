@@ -19,18 +19,46 @@ QUIZ_NAME_NIVEL_MAP: Dict[str, str] = {
 }
 
 
-def detect_nivel_from_quiz_name(quiz_name: str) -> Optional[str]:
-    """Devuelve el nivel del sistema inferido del código en el QuizName.
+def parse_quiz_name(quiz_name: str) -> Dict[str, Any]:
+    """Descompone QuizName en (eta_number, remainder).
 
-    QuizName típico: ``ETA01-PRIM-2026-1`` → ``PRIMARIA``;
-    ``ETA02-PS-2026-1`` → ``ACADEMIA``. Retorna None si no se reconoce el patrón.
+    Patrón nuevo (a partir de 2026): ``ETA<NN>-<AULA_CODIGO>``,
+    donde ``AULA_CODIGO`` puede contener guiones internos (p. ej.
+    ``ETA02-SEMECF17DF5AC-A-M-26``). El remainder es todo lo que va después del
+    primer guion y se compara contra ``aulas.codigo``.
+
+    Patrón legacy (anterior a 2026): ``ETA<NN>-<NIVEL_CODE>-<YEAR>-<CICLO>``,
+    donde ``NIVEL_CODE`` ∈ {INI, PRIM, SEC, PS, INT, …}. Se preserva como
+    fallback cuando el código del aula no coincide.
     """
+    out: Dict[str, Any] = {
+        'eta_number': None,
+        'remainder': '',
+        'legacy_nivel_code': None,
+    }
     if not quiz_name:
-        return None
-    m = re.match(r'^ETA\d+\s*-\s*([A-Z]+)\s*-', str(quiz_name).strip().upper())
+        return out
+    m = re.match(r'^\s*ETA\s*(\d+)\s*-\s*(.+?)\s*$', str(quiz_name).strip().upper())
     if not m:
-        return None
-    return QUIZ_NAME_NIVEL_MAP.get(m.group(1))
+        return out
+    out['eta_number'] = int(m.group(1))
+    out['remainder'] = m.group(2).strip()
+    first = out['remainder'].split('-', 1)[0]
+    if first in QUIZ_NAME_NIVEL_MAP:
+        out['legacy_nivel_code'] = first
+    return out
+
+
+def detect_nivel_from_quiz_name(quiz_name: str) -> Optional[str]:
+    """Compatibilidad: nivel inferido del segmento legacy del QuizName.
+
+    Sólo funciona con el formato antiguo (``ETA01-PRIM-2026-1`` →
+    ``PRIMARIA``). Para el formato nuevo (código de aula), usa
+    ``CSVService.peek_quiz_metadata``.
+    """
+    parsed = parse_quiz_name(quiz_name)
+    code = parsed.get('legacy_nivel_code')
+    return QUIZ_NAME_NIVEL_MAP.get(code) if code else None
 
 
 class CSVService:
@@ -72,18 +100,68 @@ class CSVService:
         return df
 
     def peek_quiz_metadata(self, filepath: str) -> Dict[str, Any]:
-        """Lee la primera fila de datos y devuelve QuizName/QuizClass + nivel inferido."""
+        """Lee la primera fila y resuelve aula/nivel a partir del QuizName.
+
+        Estrategia:
+          1. Intentar match exacto contra ``aulas.codigo`` con el remainder
+             del QuizName (lo que va después de ``ETA<NN>-``).
+          2. Si no hay aula con ese código, caer al mapeo legacy
+             (``PRIM`` → ``PRIMARIA`` y demás).
+
+        Devuelve:
+            quiz_name (str), quiz_class (str), eta_number (int|None),
+            aula_codigo (str): remainder del QuizName,
+            aula_match: dict con la fila de Aula que coincide exactamente,
+                o None si no hubo match,
+            nivel: nivel resuelto (de aula_match o legacy), o None.
+        """
         df = self._read_dataframe(filepath)
         if len(df) == 0:
-            return {'quiz_name': '', 'quiz_class': '', 'nivel': None}
+            return {
+                'quiz_name': '', 'quiz_class': '', 'eta_number': None,
+                'aula_codigo': '', 'aula_match': None, 'nivel': None,
+            }
         row0 = df.iloc[0]
         qn = str(row0.get('QuizName', '') or '').strip()
         qc_raw = row0.get('QuizClass', '')
         qc = '' if qc_raw is None else str(qc_raw).strip()
+        parsed = parse_quiz_name(qn)
+        aula_codigo = parsed.get('remainder') or ''
+
+        aula_match = None
+        nivel = None
+        if aula_codigo:
+            try:
+                from models.aula import Aula
+                aula = (
+                    Aula.query
+                    .filter(Aula.codigo.ilike(aula_codigo), Aula.activo.is_(True))
+                    .first()
+                )
+                if aula is not None:
+                    aula_match = {
+                        'id': aula.id,
+                        'nombre': aula.nombre,
+                        'codigo': aula.codigo,
+                        'nivel': aula.nivel,
+                        'grado': aula.grado,
+                    }
+                    nivel = aula.nivel
+            except Exception as e:
+                print(f"peek_quiz_metadata: error buscando aula por codigo {aula_codigo!r}: {e}")
+
+        if nivel is None:
+            legacy_code = parsed.get('legacy_nivel_code')
+            if legacy_code:
+                nivel = QUIZ_NAME_NIVEL_MAP.get(legacy_code)
+
         return {
             'quiz_name': qn,
             'quiz_class': qc,
-            'nivel': detect_nivel_from_quiz_name(qn),
+            'eta_number': parsed.get('eta_number'),
+            'aula_codigo': aula_codigo,
+            'aula_match': aula_match,
+            'nivel': nivel,
         }
 
     @staticmethod

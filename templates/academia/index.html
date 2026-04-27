@@ -265,11 +265,44 @@
                     }
                     const data = await r.json();
                     const qn = data.quiz_name || '(sin QuizName)';
+                    const eta = data.eta_number;
+                    const aulaCode = data.aula_codigo || '';
+                    const aulaMatch = data.aula_match;
                     const niv = data.nivel_detectado;
                     const aulas = data.aulas_candidatas || [];
+                    const etaLabel = eta != null ? `ETA ${String(eta).padStart(2, '0')}` : 'ETA ?';
+
+                    // Caso 1: match exacto por código de aula → preseleccionar el aula puntual.
+                    if (aulaMatch) {
+                        highlightProgramaSelect([aulaMatch.nombre]);
+                        const select = document.getElementById('programa');
+                        if (select) select.value = aulaMatch.nombre;
+                        setQuizMetaBox(
+                            `<strong>${etaLabel}</strong> &middot; QuizName: <strong>${qn}</strong><br>` +
+                            `Aula identificada por código <code>${aulaMatch.codigo}</code>: ` +
+                            `<strong>${aulaMatch.nombre}</strong> (${aulaMatch.nivel}). Programa preseleccionado.`,
+                            'success'
+                        );
+                        return;
+                    }
+
+                    // Caso 2: no hubo match exacto pero el QuizName trae código → avisar.
+                    if (aulaCode && !niv) {
+                        setQuizMetaBox(
+                            `<strong>${etaLabel}</strong> &middot; QuizName: <strong>${qn}</strong><br>` +
+                            `No existe un aula activa con código <code>${aulaCode}</code>. ` +
+                            `Verifica que el aula esté creada en /aulas o selecciona el programa manualmente.`,
+                            'error'
+                        );
+                        resetProgramaSelect();
+                        return;
+                    }
+
+                    // Caso 3: fallback legacy por nivel (PRIM/SEC/INI/PS…).
                     if (!niv) {
                         setQuizMetaBox(
-                            `QuizName detectado: <strong>${qn}</strong>. No se reconoció el nivel; selecciona el programa manualmente.`,
+                            `QuizName detectado: <strong>${qn}</strong>. No se reconoció el código del aula; ` +
+                            `selecciona el programa manualmente.`,
                             'warning'
                         );
                         resetProgramaSelect();
@@ -277,8 +310,9 @@
                     }
                     if (aulas.length === 0) {
                         setQuizMetaBox(
-                            `QuizName: <strong>${qn}</strong> &middot; Nivel detectado: <strong>${niv}</strong>. ` +
-                            `No hay programas activos del nivel ${niv} en el sistema. Crea uno antes de continuar.`,
+                            `<strong>${etaLabel}</strong> &middot; QuizName: <strong>${qn}</strong> &middot; ` +
+                            `Nivel detectado: <strong>${niv}</strong>. ` +
+                            `No hay programas activos del nivel ${niv}. Crea uno antes de continuar.`,
                             'error'
                         );
                         resetProgramaSelect();
@@ -288,14 +322,16 @@
                     highlightProgramaSelect(nombres);
                     if (aulas.length === 1) {
                         setQuizMetaBox(
-                            `QuizName: <strong>${qn}</strong> &middot; Nivel: <strong>${niv}</strong>. ` +
-                            `Programa preseleccionado automáticamente: <strong>${aulas[0].nombre}</strong>.`,
+                            `<strong>${etaLabel}</strong> &middot; QuizName: <strong>${qn}</strong> &middot; ` +
+                            `Nivel: <strong>${niv}</strong>. ` +
+                            `Programa preseleccionado: <strong>${aulas[0].nombre}</strong>.`,
                             'success'
                         );
                     } else {
                         setQuizMetaBox(
-                            `QuizName: <strong>${qn}</strong> &middot; Nivel: <strong>${niv}</strong>. ` +
-                            `Hay ${aulas.length} programas posibles del nivel ${niv}; elige el correcto en el menú.`,
+                            `<strong>${etaLabel}</strong> &middot; QuizName: <strong>${qn}</strong> &middot; ` +
+                            `Nivel: <strong>${niv}</strong>. ` +
+                            `Hay ${aulas.length} programas posibles del nivel ${niv}; elige el correcto.`,
                             'info'
                         );
                     }

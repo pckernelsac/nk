@@ -83,7 +83,10 @@ def init_routes(csv_service, academic_service):
 
         aulas_candidatas: list = []
         nivel = meta.get("nivel")
-        if nivel:
+        aula_match = meta.get("aula_match")
+        # Si no hay match exacto por código de aula, devolvemos las aulas del
+        # nivel detectado para fallback (modo legacy).
+        if not aula_match and nivel:
             try:
                 rows = (
                     Aula.query.filter_by(nivel=nivel, activo=True)
@@ -94,6 +97,7 @@ def init_routes(csv_service, academic_service):
                     {
                         "id": a.id,
                         "nombre": a.nombre,
+                        "codigo": a.codigo,
                         "grado": a.grado,
                         "nivel": a.nivel,
                     }
@@ -106,6 +110,9 @@ def init_routes(csv_service, academic_service):
             {
                 "quiz_name": meta.get("quiz_name") or "",
                 "quiz_class": meta.get("quiz_class") or "",
+                "eta_number": meta.get("eta_number"),
+                "aula_codigo": meta.get("aula_codigo") or "",
+                "aula_match": aula_match,
                 "nivel_detectado": nivel,
                 "aulas_candidatas": aulas_candidatas,
             }
@@ -146,22 +153,37 @@ def init_routes(csv_service, academic_service):
 
             try:
                 meta = csv_service.peek_quiz_metadata(filepath)
-                nivel_detectado = meta.get("nivel")
             except ValueError:
-                nivel_detectado = None
-            if nivel_detectado and programa and nivel_detectado != nivel:
+                meta = {}
+            nivel_detectado = (meta or {}).get("nivel")
+            aula_match = (meta or {}).get("aula_match")
+
+            mismatch_msg = None
+            if aula_match and programa:
+                # Si el archivo identifica un aula concreta por código, exigimos
+                # que el programa elegido sea exactamente esa aula.
+                if programa != aula_match.get("nombre"):
+                    mismatch_msg = (
+                        f"El QuizName del archivo identifica el aula "
+                        f"'{aula_match.get('nombre')}' (código "
+                        f"{aula_match.get('codigo')}), pero seleccionaste "
+                        f"'{programa}'. Use el aula que coincide con el código del "
+                        f"archivo."
+                    )
+            elif nivel_detectado and programa and nivel_detectado != nivel:
+                mismatch_msg = (
+                    f"El QuizName del archivo indica nivel {nivel_detectado}, pero el "
+                    f"programa seleccionado ('{programa}') es de nivel {nivel}. "
+                    f"Seleccione un programa de {nivel_detectado} o suba un archivo "
+                    f"que coincida."
+                )
+
+            if mismatch_msg:
                 try:
                     os.remove(filepath)
                 except OSError:
                     pass
-                add_flash(
-                    request,
-                    f"El QuizName del archivo indica nivel {nivel_detectado}, pero el "
-                    f"programa seleccionado ('{programa}') es de nivel {nivel}. "
-                    f"Seleccione un programa de {nivel_detectado} o suba un archivo "
-                    f"que coincida.",
-                    "error",
-                )
+                add_flash(request, mismatch_msg, "error")
                 return RedirectResponse(
                     url=str(request.url_for("academia_main.index")), status_code=303
                 )
