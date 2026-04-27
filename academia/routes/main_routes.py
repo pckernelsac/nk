@@ -50,8 +50,8 @@ def init_routes(csv_service, academic_service):
             return RedirectResponse(url=str(request.url_for("academia_main.index")), status_code=303)
 
         filename = secure_filename(up.filename)
-        if not filename.endswith(".csv"):
-            add_flash(request, "Formato de archivo inválido. Por favor, suba un archivo CSV.", "error")
+        if not filename.lower().endswith((".csv", ".xlsx")):
+            add_flash(request, "Formato de archivo inválido. Por favor, suba un archivo CSV o XLSX.", "error")
             return RedirectResponse(url=str(request.url_for("academia_main.index")), status_code=303)
 
         filepath = os.path.join(csv_service.upload_folder, filename)

@@ -28,31 +28,25 @@ class CSVService:
 
     def process_csv_file(self, filepath: str, programa: str = '', nivel: str = 'ACADEMIA') -> int:
         """
-        Procesa un archivo CSV y guarda sus datos.
+        Procesa un archivo CSV o XLSX (mismo esquema de columnas) y guarda sus datos.
 
         Args:
-            filepath (str): Ruta al archivo CSV
+            filepath (str): Ruta al archivo CSV o XLSX
 
         Returns:
             int: Número de registros procesados
         """
+        dtype_options = {'StudentID': str, 'CustomID': str}
+        ext = os.path.splitext(filepath)[1].lower()
         try:
-            # --- MODIFICACIÓN CLAVE ---
-            # Especificar explícitamente el tipo de dato como string para columnas ID
-            dtype_options = {'StudentID': str, 'CustomID': str} 
-            # Lee el CSV forzando los tipos y tratando celdas vacías como strings vacíos
-            df = pd.read_csv(filepath, dtype=dtype_options, na_filter=False)
-            # --- FIN MODIFICACIÓN ---
-
-            # Opcional: Si aún quieres manejar posibles NaN que no sean string vacío:
-            # df['StudentID'] = df['StudentID'].fillna('').astype(str)
-            # df['CustomID'] = df['CustomID'].fillna('').astype(str)
-
+            if ext == '.xlsx':
+                df = pd.read_excel(filepath, dtype=dtype_options, engine='openpyxl')
+                df = df.where(df.notna(), '')
+            else:
+                df = pd.read_csv(filepath, dtype=dtype_options, na_filter=False)
         except Exception as e:
-            # Manejar error de lectura de CSV de forma más robusta
-            print(f"Error leyendo el archivo CSV en {filepath}: {e}")
-            # Puedes relanzar un error más específico o devolver 0/None
-            raise ValueError(f"No se pudo leer o procesar el archivo CSV: {e}") from e
+            print(f"Error leyendo el archivo en {filepath}: {e}")
+            raise ValueError(f"No se pudo leer o procesar el archivo: {e}") from e
 
         count = 0
 

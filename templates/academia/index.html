@@ -84,16 +84,16 @@
                                 </optgroup>
                                 {% endfor %}
                             </select>
-                            <p class="mt-1 text-xs text-gray-500">Selecciona el programa al que pertenecen los resultados del CSV. El nivel determina cómo se interpreta el QuizClass.</p>
+                            <p class="mt-1 text-xs text-gray-500">Selecciona el programa al que pertenecen los resultados (CSV o XLSX). El nivel determina cómo se interpreta el QuizClass.</p>
                         </div>
 
                         <div class="drop-area flex flex-col items-center justify-center p-12 bg-white shadow-inner hover:shadow-lg" id="drop-area">
                             <svg class="w-14 h-14 mb-4" style="color: #5F2A5D;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3-3m0 0l3 3m-3-3v12"></path>
                             </svg>
-                            <p class="mb-2 text-base text-gray-700"><span class="font-semibold">Haz clic para seleccionar</span> o arrastra y suelta tu archivo CSV</p>
-                            <p class="text-xs text-gray-500">Solo archivos CSV</p>
-                            <input id="file-upload" name="file" type="file" accept=".csv" class="hidden" />
+                            <p class="mb-2 text-base text-gray-700"><span class="font-semibold">Haz clic para seleccionar</span> o arrastra y suelta tu archivo CSV o XLSX</p>
+                            <p class="text-xs text-gray-500">Archivos CSV o XLSX</p>
+                            <input id="file-upload" name="file" type="file" accept=".csv,.xlsx" class="hidden" />
                         </div>
 
                         <div class="flex items-center justify-between p-5 bg-gray-50 rounded-lg shadow-md" id="file-info" style="display: none;">
@@ -208,13 +208,14 @@
             function handleFileSelect() {
                 if (fileUpload.files.length) {
                     const file = fileUpload.files[0];
-                    if (file.name.endsWith('.csv')) {
+                    const lower = file.name.toLowerCase();
+                    if (lower.endsWith('.csv') || lower.endsWith('.xlsx')) {
                         fileName.textContent = file.name;
                         fileSize.textContent = formatFileSize(file.size);
                         fileInfo.style.display = 'flex';
                         submitBtn.disabled = false;
                     } else {
-                        alert('Por favor, selecciona un archivo CSV válido.');
+                        alert('Por favor, selecciona un archivo CSV o XLSX válido.');
                         fileUpload.value = '';
                     }
                 }
