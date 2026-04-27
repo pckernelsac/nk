@@ -27,6 +27,28 @@
             <p class="text-slate-600">Ejemplos: Inicial/Prim/Sec. 1.°–4.° o genérico → 20; 5.° secund. → 50, 80 o 100; ACADEMIA → 50, 80 o 100 según el área.</p>
         </div>
 
+        <div class="p-5 border-b border-indigo-50 bg-indigo-50 text-sm text-indigo-900">
+            <p class="font-semibold mb-2">Aplicar cupo UNCP 2026 (80 preguntas por área)</p>
+            <p class="mb-3">
+                Sube el Excel <code>NUEVA PONDERACION CICLO UNCP 2026.xlsx</code>: el sistema fija
+                <strong>80 preguntas</strong> en <code>ACADEMIA / * / área</code> para las 5 áreas que aparezcan
+                en el archivo. Las reglas de niveles escolares no se tocan.
+            </p>
+            <form method="post" action="{{ url_for('academia_cupo.cargar_uncp') }}"
+                  enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="file" name="file_uncp" accept=".xlsx" required
+                       class="block text-sm text-indigo-900 file:mr-3 file:px-3 file:py-2 file:rounded-md
+                              file:border-0 file:bg-indigo-600 file:text-white file:font-semibold
+                              hover:file:bg-indigo-700"/>
+                <button type="submit" class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow"
+                        style="background-color: #4f46e5;"
+                        onclick="return confirm('Esto fijará el cupo a 80 para las 5 áreas ACADEMIA. ¿Continuar?');">
+                    <i class="fas fa-upload mr-2"></i>Aplicar cupo a 80
+                </button>
+            </form>
+        </div>
+
         <div class="p-6">
             <div aria-live="polite">
                 {% with messages = get_flashed_messages(with_categories=true) %}

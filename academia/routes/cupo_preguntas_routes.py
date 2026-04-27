@@ -3,11 +3,17 @@
 
 from __future__ import annotations
 
+from io import BytesIO
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 
+from academia.services.uncp_loader import (
+    apply_cupo as uncp_apply_cupo,
+    parse_workbook as uncp_parse_workbook,
+    validate_parsed as uncp_validate_parsed,
+)
 from config import Config
 from dependencies import require_roles
 from template_helpers import add_flash, common_context, csrf_ok, templates
@@ -89,6 +95,51 @@ def init_cupo_preguntas_routes(academic_service):
             add_flash(request, err, "error")
         else:
             add_flash(request, "Configuración de cupo de preguntas guardada.", "success")
+        return RedirectResponse(
+            url=str(request.url_for("academia_cupo.index")), status_code=303
+        )
+
+    @router.post("/cupo-preguntas/cargar-uncp", name="academia_cupo.cargar_uncp")
+    async def cupo_cargar_uncp(
+        request: Request, _user_id: int = Depends(require_roles("administrador"))
+    ):
+        form = await request.form()
+        if not csrf_ok(request, form.get("csrf_token")) and getattr(
+            Config, "WTF_CSRF_ENABLED", True
+        ):
+            add_flash(request, "Sesión de seguridad expirada. Intente de nuevo.", "error")
+            return RedirectResponse(
+                url=str(request.url_for("academia_cupo.index")), status_code=303
+            )
+
+        up = form.get("file_uncp")
+        if up is None or not getattr(up, "filename", None):
+            add_flash(request, "Seleccione el archivo .xlsx de ponderaciones UNCP.", "error")
+            return RedirectResponse(
+                url=str(request.url_for("academia_cupo.index")), status_code=303
+            )
+        if not up.filename.lower().endswith(".xlsx"):
+            add_flash(request, "El archivo debe ser .xlsx.", "error")
+            return RedirectResponse(
+                url=str(request.url_for("academia_cupo.index")), status_code=303
+            )
+
+        try:
+            content = await up.read()
+            parsed = uncp_parse_workbook(BytesIO(content))
+            uncp_validate_parsed(parsed)
+            stats = uncp_apply_cupo(parsed)
+            add_flash(
+                request,
+                f"Cupo UNCP aplicado: {stats['areas']} áreas a "
+                f"{stats['max_questions']} preguntas.",
+                "success",
+            )
+        except (ValueError, RuntimeError) as exc:
+            add_flash(request, f"Error al cargar el Excel: {exc}", "error")
+        except Exception as exc:  # noqa: BLE001
+            add_flash(request, f"Error inesperado: {exc}", "error")
+
         return RedirectResponse(
             url=str(request.url_for("academia_cupo.index")), status_code=303
         )
