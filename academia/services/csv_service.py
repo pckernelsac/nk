@@ -1,7 +1,36 @@
 import pandas as pd
 import os
 import datetime
-from typing import Any, Dict, List, Tuple
+import re
+from typing import Any, Dict, List, Optional, Tuple
+
+
+# Códigos del segundo segmento de QuizName (ETAxx-<CODE>-yyyy-cc) → nivel del sistema.
+QUIZ_NAME_NIVEL_MAP: Dict[str, str] = {
+    'INI': 'INICIAL',
+    'PRIM': 'PRIMARIA',
+    'SEC': 'SECUNDARIA',
+    'PS': 'ACADEMIA',
+    'INT': 'ACADEMIA',
+    'SEM': 'ACADEMIA',
+    'CV': 'ACADEMIA',
+    'CI': 'ACADEMIA',
+    'ANUAL': 'ACADEMIA',
+}
+
+
+def detect_nivel_from_quiz_name(quiz_name: str) -> Optional[str]:
+    """Devuelve el nivel del sistema inferido del código en el QuizName.
+
+    QuizName típico: ``ETA01-PRIM-2026-1`` → ``PRIMARIA``;
+    ``ETA02-PS-2026-1`` → ``ACADEMIA``. Retorna None si no se reconoce el patrón.
+    """
+    if not quiz_name:
+        return None
+    m = re.match(r'^ETA\d+\s*-\s*([A-Z]+)\s*-', str(quiz_name).strip().upper())
+    if not m:
+        return None
+    return QUIZ_NAME_NIVEL_MAP.get(m.group(1))
 
 
 class CSVService:
@@ -41,6 +70,21 @@ class CSVService:
             print(f"Error leyendo el archivo en {filepath}: {e}")
             raise ValueError(f"No se pudo leer o procesar el archivo: {e}") from e
         return df
+
+    def peek_quiz_metadata(self, filepath: str) -> Dict[str, Any]:
+        """Lee la primera fila de datos y devuelve QuizName/QuizClass + nivel inferido."""
+        df = self._read_dataframe(filepath)
+        if len(df) == 0:
+            return {'quiz_name': '', 'quiz_class': '', 'nivel': None}
+        row0 = df.iloc[0]
+        qn = str(row0.get('QuizName', '') or '').strip()
+        qc_raw = row0.get('QuizClass', '')
+        qc = '' if qc_raw is None else str(qc_raw).strip()
+        return {
+            'quiz_name': qn,
+            'quiz_class': qc,
+            'nivel': detect_nivel_from_quiz_name(qn),
+        }
 
     @staticmethod
     def _normalize_dni(raw: Any) -> str:

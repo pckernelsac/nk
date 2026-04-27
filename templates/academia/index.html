@@ -85,6 +85,7 @@
                                 {% endfor %}
                             </select>
                             <p class="mt-1 text-xs text-gray-500">Selecciona el programa al que pertenecen los resultados (CSV o XLSX). El nivel determina cómo se interpreta el QuizClass.</p>
+                            <div id="quiz-meta" class="mt-3 hidden text-xs px-3 py-2 rounded-lg border" role="status" aria-live="polite"></div>
                         </div>
 
                         <div class="drop-area flex flex-col items-center justify-center p-12 bg-white shadow-inner hover:shadow-lg" id="drop-area">
@@ -186,6 +187,8 @@
                 fileUpload.value = '';
                 fileInfo.style.display = 'none';
                 submitBtn.disabled = true;
+                setQuizMetaBox('', 'info');
+                resetProgramaSelect();
             });
             function preventDefaults(e) {
                 e.preventDefault();
@@ -205,6 +208,104 @@
                     handleFileSelect();
                 }
             }
+            function setQuizMetaBox(text, tone) {
+                const box = document.getElementById('quiz-meta');
+                if (!box) return;
+                if (!text) { box.classList.add('hidden'); box.textContent = ''; return; }
+                const palette = {
+                    info:    'bg-purple-50 text-purple-800 border-purple-200',
+                    success: 'bg-green-50 text-green-800 border-green-200',
+                    warning: 'bg-yellow-50 text-yellow-900 border-yellow-300',
+                    error:   'bg-red-50 text-red-800 border-red-300',
+                };
+                box.className = 'mt-3 text-xs px-3 py-2 rounded-lg border ' + (palette[tone] || palette.info);
+                box.innerHTML = text;
+            }
+
+            function highlightProgramaSelect(matchingNombres) {
+                const select = document.getElementById('programa');
+                if (!select) return;
+                const set = new Set((matchingNombres || []).map(n => String(n)));
+                Array.from(select.options).forEach(opt => {
+                    if (!opt.value) return;
+                    if (set.size === 0 || set.has(opt.value)) {
+                        opt.disabled = false;
+                        opt.hidden = false;
+                    } else {
+                        opt.disabled = true;
+                        opt.hidden = true;
+                    }
+                });
+                if (matchingNombres && matchingNombres.length === 1) {
+                    select.value = matchingNombres[0];
+                } else if (select.value && set.size > 0 && !set.has(select.value)) {
+                    select.value = '';
+                }
+            }
+
+            function resetProgramaSelect() {
+                const select = document.getElementById('programa');
+                if (!select) return;
+                Array.from(select.options).forEach(opt => { opt.disabled = false; opt.hidden = false; });
+            }
+
+            async function previewQuizFile(file) {
+                const fd = new FormData();
+                fd.append('file', file);
+                const csrf = document.querySelector('input[name="csrf_token"]');
+                if (csrf) fd.append('csrf_token', csrf.value);
+                try {
+                    const r = await fetch("{{ url_for('academia_main.upload_preview') }}", {
+                        method: 'POST', body: fd, credentials: 'same-origin',
+                    });
+                    if (!r.ok) {
+                        setQuizMetaBox('No se pudo leer el archivo para detectar el programa. Selecciónalo manualmente.', 'warning');
+                        resetProgramaSelect();
+                        return;
+                    }
+                    const data = await r.json();
+                    const qn = data.quiz_name || '(sin QuizName)';
+                    const niv = data.nivel_detectado;
+                    const aulas = data.aulas_candidatas || [];
+                    if (!niv) {
+                        setQuizMetaBox(
+                            `QuizName detectado: <strong>${qn}</strong>. No se reconoció el nivel; selecciona el programa manualmente.`,
+                            'warning'
+                        );
+                        resetProgramaSelect();
+                        return;
+                    }
+                    if (aulas.length === 0) {
+                        setQuizMetaBox(
+                            `QuizName: <strong>${qn}</strong> &middot; Nivel detectado: <strong>${niv}</strong>. ` +
+                            `No hay programas activos del nivel ${niv} en el sistema. Crea uno antes de continuar.`,
+                            'error'
+                        );
+                        resetProgramaSelect();
+                        return;
+                    }
+                    const nombres = aulas.map(a => a.nombre);
+                    highlightProgramaSelect(nombres);
+                    if (aulas.length === 1) {
+                        setQuizMetaBox(
+                            `QuizName: <strong>${qn}</strong> &middot; Nivel: <strong>${niv}</strong>. ` +
+                            `Programa preseleccionado automáticamente: <strong>${aulas[0].nombre}</strong>.`,
+                            'success'
+                        );
+                    } else {
+                        setQuizMetaBox(
+                            `QuizName: <strong>${qn}</strong> &middot; Nivel: <strong>${niv}</strong>. ` +
+                            `Hay ${aulas.length} programas posibles del nivel ${niv}; elige el correcto en el menú.`,
+                            'info'
+                        );
+                    }
+                } catch (err) {
+                    console.error('preview error', err);
+                    setQuizMetaBox('Error al leer el archivo. Selecciona el programa manualmente.', 'warning');
+                    resetProgramaSelect();
+                }
+            }
+
             function handleFileSelect() {
                 if (fileUpload.files.length) {
                     const file = fileUpload.files[0];
@@ -214,9 +315,12 @@
                         fileSize.textContent = formatFileSize(file.size);
                         fileInfo.style.display = 'flex';
                         submitBtn.disabled = false;
+                        previewQuizFile(file);
                     } else {
                         alert('Por favor, selecciona un archivo CSV o XLSX válido.');
                         fileUpload.value = '';
+                        setQuizMetaBox('', 'info');
+                        resetProgramaSelect();
                     }
                 }
             }
