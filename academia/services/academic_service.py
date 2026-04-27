@@ -188,16 +188,16 @@ class AcademicService:
         try:
             if ExamenPreguntasConfig.query.count() > 0:
                 return
-            # Grados escolares: 20; 5.° sec. y academia: 50 por defecto (configurable en /academia/cupo-preguntas)
+            # Grados escolares: 20; 5.° sec. y academia: 80 por defecto (UNCP 2026, configurable en /academia/cupo-preguntas)
             defaults: List[Tuple[str, str, Optional[int], int]] = [
                 ("INICIAL", "*", None, 20),
                 ("PRIMARIA", "*", None, 20),
                 ("SECUNDARIA", "*", None, 20),
-                ("SECUNDARIA", "5", None, 50),
+                ("SECUNDARIA", "5", None, 80),
             ]
             for aid in range(1, 6):
-                defaults.append(("ACADEMIA", "*", aid, 50))
-            defaults.append(("ACADEMIA", "*", None, 50))
+                defaults.append(("ACADEMIA", "*", aid, 80))
+            defaults.append(("ACADEMIA", "*", None, 80))
             for niv, gr, area, mx in defaults:
                 db.session.add(
                     ExamenPreguntasConfig(
@@ -242,7 +242,7 @@ class AcademicService:
                 )
                 if row and row.max_questions > 0:
                     return int(row.max_questions)
-                return 50
+                return 80
             if g:
                 row = ExamenPreguntasConfig.query.filter_by(
                     nivel=n, grado=g, academic_area_id=None
@@ -257,7 +257,7 @@ class AcademicService:
             return 20
         except Exception as e:
             print(f"get_max_questions: {e}")
-            return 50 if n == "ACADEMIA" else 20
+            return 80 if n == "ACADEMIA" else 20
 
     def list_examen_preguntas_configs(self) -> List[Dict[str, Any]]:
         try:
