@@ -49,6 +49,17 @@ def _rows_from_form(form) -> List[Dict[str, Any]]:
     return rows
 
 
+ACADEMIA_CUPOS = (20, 50, 80)
+
+
+def _normalize_cupo(raw: Any, default: int = 80) -> int:
+    try:
+        c = int(raw)
+    except (TypeError, ValueError):
+        return default
+    return c if c in ACADEMIA_CUPOS else default
+
+
 def init_weights_routes(academic_service):
     @router.get("/ponderaciones", name="academia_weights.index")
     def ponderaciones_get(
@@ -58,6 +69,7 @@ def init_weights_routes(academic_service):
         if mode not in ("area", "nivel"):
             mode = "area"
         area_id = int(request.query_params.get("area_id") or 1)
+        cupo = _normalize_cupo(request.query_params.get("cupo"))
         nivel = (request.query_params.get("nivel") or "PRIMARIA").strip()
         if nivel not in ("INICIAL", "PRIMARIA", "SECUNDARIA"):
             nivel = "PRIMARIA"
@@ -65,11 +77,11 @@ def init_weights_routes(academic_service):
 
         areas = academic_service.get_all_academic_areas()
         if mode == "area":
-            filas = academic_service.list_question_weights_for_area(area_id)
+            filas = academic_service.list_question_weights_for_area(area_id, cupo=cupo)
         else:
             filas = academic_service.list_question_weights_for_nivel_grado(nivel, grado)
 
-        max_rows = 32
+        max_rows = max(32, cupo) if mode == "area" else 32
         while len(filas) < max_rows:
             filas.append(
                 {
@@ -83,11 +95,14 @@ def init_weights_routes(academic_service):
         filas = filas[:max_rows]
 
         base = str(request.url_for("academia_weights.index"))
-        tab_area_href = f"{base}?mode=area&area_id={area_id}"
+        tab_area_href = f"{base}?mode=area&area_id={area_id}&cupo={cupo}"
         tab_nivel_href = f"{base}?mode=nivel&nivel={quote(nivel)}&grado={quote(grado)}"
+        cupo_tabs = [
+            (c, f"{base}?mode=area&area_id={area_id}&cupo={c}") for c in ACADEMIA_CUPOS
+        ]
 
         if mode == "area":
-            max_preguntas = academic_service.get_max_questions("ACADEMIA", None, area_id)
+            max_preguntas = cupo
         else:
             max_preguntas = academic_service.get_max_questions(nivel, grado, None)
 
@@ -97,6 +112,8 @@ def init_weights_routes(academic_service):
                 request,
                 mode=mode,
                 area_id=area_id,
+                cupo_sel=cupo,
+                cupo_tabs=cupo_tabs,
                 nivel_sel=nivel,
                 grado_sel=grado,
                 areas_academia=areas,
@@ -127,7 +144,10 @@ def init_weights_routes(academic_service):
                 area_id = int(form.get("area_id") or 1)
             except (TypeError, ValueError):
                 area_id = 1
-            err = academic_service.replace_weights_for_academic_area(area_id, rows)
+            cupo = _normalize_cupo(form.get("cupo"))
+            err = academic_service.replace_weights_for_academic_area(
+                area_id, rows, cupo=cupo
+            )
         else:
             nivel = (form.get("nivel") or "PRIMARIA").strip()
             if nivel not in ("INICIAL", "PRIMARIA", "SECUNDARIA"):
@@ -145,7 +165,11 @@ def init_weights_routes(academic_service):
                 aid = int(form.get("area_id") or 1)
             except (TypeError, ValueError):
                 aid = 1
-            loc = f"{request.url_for('academia_weights.index')}?mode=area&area_id={aid}"
+            c = _normalize_cupo(form.get("cupo"))
+            loc = (
+                f"{request.url_for('academia_weights.index')}"
+                f"?mode=area&area_id={aid}&cupo={c}"
+            )
         else:
             niv = (form.get("nivel") or "PRIMARIA").strip()
             g = (form.get("grado") or "").strip()

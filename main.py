@@ -63,6 +63,26 @@ async def lifespan(app: FastAPI):
         )
         db_facade.session.commit()
 
+    if inspector.has_table("question_weights"):
+        columnas_qw = [col["name"] for col in inspector.get_columns("question_weights")]
+        if "cupo" not in columnas_qw:
+            db_facade.session.execute(
+                text("ALTER TABLE question_weights ADD COLUMN cupo INTEGER")
+            )
+            db_facade.session.execute(
+                text(
+                    "UPDATE question_weights SET cupo = 80 "
+                    "WHERE cupo IS NULL AND (nivel = 'ACADEMIA' OR nivel IS NULL)"
+                )
+            )
+            db_facade.session.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_question_weights_cupo "
+                    "ON question_weights(cupo)"
+                )
+            )
+            db_facade.session.commit()
+
     estudiantes_actualizar = (
         Estudiante.query.filter(
             or_(

@@ -147,6 +147,76 @@ class StudentService:
             print(f"Error al eliminar todos los estudiantes: {e}")
             return False
 
+    def delete_by_quiz_name(self, quiz_name: str, commit: bool = True) -> int:
+        """Borra todos los registros de un QuizName y retorna cuántos se eliminaron.
+
+        Si ``commit=False`` el caller controla la transacción (útil para
+        encadenar DELETE + INSERT en un solo ``db.session.commit()``).
+        """
+        if not quiz_name:
+            return 0
+        try:
+            deleted = (
+                AcademiaStudent.query.filter(
+                    AcademiaStudent.quiz_name == quiz_name
+                ).delete(synchronize_session=False)
+            )
+            if commit:
+                db.session.commit()
+            return int(deleted or 0)
+        except Exception as e:
+            if commit:
+                db.session.rollback()
+            print(f"Error al eliminar registros del quiz '{quiz_name}': {e}")
+            return 0
+
+    def list_quiz_names_with_question_count(self) -> List[Dict[str, Any]]:
+        """Resumen por (quiz_name, nivel, número de preguntas guardadas).
+
+        Útil para detectar lotes con cupo distinto al actual (p. ej. viejos
+        con 50 preguntas conviviendo con nuevos de 80). Usa array_length +
+        string_to_array de PostgreSQL para contar entradas en ``pri_keys``.
+
+        Returns:
+            list[{quiz_name, nivel, preg_count, filas, primer_import,
+                  ultimo_import}].
+        """
+        out: List[Dict[str, Any]] = []
+        try:
+            preg_expr = db.func.array_length(
+                db.func.string_to_array(AcademiaStudent.pri_keys, ","), 1
+            ).label("preg_count")
+            rows = (
+                db.session.query(
+                    AcademiaStudent.quiz_name,
+                    AcademiaStudent.nivel,
+                    preg_expr,
+                    db.func.count(AcademiaStudent.id).label("filas"),
+                    db.func.min(AcademiaStudent.data_exported).label("primer"),
+                    db.func.max(AcademiaStudent.data_exported).label("ultimo"),
+                )
+                .filter(AcademiaStudent.quiz_name.isnot(None))
+                .group_by(
+                    AcademiaStudent.quiz_name,
+                    AcademiaStudent.nivel,
+                    preg_expr,
+                )
+                .all()
+            )
+            for quiz_name, nivel, preg, filas, primer, ultimo in rows:
+                out.append({
+                    "quiz_name": quiz_name,
+                    "nivel": nivel or "ACADEMIA",
+                    "preg_count": int(preg or 0),
+                    "filas": int(filas or 0),
+                    "primer_import": primer,
+                    "ultimo_import": ultimo,
+                })
+            out.sort(key=lambda r: (r["nivel"], r["quiz_name"], r["preg_count"]))
+        except Exception as e:
+            print(f"list_quiz_names_with_question_count: {e}")
+        return out
+
     @staticmethod
     def _extract_eta_number_from_name(quiz_name: str) -> Optional[int]:
         """Extrae el número de ETA del nombre del quiz (ej: 'ETA 06' -> 6)."""

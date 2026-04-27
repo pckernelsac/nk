@@ -154,6 +154,7 @@ class QuestionWeight(db.Model):
     weight = db.Column(db.Float, nullable=False)
     nivel = db.Column(db.String(20), nullable=True, default='ACADEMIA')  # ACADEMIA, INICIAL, PRIMARIA, SECUNDARIA
     grado = db.Column(db.String(20), nullable=True)  # Grado escolar: 3,4,5 (INI), 1-6 (PRIM), 1-5 (SEC)
+    cupo = db.Column(db.Integer, nullable=True, index=True)  # Tamaño del examen para ACADEMIA: 20, 50, 80…
 
     def __repr__(self):
         return f'<QuestionWeight {self.id}: {self.subject} ({self.level})>'

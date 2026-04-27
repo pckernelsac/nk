@@ -54,7 +54,34 @@ class AcademicService:
 
         return 1
 
-    def get_weights_by_area(self, area_id: int) -> Dict[Tuple[int, int], Tuple[str, str, float]]:
+    ACADEMIA_CUPOS = (20, 50, 80)
+
+    @classmethod
+    def normalize_cupo(cls, cupo: Optional[int], default: int = 80) -> int:
+        """Normaliza un cupo a uno de los tamaños soportados de ACADEMIA (20/50/80).
+
+        Si el valor recibido no coincide exactamente con un cupo soportado, redondea
+        hacia el inmediatamente superior (≤20→20, 21..50→50, 51..→80). ``None`` o
+        ``0`` retorna ``default``.
+        """
+        try:
+            n = int(cupo) if cupo is not None else 0
+        except (TypeError, ValueError):
+            n = 0
+        if n <= 0:
+            return default
+        if n in cls.ACADEMIA_CUPOS:
+            return n
+        for c in cls.ACADEMIA_CUPOS:
+            if n <= c:
+                return c
+        return cls.ACADEMIA_CUPOS[-1]
+
+    def get_weights_by_area(
+        self, area_id: int, cupo: Optional[int] = None
+    ) -> Dict[Tuple[int, int], Tuple[str, str, float]]:
+        """Ponderaciones ACADEMIA de un área para un cupo dado (default 80)."""
+        target_cupo = self.normalize_cupo(cupo, default=80)
         weights_map = {}
         try:
             # Solo filas de ACADEMIA (excluir ponderaciones de nivel escolar con mismo area_id)
@@ -63,6 +90,7 @@ class AcademicService:
                     QuestionWeight.academic_area_id == area_id,
                     or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
                     or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
+                    QuestionWeight.cupo == target_cupo,
                 )
                 .order_by(QuestionWeight.question_start)
                 .all()
@@ -71,7 +99,7 @@ class AcademicService:
             for w in weights:
                 weights_map[(w.question_start, w.question_end)] = (w.subject, w.level, w.weight)
         except Exception as e:
-            print(f"Error al obtener ponderaciones para el área {area_id}: {e}")
+            print(f"Error al obtener ponderaciones para el área {area_id} (cupo {target_cupo}): {e}")
         return weights_map
 
     def get_academic_area_name(self, area_id: int) -> str:
@@ -173,7 +201,8 @@ class AcademicService:
                 for area_id, q_start, q_end, subject, level, weight in all_weights:
                     db.session.add(QuestionWeight(
                         academic_area_id=area_id, question_start=q_start, question_end=q_end,
-                        subject=subject, level=level, weight=weight
+                        subject=subject, level=level, weight=weight,
+                        nivel="ACADEMIA", cupo=50,
                     ))
                 db.session.commit()
                 print("Ponderaciones de preguntas inicializadas correctamente.")
@@ -340,12 +369,25 @@ class AcademicService:
             print(f"Error al obtener ponderaciones para {nivel} grado {grado}: {e}")
         return weights_map
 
+    @staticmethod
+    def _student_cupo(student_dict: Dict[str, Any]) -> int:
+        """Cupo del estudiante = nº real de entradas en pri_keys (auto-detectado)."""
+        pk = student_dict.get('pri_keys') or ''
+        if not pk:
+            return 0
+        return len([p for p in pk.split(',') if p is not None])
+
     def get_weights_for_student(self, student_dict: Dict[str, Any]) -> Dict[Tuple[int, int], Tuple[str, str, float]]:
-        """Obtiene ponderaciones según el nivel del estudiante (ACADEMIA vs escolar)."""
+        """Obtiene ponderaciones según el nivel del estudiante (ACADEMIA vs escolar).
+
+        Para ACADEMIA, el cupo se infiere del largo real de ``pri_keys`` (20/50/80)
+        para que un quiz viejo de 50 use sus pesos sin necesidad de reconfigurar.
+        """
         nivel = student_dict.get('nivel') or 'ACADEMIA'
         if nivel == 'ACADEMIA':
             area_id = student_dict.get('academic_area_id', 1)
-            return self.get_weights_by_area(area_id)
+            cupo = self._student_cupo(student_dict)
+            return self.get_weights_by_area(area_id, cupo=cupo or None)
         else:
             grado = student_dict.get('quiz_class', '')
             return self.get_weights_by_nivel_grado(nivel, grado)
@@ -358,9 +400,11 @@ class AcademicService:
             print(f"Error al obtener área académica por ID {area_id}: {e}")
             return None
 
-    def list_question_weights_for_area(self, area_id: int) -> List[Dict[str, Any]]:
-        """Filas de ponderación ACADEMIA para un área (para edición manual)."""
-        wmap = self.get_weights_by_area(area_id)
+    def list_question_weights_for_area(
+        self, area_id: int, cupo: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """Filas de ponderación ACADEMIA para un área y cupo (para edición manual)."""
+        wmap = self.get_weights_by_area(area_id, cupo=cupo)
         out: List[Dict[str, Any]] = []
         for (q_start, q_end), (subject, level, weight) in sorted(
             wmap.items(), key=lambda x: (x[0][0], x[0][1])
@@ -428,17 +472,23 @@ class AcademicService:
                 )
         return None
 
-    def replace_weights_for_academic_area(self, area_id: int, rows: List[Dict[str, Any]]) -> Optional[str]:
+    def replace_weights_for_academic_area(
+        self,
+        area_id: int,
+        rows: List[Dict[str, Any]],
+        cupo: Optional[int] = None,
+    ) -> Optional[str]:
         """
-        Sustituye todas las ponderaciones de ACADEMIA para un área.
-        Lista vacía elimina todas las ponderaciones del área (ACADEMIA).
+        Sustituye las ponderaciones de ACADEMIA del área para el cupo dado.
+        Lista vacía elimina todas las ponderaciones del área (ACADEMIA) en ese cupo.
+        Solo afecta el conjunto del cupo indicado: los demás cupos del área quedan intactos.
         Retorna mensaje de error o None si ok.
         """
         if not db.session.get(AcademicArea, area_id):
             return "El área académica no existe."
+        target_cupo = self.normalize_cupo(cupo, default=80)
         if rows:
-            max_q = self.get_max_questions("ACADEMIA", None, area_id)
-            err = self._validate_weight_rows(rows, max_q)
+            err = self._validate_weight_rows(rows, target_cupo)
             if err:
                 return err
         try:
@@ -447,6 +497,7 @@ class AcademicService:
                     QuestionWeight.academic_area_id == area_id,
                     or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
                     or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
+                    QuestionWeight.cupo == target_cupo,
                 ).delete(synchronize_session=False)
             )
             for r in rows:
@@ -460,6 +511,7 @@ class AcademicService:
                         weight=float(r["weight"]),
                         nivel="ACADEMIA",
                         grado=None,
+                        cupo=target_cupo,
                     )
                 )
             db.session.commit()

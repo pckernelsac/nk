@@ -12,12 +12,12 @@ from werkzeug.utils import secure_filename
 
 from academia.services.csv_service import detect_nivel_from_quiz_name
 from config import Config
-from dependencies import get_current_user_id
+from dependencies import get_current_user_id, require_roles
 from models.aula import Aula
 from template_helpers import add_flash, common_context, csrf_ok, templates
 
 
-def init_routes(csv_service, academic_service):
+def init_routes(csv_service, academic_service, student_service=None):
     router = APIRouter()
 
     @router.get("/", name="academia_main.index")

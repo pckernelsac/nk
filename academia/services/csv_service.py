@@ -253,6 +253,21 @@ class CSVService:
         """
         df = self._read_dataframe(filepath)
 
+        # 0) Detectar cupo real del CSV: contar columnas PriKey{i}/Stu{i}.
+        #    Con esto un archivo de 50 preguntas guarda 50 entradas en pri_keys
+        #    aunque el cupo global esté configurado en 80. La boleta luego elige
+        #    el set de ponderaciones que coincide con ese tamaño.
+        prikey_re = re.compile(r'^PriKey(\d+)$')
+        prikey_indices: List[int] = []
+        for col in df.columns:
+            m = prikey_re.match(str(col))
+            if m:
+                try:
+                    prikey_indices.append(int(m.group(1)))
+                except ValueError:
+                    pass
+        csv_n_questions = max(prikey_indices) if prikey_indices else 0
+
         # 1) Lookup batch de estudiantes (1 sola query) por DNIs únicos del archivo.
         from models import Estudiante
         unique_dnis = {
@@ -324,10 +339,15 @@ class CSVService:
                 quiz_class, nivel
             )
             grado_csv = (quiz_class or "").strip() if nivel != "ACADEMIA" else None
-            max_questions = self.academic_service.get_max_questions(
-                nivel, grado_csv, academic_area_id if nivel == "ACADEMIA" else None
-            )
-            for i in range(1, max_questions + 1):
+            # Tamaño efectivo: lo que el CSV trae; si el archivo no tiene columnas
+            # PriKey{i}, caer al cupo configurado para no romper niveles escolares.
+            if csv_n_questions > 0:
+                n_questions = csv_n_questions
+            else:
+                n_questions = self.academic_service.get_max_questions(
+                    nivel, grado_csv, academic_area_id if nivel == "ACADEMIA" else None
+                )
+            for i in range(1, n_questions + 1):
                 responses.append(str(row.get(f'Stu{i}', '')))
                 pri_keys.append(str(row.get(f'PriKey{i}', '')))
                 points.append(str(row.get(f'Points{i}', '0')))

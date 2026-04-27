@@ -222,6 +222,7 @@ def apply_weights(
             QuestionWeight.academic_area_id.in_(area_ids),
             or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
             or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
+            QuestionWeight.cupo == EXPECTED_QUESTIONS_PER_AREA,
         )
         .delete(synchronize_session=False)
     )
@@ -239,6 +240,7 @@ def apply_weights(
                     weight=row["weight"],
                     nivel="ACADEMIA",
                     grado=None,
+                    cupo=EXPECTED_QUESTIONS_PER_AREA,
                 )
             )
             inserted += 1

@@ -144,7 +144,7 @@ class PDFService:
         nivel = student.get('nivel') or 'ACADEMIA'
         if nivel == 'ACADEMIA':
             area_id = int(student.get('academic_area_id', 1) or 1)
-            return self._get_points_lookup(area_id, num_total_questions)
+            return self._get_points_lookup(area_id, num_total_questions, cupo=num_total_questions)
         else:
             return self._get_points_lookup_by_nivel(nivel, student.get('quiz_class', ''), num_total_questions)
 
@@ -173,7 +173,12 @@ class PDFService:
             print(f"Error obteniendo ponderaciones para {nivel} grado {grado}: {e}")
         return points_lookup
 
-    def _get_points_lookup(self, academic_area_id: int, num_total_questions: int) -> Dict[int, float]:
+    def _get_points_lookup(
+        self,
+        academic_area_id: int,
+        num_total_questions: int,
+        cupo: Optional[int] = None,
+    ) -> Dict[int, float]:
         """
         Obtiene las ponderaciones del servicio académico y crea un diccionario
         mapeando el índice de pregunta (0-based) a su puntaje.
@@ -181,7 +186,9 @@ class PDFService:
         points_lookup = {}
         try:
             # Obtener pesos: Dict[Tuple[int, int], Tuple[str, str, float]]
-            subjects_map = self.academic_service.get_weights_by_area(academic_area_id) or {}
+            subjects_map = self.academic_service.get_weights_by_area(
+                academic_area_id, cupo=cupo
+            ) or {}
             if not subjects_map:
                  print(f"Advertencia: No se encontraron ponderaciones para el área {academic_area_id}.")
                  return {}
