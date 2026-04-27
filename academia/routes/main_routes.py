@@ -69,6 +69,36 @@ def init_routes(csv_service, academic_service):
                     nivel = aula.nivel
             except Exception:
                 pass
+
+            validation = csv_service.validate_file(filepath)
+            problems = []
+            missing = validation.get("missing_dni") or []
+            unknown = validation.get("unknown_dni") or []
+            if missing:
+                preview = ", ".join(f"fila {r} ({info})" for r, info in missing[:8])
+                more = "" if len(missing) <= 8 else f" y {len(missing) - 8} más"
+                problems.append(
+                    f"Falta DNI en {len(missing)} registro(s): {preview}{more}."
+                )
+            if unknown:
+                preview = ", ".join(
+                    f"fila {r}: DNI {dni} ({info})" for r, dni, info in unknown[:8]
+                )
+                more = "" if len(unknown) <= 8 else f" y {len(unknown) - 8} más"
+                problems.append(
+                    f"DNI no registrado en /estudiantes para {len(unknown)} registro(s): "
+                    f"{preview}{more}. Regístrelos antes de cargar el archivo."
+                )
+            if problems:
+                try:
+                    os.remove(filepath)
+                except OSError:
+                    pass
+                add_flash(request, " | ".join(problems), "error")
+                return RedirectResponse(
+                    url=str(request.url_for("academia_main.index")), status_code=303
+                )
+
             num_records = csv_service.process_csv_file(filepath, programa=programa, nivel=nivel)
             add_flash(
                 request,

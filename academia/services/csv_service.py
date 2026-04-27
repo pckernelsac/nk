@@ -1,8 +1,8 @@
 import pandas as pd
 import os
 import datetime
-# Asegúrate de tener cualquier otro import necesario aquí
-# from typing import List, Dict, Any # Si usas type hints
+from typing import Any, Dict, List, Tuple
+
 
 class CSVService:
     """
@@ -26,16 +26,9 @@ class CSVService:
         if not os.path.exists(self.upload_folder):
             os.makedirs(self.upload_folder)
 
-    def process_csv_file(self, filepath: str, programa: str = '', nivel: str = 'ACADEMIA') -> int:
-        """
-        Procesa un archivo CSV o XLSX (mismo esquema de columnas) y guarda sus datos.
-
-        Args:
-            filepath (str): Ruta al archivo CSV o XLSX
-
-        Returns:
-            int: Número de registros procesados
-        """
+    @staticmethod
+    def _read_dataframe(filepath: str) -> pd.DataFrame:
+        """Carga el archivo CSV/XLSX preservando StudentID y CustomID como string."""
         dtype_options = {'StudentID': str, 'CustomID': str}
         ext = os.path.splitext(filepath)[1].lower()
         try:
@@ -47,20 +40,92 @@ class CSVService:
         except Exception as e:
             print(f"Error leyendo el archivo en {filepath}: {e}")
             raise ValueError(f"No se pudo leer o procesar el archivo: {e}") from e
+        return df
+
+    @staticmethod
+    def _normalize_dni(raw: Any) -> str:
+        """Limpia un valor StudentID para compararlo contra estudiantes.dni_est."""
+        if raw is None:
+            return ""
+        sid = str(raw).strip()
+        if sid.endswith('.0'):
+            sid = sid[:-2]
+        return sid
+
+    def validate_file(self, filepath: str) -> Dict[str, Any]:
+        """
+        Valida un archivo de quiz antes de procesarlo:
+          * DNI vacío / 0 → 'missing_dni' (bloquea).
+          * DNI no encontrado en estudiantes.dni_est → 'unknown_dni' (bloquea).
+
+        No escribe en la base de datos. Hace una sola consulta IN(...) a estudiantes.
+
+        Returns:
+            dict con keys:
+                total_rows (int),
+                missing_dni: list[(excel_row:int, info:str)],
+                unknown_dni: list[(excel_row:int, dni:str, info:str)].
+        """
+        df = self._read_dataframe(filepath)
+
+        missing: List[Tuple[int, str]] = []
+        seen_dnis: List[Tuple[int, str, str]] = []  # (excel_row, dni, info)
+        invalid_sentinels = {"", "0", "00", "000", "0000"}
+
+        for idx, row in df.iterrows():
+            excel_row = int(idx) + 2  # 1-based + cabecera
+            sid = self._normalize_dni(row.get('StudentID', ''))
+            first = str(row.get('FirstName', '') or '').strip()
+            last = str(row.get('LastName', '') or '').strip()
+            info = (f"{first} {last}".strip()) or "(sin nombre)"
+            if sid in invalid_sentinels:
+                missing.append((excel_row, info))
+            else:
+                seen_dnis.append((excel_row, sid, info))
+
+        unknown: List[Tuple[int, str, str]] = []
+        unique_dnis = {sid for _, sid, _ in seen_dnis}
+        if unique_dnis:
+            try:
+                from models import Estudiante
+                rows = (
+                    Estudiante.query
+                    .with_entities(Estudiante.dni_est)
+                    .filter(Estudiante.dni_est.in_(list(unique_dnis)))
+                    .all()
+                )
+                existing = {r[0] for r in rows}
+                for excel_row, sid, info in seen_dnis:
+                    if sid not in existing:
+                        unknown.append((excel_row, sid, info))
+            except Exception as e:
+                print(f"Error consultando estudiantes para validación: {e}")
+                # No bloquear por error de BD; el llamador decide.
+
+        return {
+            'total_rows': int(len(df)),
+            'missing_dni': missing,
+            'unknown_dni': unknown,
+        }
+
+    def process_csv_file(self, filepath: str, programa: str = '', nivel: str = 'ACADEMIA') -> int:
+        """
+        Procesa un archivo CSV o XLSX (mismo esquema de columnas) y guarda sus datos.
+
+        Args:
+            filepath (str): Ruta al archivo CSV o XLSX
+
+        Returns:
+            int: Número de registros procesados
+        """
+        df = self._read_dataframe(filepath)
 
         count = 0
 
         # Guardar cada fila en la base de datos
         for _, row in df.iterrows():
-            # Ahora .get() debería devolver strings directamente por el dtype especificado
-            student_id = row.get('StudentID', '')
-            custom_id = row.get('CustomID', '')
-
-            # Como precaución extra (aunque menos probable ahora), podrías limpiar el '.0' si aún apareciera
-            if isinstance(student_id, str) and student_id.endswith('.0'):
-                 student_id = student_id[:-2]
-            if isinstance(custom_id, str) and custom_id.endswith('.0'):
-                 custom_id = custom_id[:-2]
+            student_id = self._normalize_dni(row.get('StudentID', ''))
+            custom_id = self._normalize_dni(row.get('CustomID', ''))
 
             # Extraer el resto de los datos (sin cambios aquí)
             quiz_name = row.get('QuizName', '')
