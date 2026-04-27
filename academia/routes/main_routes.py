@@ -188,42 +188,56 @@ def init_routes(csv_service, academic_service):
                     url=str(request.url_for("academia_main.index")), status_code=303
                 )
 
+            # Solo bloqueamos cuando hay DNI faltante en el archivo (irrecuperable);
+            # los DNIs no registrados en /estudiantes se omiten en el procesamiento
+            # pero el archivo se sube y los reconocidos sí se guardan.
             validation = csv_service.validate_file(filepath)
-            problems = []
             missing = validation.get("missing_dni") or []
-            unknown = validation.get("unknown_dni") or []
             if missing:
                 preview = ", ".join(f"fila {r} ({info})" for r, info in missing[:8])
                 more = "" if len(missing) <= 8 else f" y {len(missing) - 8} más"
-                problems.append(
-                    f"Falta DNI en {len(missing)} registro(s): {preview}{more}."
-                )
-            if unknown:
-                preview = ", ".join(
-                    f"fila {r}: DNI {dni} ({info})" for r, dni, info in unknown[:8]
-                )
-                more = "" if len(unknown) <= 8 else f" y {len(unknown) - 8} más"
-                problems.append(
-                    f"DNI no registrado en /estudiantes para {len(unknown)} registro(s): "
-                    f"{preview}{more}. Regístrelos antes de cargar el archivo."
-                )
-            if problems:
                 try:
                     os.remove(filepath)
                 except OSError:
                     pass
-                add_flash(request, " | ".join(problems), "error")
+                add_flash(
+                    request,
+                    f"Falta DNI en {len(missing)} registro(s): {preview}{more}. "
+                    f"Complete el StudentID en el archivo y vuelva a subirlo.",
+                    "error",
+                )
                 return RedirectResponse(
                     url=str(request.url_for("academia_main.index")), status_code=303
                 )
 
-            num_records = csv_service.process_csv_file(filepath, programa=programa, nivel=nivel)
-            add_flash(
-                request,
-                f"Archivo procesado correctamente. Se cargaron {num_records} registros en {programa or 'sin programa'} ({nivel}).",
-                "success",
+            result = csv_service.process_csv_file(
+                filepath, programa=programa, nivel=nivel
             )
-            return RedirectResponse(url=str(request.url_for("academia_student.results")), status_code=303)
+            saved = result.get("count", 0)
+            skipped_unknown = result.get("skipped_unknown_dni") or []
+            target = programa or "sin programa"
+            if skipped_unknown:
+                preview = ", ".join(
+                    f"fila {r} (DNI {dni})" for r, dni in skipped_unknown[:8]
+                )
+                more = "" if len(skipped_unknown) <= 8 else f" y {len(skipped_unknown) - 8} más"
+                add_flash(
+                    request,
+                    f"Se cargaron {saved} registros en {target} ({nivel}). "
+                    f"Se omitieron {len(skipped_unknown)} fila(s) con DNI no "
+                    f"registrado en /estudiantes: {preview}{more}.",
+                    "warning",
+                )
+            else:
+                add_flash(
+                    request,
+                    f"Archivo procesado correctamente. Se cargaron {saved} "
+                    f"registros en {target} ({nivel}).",
+                    "success",
+                )
+            return RedirectResponse(
+                url=str(request.url_for("academia_student.results")), status_code=303
+            )
         except Exception as e:
             add_flash(request, f"Error al procesar el archivo: {str(e)}", "error")
             return RedirectResponse(url=str(request.url_for("academia_main.index")), status_code=303)

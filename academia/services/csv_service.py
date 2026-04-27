@@ -230,31 +230,71 @@ class CSVService:
             'unknown_dni': unknown,
         }
 
-    def process_csv_file(self, filepath: str, programa: str = '', nivel: str = 'ACADEMIA') -> int:
+    def process_csv_file(
+        self, filepath: str, programa: str = '', nivel: str = 'ACADEMIA'
+    ) -> Dict[str, Any]:
         """
-        Procesa un archivo CSV o XLSX (mismo esquema de columnas) y guarda sus datos.
+        Procesa un archivo CSV o XLSX y guarda los registros cuyo DNI esté
+        registrado en la tabla ``estudiantes``.
 
-        Args:
-            filepath (str): Ruta al archivo CSV o XLSX
+        Reglas:
+          * Filas sin DNI: omitidas (en la práctica el endpoint ya las bloqueó
+            con ``validate_file``; aquí actúa como guardia defensiva).
+          * Filas con DNI no registrado en ``estudiantes.dni_est``: omitidas y
+            reportadas en el dict de retorno.
+          * Filas con DNI registrado: se vincula ``estudiante_id`` y, si el
+            archivo no trae nombres, se rellenan desde el registro de BD.
 
         Returns:
-            int: Número de registros procesados
+            dict con keys:
+                count (int): registros guardados,
+                skipped_no_dni (int),
+                skipped_unknown_dni (list[(excel_row:int, dni:str)]).
         """
         df = self._read_dataframe(filepath)
 
-        count = 0
+        # 1) Lookup batch de estudiantes (1 sola query) por DNIs únicos del archivo.
+        from models import Estudiante
+        unique_dnis = {
+            self._normalize_dni(row.get('StudentID', ''))
+            for _, row in df.iterrows()
+        }
+        unique_dnis.discard("")
+        estudiantes_by_dni: Dict[str, Any] = {}
+        if unique_dnis:
+            try:
+                rows = Estudiante.query.filter(
+                    Estudiante.dni_est.in_(list(unique_dnis))
+                ).all()
+                estudiantes_by_dni = {e.dni_est: e for e in rows}
+            except Exception as e:
+                print(f"process_csv_file: error consultando estudiantes: {e}")
 
-        # Guardar cada fila en la base de datos
-        for _, row in df.iterrows():
+        count = 0
+        skipped_no_dni = 0
+        skipped_unknown_dni: List[Tuple[int, str]] = []
+        invalid_sentinels = {"", "0", "00", "000", "0000"}
+
+        for idx, row in df.iterrows():
+            excel_row = int(idx) + 2
             student_id = self._normalize_dni(row.get('StudentID', ''))
             custom_id = self._normalize_dni(row.get('CustomID', ''))
 
-            # Extraer el resto de los datos (sin cambios aquí)
+            # 2a) Sin DNI → saltar (se asume bloqueo previo en upload_file).
+            if student_id in invalid_sentinels:
+                skipped_no_dni += 1
+                continue
+
+            # 2b) DNI no registrado → saltar y reportar.
+            est = estudiantes_by_dni.get(student_id)
+            if est is None:
+                skipped_unknown_dni.append((excel_row, student_id))
+                continue
+
             quiz_name = row.get('QuizName', '')
             quiz_class = row.get('QuizClass', '')
-            first_name = row.get('FirstName', '')
-            last_name = row.get('LastName', '')
-            # Para campos numéricos, es bueno manejar posibles errores de conversión
+            first_name = row.get('FirstName', '') or ''
+            last_name = row.get('LastName', '') or ''
             try:
                 earned_points = float(row.get('Earned Points', 0.0))
             except (ValueError, TypeError):
@@ -269,15 +309,20 @@ class CSVService:
                 percent_correct = 0.0
 
             quiz_created = row.get('QuizCreated', '')
-            data_exported = row.get('DataExported', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')) # Formato con hora
-            key_version = row.get('Key Version', '')  # Nueva columna
+            data_exported = row.get(
+                'DataExported',
+                datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            )
+            key_version = row.get('Key Version', '')
 
-            responses = []
-            pri_keys = []
-            points = []
-            marks = []
+            responses: List[str] = []
+            pri_keys: List[str] = []
+            points: List[str] = []
+            marks: List[str] = []
 
-            academic_area_id = self.academic_service.get_area_id_for_nivel(quiz_class, nivel)
+            academic_area_id = self.academic_service.get_area_id_for_nivel(
+                quiz_class, nivel
+            )
             grado_csv = (quiz_class or "").strip() if nivel != "ACADEMIA" else None
             max_questions = self.academic_service.get_max_questions(
                 nivel, grado_csv, academic_area_id if nivel == "ACADEMIA" else None
@@ -285,51 +330,45 @@ class CSVService:
             for i in range(1, max_questions + 1):
                 responses.append(str(row.get(f'Stu{i}', '')))
                 pri_keys.append(str(row.get(f'PriKey{i}', '')))
-                points.append(str(row.get(f'Points{i}', '0'))) # Guardar como string
+                points.append(str(row.get(f'Points{i}', '0')))
                 marks.append(str(row.get(f'Mark{i}', '')))
 
-            # Buscar estudiante del sistema principal por DNI para vincular y resolver nombres
-            estudiante_id = None
-            if student_id:
-                try:
-                    from models import Estudiante
-                    est = Estudiante.query.filter_by(dni_est=student_id).first()
-                    if est:
-                        estudiante_id = est.id
-                        # Si no tiene nombre/apellido o viene como "Estudiante", usar el nombre real
-                        nombre_faltante = (
-                            not first_name or not first_name.strip() or
-                            first_name.strip().lower() == 'estudiante' or
-                            not last_name or not last_name.strip() or
-                            last_name.strip().lower() == 'estudiante'
-                        )
-                        if nombre_faltante:
-                            first_name = est.nombres_est or 'Estudiante'
-                            last_name = f"{est.apellido_paterno_est or ''} {est.apellido_materno_est or ''}".strip() or 'Estudiante'
-                except Exception:
-                    pass
+            # Resolver nombres: si el archivo no los trae, usar los de BD.
+            first_name = first_name.strip() if isinstance(first_name, str) else ''
+            last_name = last_name.strip() if isinstance(last_name, str) else ''
+            nombre_faltante = (
+                not first_name
+                or first_name.lower() == 'estudiante'
+                or not last_name
+                or last_name.lower() == 'estudiante'
+            )
+            if nombre_faltante:
+                first_name = est.nombres_est or 'Estudiante'
+                last_name = (
+                    f"{est.apellido_paterno_est or ''} {est.apellido_materno_est or ''}"
+                ).strip() or 'Estudiante'
 
-            # Fallback si no se encontró estudiante y el nombre está vacío
-            if not first_name or not first_name.strip() or first_name.strip().lower() == 'estudiante':
-                first_name = "Estudiante"
-            if not last_name or not last_name.strip() or last_name.strip().lower() == 'estudiante':
-                last_name = "Estudiante"
-
-            # Guardar el estudiante
             try:
                 self.student_service.save_student(
-                    quiz_name, quiz_class, first_name, last_name, student_id, custom_id,
-                    earned_points, possible_points, percent_correct, quiz_created,
-                    data_exported, ','.join(responses), ','.join(pri_keys),
-                    ','.join(points), ','.join(marks), academic_area_id, key_version,
-                    programa=programa, nivel=nivel, estudiante_id=estudiante_id
+                    quiz_name, quiz_class, first_name, last_name,
+                    student_id, custom_id,
+                    earned_points, possible_points, percent_correct,
+                    quiz_created, data_exported,
+                    ','.join(responses), ','.join(pri_keys),
+                    ','.join(points), ','.join(marks),
+                    academic_area_id, key_version,
+                    programa=programa, nivel=nivel, estudiante_id=est.id,
                 )
                 count += 1
             except Exception as db_err:
-                 # Loggear error al guardar estudiante específico
-                 print(f"Error al guardar datos del estudiante con ID {student_id} desde CSV: {db_err}")
-                 # Decidir si continuar con el siguiente registro o detener todo el proceso
-                 # raise db_err # Para detener el proceso
-                 continue # Para continuar con el siguiente estudiante
+                print(
+                    f"Error al guardar datos del estudiante con DNI {student_id} "
+                    f"(fila {excel_row}): {db_err}"
+                )
+                continue
 
-        return count
+        return {
+            'count': count,
+            'skipped_no_dni': skipped_no_dni,
+            'skipped_unknown_dni': skipped_unknown_dni,
+        }
