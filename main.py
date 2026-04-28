@@ -83,18 +83,34 @@ async def lifespan(app: FastAPI):
             )
             db_facade.session.commit()
 
-    if inspector.has_table("aulas"):
-        cols_aulas = {c["name"]: c for c in inspector.get_columns("aulas")}
-        grado_col = cols_aulas.get("grado")
-        # ``length`` puede ser None (TEXT) o un int para VARCHAR(N).
-        grado_len = (grado_col or {}).get("type")
-        # SQLAlchemy expone .length en el tipo cuando es VARCHAR.
-        actual_len = getattr(grado_len, "length", None) if grado_len is not None else None
-        if actual_len is not None and actual_len < 100:
+    def _maybe_widen_varchar(table: str, column: str, target_len: int = 100) -> None:
+        """ALTER COLUMN ... TYPE VARCHAR(target_len) si la columna actual es más corta.
+
+        Idempotente: no hace nada si la tabla/columna no existe o ya cumple.
+        """
+        if not inspector.has_table(table):
+            return
+        cols = {c["name"]: c for c in inspector.get_columns(table)}
+        col = cols.get(column)
+        if not col:
+            return
+        col_type = col.get("type")
+        actual_len = getattr(col_type, "length", None) if col_type is not None else None
+        if actual_len is not None and actual_len < target_len:
             db_facade.session.execute(
-                text("ALTER TABLE aulas ALTER COLUMN grado TYPE VARCHAR(100)")
+                text(
+                    f"ALTER TABLE {table} ALTER COLUMN {column} TYPE VARCHAR({target_len})"
+                )
             )
             db_facade.session.commit()
+
+    # 'grado' guarda el nombre del programa de Academia (texto largo) además del
+    # grado escolar tradicional. Ampliamos a 100 chars para aceptar nombres como
+    # 'ACADEMIA 1RA SELESCCION A5 2026-1' o 'MATE DESDE CERO NK01 2026-1'.
+    _maybe_widen_varchar("aulas", "grado", 100)
+    _maybe_widen_varchar("estudiantes", "grado", 100)
+    _maybe_widen_varchar("pension_estudiante", "estudiante_grado", 100)
+    _maybe_widen_varchar("pago_pension", "estudiante_grado", 100)
 
     estudiantes_actualizar = (
         Estudiante.query.filter(

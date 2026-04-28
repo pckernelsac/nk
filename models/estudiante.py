@@ -12,7 +12,7 @@ class Estudiante(db.Model):
 
     # Información del Estudiante
     nivel = db.Column(db.String(50))
-    grado = db.Column(db.String(20))
+    grado = db.Column(db.String(100))  # 1ro..6to (escolar) o nombre del programa (ACADEMIA)
     seccion = db.Column(db.String(10))
     turno = db.Column(db.String(20))
     carrera_postula = db.Column(db.String(100))

@@ -54,7 +54,7 @@ class PensionEstudiante(db.Model):
     estudiante_nombre_completo = db.Column(db.String(200))
     estudiante_dni = db.Column(db.String(8))
     estudiante_nivel = db.Column(db.String(50))
-    estudiante_grado = db.Column(db.String(20))
+    estudiante_grado = db.Column(db.String(100))
 
     # Tipo de pensión
     tipo = db.Column(db.String(20), default='regular', nullable=False)  # 'regular' o 'academia'
@@ -87,7 +87,7 @@ class PagoPension(db.Model):
     estudiante_nombre_completo = db.Column(db.String(200))
     estudiante_dni = db.Column(db.String(8))
     estudiante_nivel = db.Column(db.String(50))
-    estudiante_grado = db.Column(db.String(20))
+    estudiante_grado = db.Column(db.String(100))
 
     # Info del pagador
     pagador_nombre = db.Column(db.String(200))
