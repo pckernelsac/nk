@@ -125,25 +125,12 @@
             </div>
 
             {% if session.get('rol') == 'administrador' %}
-            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                    <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">Cupo de preguntas</h3>
-                            <p class="text-sm text-gray-600">20, 50, 80 o 100… según nivel, grado y área (CSV / PDFs).</p>
-                        </div>
-                        <a href="{{ url_for('academia_cupo.index') }}"
-                           class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-white text-sm font-semibold shadow shrink-0"
-                           style="background-color: #4f46e5;">
-                            <i class="fas fa-list-ol mr-2"></i>Configurar
-                        </a>
-                    </div>
-                </div>
+            <div class="mt-6">
                 <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                     <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div>
                             <h3 class="text-lg font-bold text-gray-800">Ponderaciones (PDFs)</h3>
-                            <p class="text-sm text-gray-600">Pesos por rango: asignaturas y nivel (Básico, etc.).</p>
+                            <p class="text-sm text-gray-600">Pesos por rango: asignaturas y nivel (20 / 50 / 80 preguntas por área).</p>
                         </div>
                         <a href="{{ url_for('academia_weights.index') }}"
                            class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-white text-sm font-semibold shadow shrink-0"

@@ -3,8 +3,8 @@
 Carga de ponderaciones UNCP 2026 (80 preguntas) desde un .xlsx.
 
 Expone funciones reutilizables tanto desde el script CLI
-(``scripts/load_ponderaciones_uncp.py``) como desde los endpoints HTTP de
-``academia_weights`` y ``academia_cupo``.
+(``scripts/load_ponderaciones_uncp.py``) como desde el endpoint HTTP
+``academia_weights``.
 """
 from __future__ import annotations
 
