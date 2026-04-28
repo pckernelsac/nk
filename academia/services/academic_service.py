@@ -55,6 +55,9 @@ class AcademicService:
         return 1
 
     ACADEMIA_CUPOS = (20, 50, 80)
+    # Cupos que NO usan area: una sola tabla compartida para todas las áreas
+    # (academic_area_id IS NULL en question_weights).
+    AREA_AGNOSTIC_CUPOS = (20,)
 
     @classmethod
     def normalize_cupo(cls, cupo: Optional[int], default: int = 80) -> int:
@@ -77,24 +80,32 @@ class AcademicService:
                 return c
         return cls.ACADEMIA_CUPOS[-1]
 
+    @classmethod
+    def cupo_uses_area(cls, cupo: int) -> bool:
+        """¿El cupo usa el desglose por área? (20 → no, 50/80 → sí)."""
+        return cupo not in cls.AREA_AGNOSTIC_CUPOS
+
     def get_weights_by_area(
         self, area_id: int, cupo: Optional[int] = None
     ) -> Dict[Tuple[int, int], Tuple[str, str, float]]:
-        """Ponderaciones ACADEMIA de un área para un cupo dado (default 80)."""
+        """Ponderaciones ACADEMIA para un cupo dado (default 80).
+
+        Si el cupo está en ``AREA_AGNOSTIC_CUPOS`` (p. ej. 20) ignora ``area_id``
+        y devuelve el set único almacenado con ``academic_area_id IS NULL``.
+        """
         target_cupo = self.normalize_cupo(cupo, default=80)
         weights_map = {}
         try:
-            # Solo filas de ACADEMIA (excluir ponderaciones de nivel escolar con mismo area_id)
-            weights = (
-                QuestionWeight.query.filter(
-                    QuestionWeight.academic_area_id == area_id,
-                    or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
-                    or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
-                    QuestionWeight.cupo == target_cupo,
-                )
-                .order_by(QuestionWeight.question_start)
-                .all()
+            base = QuestionWeight.query.filter(
+                or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
+                or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
+                QuestionWeight.cupo == target_cupo,
             )
+            if self.cupo_uses_area(target_cupo):
+                base = base.filter(QuestionWeight.academic_area_id == area_id)
+            else:
+                base = base.filter(QuestionWeight.academic_area_id.is_(None))
+            weights = base.order_by(QuestionWeight.question_start).all()
 
             for w in weights:
                 weights_map[(w.question_start, w.question_end)] = (w.subject, w.level, w.weight)
@@ -482,28 +493,36 @@ class AcademicService:
         Sustituye las ponderaciones de ACADEMIA del área para el cupo dado.
         Lista vacía elimina todas las ponderaciones del área (ACADEMIA) en ese cupo.
         Solo afecta el conjunto del cupo indicado: los demás cupos del área quedan intactos.
+
+        Para cupos en ``AREA_AGNOSTIC_CUPOS`` (p. ej. 20) ``area_id`` se ignora
+        y se opera sobre el set único con ``academic_area_id IS NULL``.
+
         Retorna mensaje de error o None si ok.
         """
-        if not db.session.get(AcademicArea, area_id):
-            return "El área académica no existe."
         target_cupo = self.normalize_cupo(cupo, default=80)
+        uses_area = self.cupo_uses_area(target_cupo)
+        if uses_area and not db.session.get(AcademicArea, area_id):
+            return "El área académica no existe."
         if rows:
             err = self._validate_weight_rows(rows, target_cupo)
             if err:
                 return err
         try:
-            (
-                QuestionWeight.query.filter(
-                    QuestionWeight.academic_area_id == area_id,
-                    or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
-                    or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
-                    QuestionWeight.cupo == target_cupo,
-                ).delete(synchronize_session=False)
+            q = QuestionWeight.query.filter(
+                or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
+                or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
+                QuestionWeight.cupo == target_cupo,
             )
+            if uses_area:
+                q = q.filter(QuestionWeight.academic_area_id == area_id)
+            else:
+                q = q.filter(QuestionWeight.academic_area_id.is_(None))
+            q.delete(synchronize_session=False)
+
             for r in rows:
                 db.session.add(
                     QuestionWeight(
-                        academic_area_id=area_id,
+                        academic_area_id=area_id if uses_area else None,
                         question_start=int(r["question_start"]),
                         question_end=int(r["question_end"]),
                         subject=(r.get("subject") or "").strip(),

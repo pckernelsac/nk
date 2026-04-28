@@ -50,6 +50,7 @@ def _rows_from_form(form) -> List[Dict[str, Any]]:
 
 
 ACADEMIA_CUPOS = (20, 50, 80)
+AREA_AGNOSTIC_CUPOS = (20,)
 
 
 def _normalize_cupo(raw: Any, default: int = 80) -> int:
@@ -114,6 +115,7 @@ def init_weights_routes(academic_service):
                 area_id=area_id,
                 cupo_sel=cupo,
                 cupo_tabs=cupo_tabs,
+                cupo_usa_area=(cupo not in AREA_AGNOSTIC_CUPOS),
                 nivel_sel=nivel,
                 grado_sel=grado,
                 areas_academia=areas,

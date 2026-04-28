@@ -118,7 +118,7 @@
                 {% endwith %}
             </div>
 
-            {% if mode == 'area' %}
+            {% if mode == 'area' and cupo_usa_area %}
             <form method="get" action="{{ url_for('academia_weights.index') }}" class="mb-6 flex flex-wrap items-end gap-3">
                 <input type="hidden" name="mode" value="area"/>
                 <input type="hidden" name="cupo" value="{{ cupo_sel }}"/>
@@ -134,6 +134,11 @@
                     Cargar
                 </button>
             </form>
+            {% elif mode == 'area' and not cupo_usa_area %}
+            <div class="mb-6 p-3 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-700">
+                <i class="fas fa-info-circle mr-1"></i>
+                El set de <strong>{{ cupo_sel }} preguntas</strong> es único: aplica a todas las áreas (no se separa por área).
+            </div>
             {% else %}
             <form method="get" action="{{ url_for('academia_weights.index') }}" class="mb-6 flex flex-wrap items-end gap-3">
                 <input type="hidden" name="mode" value="nivel"/>
