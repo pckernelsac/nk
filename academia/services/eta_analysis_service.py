@@ -9,6 +9,8 @@ from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 from collections import defaultdict
 
+from sqlalchemy import or_
+
 from models import db
 from models.academia import AcademiaStudent, AcademicArea
 
@@ -421,7 +423,7 @@ class ETAAnalysisService:
             if term:
                 pattern = f'%{term}%'
                 inner = inner.filter(
-                    db.or_(
+                    or_(
                         AcademiaStudent.student_id.ilike(pattern),
                         AcademiaStudent.first_name.ilike(pattern),
                         AcademiaStudent.last_name.ilike(pattern),
