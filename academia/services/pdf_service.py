@@ -283,20 +283,19 @@ class PDFService:
         if not points_lookup:
             return 0.0
 
-    # Ajustar índices a 0-based
-    # IMPORTANTE: end_question es INCLUSIVE, por lo que sumamos 1 al end_idx
+        # Ajustar índices a 0-based; end_question es INCLUSIVE, por eso end_idx
+        # llega hasta end_question (range será exclusivo en ese límite).
         start_idx = max(0, start_question - 1)
-        end_idx = min(num_questions, end_question)  # end_question es el último índice inclusive
+        end_idx = min(num_questions, end_question)
 
         partial_score = 0.0
-        for i in range(start_idx, end_idx):  # range es exclusivo en el límite superior
-                if i < len(marks):
-                    is_correct = (marks[i].strip().upper() == "C")
-                    if is_correct:
-                # Sumar el puntaje de la pregunta si existe en el lookup
-                        partial_score += points_lookup.get(i, 0.0)
+        for i in range(start_idx, end_idx):
+            if i < len(marks):
+                is_correct = (marks[i].strip().upper() == "C")
+                if is_correct:
+                    partial_score += points_lookup.get(i, 0.0)
 
-                return round(partial_score, 6)
+        return round(partial_score, 6)
     
     def calculate_knowledge_aptitude_scores(self, student: Dict[str, Any], num_questions_total: int) -> Tuple[float, float]:
         """
