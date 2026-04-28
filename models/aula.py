@@ -46,7 +46,7 @@ class Aula(db.Model):
 
     # Características del aula
     nivel = db.Column(db.String(50), nullable=False)  # Primaria, Secundaria
-    grado = db.Column(db.String(20), nullable=False)  # 1ro, 2do, 3ro, 4to, 5to, 6to
+    grado = db.Column(db.String(100), nullable=False)  # 1ro..6to (escolar) o nombre del programa (ACADEMIA)
     seccion = db.Column(db.String(10), nullable=False)  # A, B, C, etc.
     turno = db.Column(db.String(20), nullable=False)  # Mañana, Tarde
 

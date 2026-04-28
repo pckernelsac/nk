@@ -83,6 +83,19 @@ async def lifespan(app: FastAPI):
             )
             db_facade.session.commit()
 
+    if inspector.has_table("aulas"):
+        cols_aulas = {c["name"]: c for c in inspector.get_columns("aulas")}
+        grado_col = cols_aulas.get("grado")
+        # ``length`` puede ser None (TEXT) o un int para VARCHAR(N).
+        grado_len = (grado_col or {}).get("type")
+        # SQLAlchemy expone .length en el tipo cuando es VARCHAR.
+        actual_len = getattr(grado_len, "length", None) if grado_len is not None else None
+        if actual_len is not None and actual_len < 100:
+            db_facade.session.execute(
+                text("ALTER TABLE aulas ALTER COLUMN grado TYPE VARCHAR(100)")
+            )
+            db_facade.session.commit()
+
     estudiantes_actualizar = (
         Estudiante.query.filter(
             or_(
