@@ -112,6 +112,54 @@ async def lifespan(app: FastAPI):
     _maybe_widen_varchar("pension_estudiante", "estudiante_grado", 100)
     _maybe_widen_varchar("pago_pension", "estudiante_grado", 100)
 
+    # Auto-carga ponderaciones por cupo si están ausentes y existe el Excel
+    # correspondiente en ``excel/``. Esto cubre los reportes consolidados de
+    # ETAs de 50 preguntas: si la tabla cupo=50 está vacía, la boleta y la
+    # tabla "Calificaciones por asignatura y ETA" muestran N/A.
+    try:
+        from models.academia import QuestionWeight  # noqa: WPS433
+
+        if inspector.has_table("question_weights"):
+            ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+            mapping = (
+                (50, os.path.join(ROOT_DIR, "excel", "50PREGUNTAS.xlsx")),
+            )
+            for cupo_target, xlsx_path in mapping:
+                if not os.path.isfile(xlsx_path):
+                    continue
+                existe = (
+                    db_facade.session.query(QuestionWeight.id)
+                    .filter(QuestionWeight.cupo == cupo_target)
+                    .first()
+                )
+                if existe is not None:
+                    continue
+                try:
+                    from academia.services.uncp_loader import (
+                        apply_weights as _uncp_apply_weights,
+                        parse_workbook as _uncp_parse_workbook,
+                        validate_parsed as _uncp_validate_parsed,
+                    )
+
+                    parsed = _uncp_parse_workbook(xlsx_path)
+                    _uncp_validate_parsed(parsed, expected_questions=cupo_target)
+                    _uncp_apply_weights(parsed, cupo=cupo_target)
+                    logger.info(
+                        "Ponderaciones cupo=%s cargadas automáticamente desde %s",
+                        cupo_target,
+                        os.path.basename(xlsx_path),
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    db_facade.session.rollback()
+                    logger.warning(
+                        "No se pudieron cargar las ponderaciones cupo=%s desde %s: %s",
+                        cupo_target,
+                        xlsx_path,
+                        exc,
+                    )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("No se ejecutó la auto-carga de ponderaciones por cupo: %s", exc)
+
     estudiantes_actualizar = (
         Estudiante.query.filter(
             or_(
