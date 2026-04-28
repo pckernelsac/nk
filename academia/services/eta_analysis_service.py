@@ -405,43 +405,43 @@ class ETAAnalysisService:
         """
         Busca estudiantes para análisis de ETA.
 
-        Devuelve una fila por (student_id, area). PostgreSQL exige que toda
-        columna no agregada esté en GROUP BY — por eso incluimos
-        first_name/last_name/area_id/area_name allí. Para el primer/último
-        nombre usamos MAX() de modo que el GROUP BY sea más simple y no
-        duplique a un mismo alumno por variaciones de capitalización entre
-        ETAs.
+        Devuelve una fila por student_id (alumno único). Filtros aplicados
+        sobre las filas individuales antes de agregar.
         """
         try:
-            base_query = db.session.query(
+            term = (search_term or "").strip()
+            inner = db.session.query(
                 AcademiaStudent.student_id.label('student_id'),
                 db.func.max(AcademiaStudent.first_name).label('first_name'),
                 db.func.max(AcademiaStudent.last_name).label('last_name'),
-                AcademiaStudent.academic_area_id.label('academic_area_id'),
-                AcademicArea.name.label('academic_area_name'),
+                db.func.max(AcademiaStudent.academic_area_id).label('academic_area_id'),
                 db.func.count(AcademiaStudent.id).label('total_etas'),
-            ).outerjoin(
-                AcademicArea, AcademiaStudent.academic_area_id == AcademicArea.id
-            )
+            ).filter(AcademiaStudent.student_id.isnot(None))
 
-            if search_term:
-                pattern = f'%{search_term}%'
-                base_query = base_query.filter(
+            if term:
+                pattern = f'%{term}%'
+                inner = inner.filter(
                     db.or_(
-                        AcademiaStudent.student_id.like(pattern),
+                        AcademiaStudent.student_id.ilike(pattern),
                         AcademiaStudent.first_name.ilike(pattern),
                         AcademiaStudent.last_name.ilike(pattern),
                         AcademiaStudent.custom_id.ilike(pattern),
                     )
                 )
 
+            sub = inner.group_by(AcademiaStudent.student_id).subquery()
+
             rows = (
-                base_query.group_by(
-                    AcademiaStudent.student_id,
-                    AcademiaStudent.academic_area_id,
-                    AcademicArea.name,
+                db.session.query(
+                    sub.c.student_id,
+                    sub.c.first_name,
+                    sub.c.last_name,
+                    sub.c.academic_area_id,
+                    AcademicArea.name.label('academic_area_name'),
+                    sub.c.total_etas,
                 )
-                .order_by(db.func.max(AcademiaStudent.last_name), db.func.max(AcademiaStudent.first_name))
+                .outerjoin(AcademicArea, AcademicArea.id == sub.c.academic_area_id)
+                .order_by(sub.c.last_name, sub.c.first_name)
                 .limit(50)
                 .all()
             )
@@ -457,7 +457,7 @@ class ETAAnalysisService:
 
         except Exception as e:
             print(f"Error buscando estudiantes para análisis ETA: {e}")
-            return []
+            raise
 
     def get_consolidated_eta_analysis(self, student_ids: List[str]) -> Dict[str, Any]:
         """
