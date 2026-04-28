@@ -179,42 +179,40 @@ def init_weights_routes(academic_service):
             )
         return RedirectResponse(url=loc, status_code=303)
 
-    @router.post(
-        "/ponderaciones/cargar-uncp", name="academia_weights.cargar_uncp"
-    )
-    async def ponderaciones_cargar_uncp(
-        request: Request, _user_id: int = Depends(require_roles("administrador"))
-    ):
+    async def _cargar_excel(request: Request, expected_questions: int) -> RedirectResponse:
         form = await request.form()
+        redirect = (
+            f"{request.url_for('academia_weights.index')}"
+            f"?mode=area&area_id=1&cupo={expected_questions}"
+        )
         if not csrf_ok(request, form.get("csrf_token")) and getattr(
             Config, "WTF_CSRF_ENABLED", True
         ):
             add_flash(request, "Sesión de seguridad expirada. Intente de nuevo.", "error")
-            return RedirectResponse(
-                url=str(request.url_for("academia_weights.index")), status_code=303
-            )
+            return RedirectResponse(url=redirect, status_code=303)
 
         up = form.get("file_uncp")
         if up is None or not getattr(up, "filename", None):
-            add_flash(request, "Seleccione el archivo .xlsx de ponderaciones UNCP.", "error")
-            return RedirectResponse(
-                url=str(request.url_for("academia_weights.index")), status_code=303
+            add_flash(
+                request,
+                f"Seleccione el archivo .xlsx de ponderaciones de {expected_questions} preguntas.",
+                "error",
             )
+            return RedirectResponse(url=redirect, status_code=303)
         if not up.filename.lower().endswith(".xlsx"):
             add_flash(request, "El archivo debe ser .xlsx.", "error")
-            return RedirectResponse(
-                url=str(request.url_for("academia_weights.index")), status_code=303
-            )
+            return RedirectResponse(url=redirect, status_code=303)
 
         try:
             content = await up.read()
             parsed = uncp_parse_workbook(BytesIO(content))
-            uncp_validate_parsed(parsed)
-            stats = uncp_apply_weights(parsed)
+            uncp_validate_parsed(parsed, expected_questions=expected_questions)
+            stats = uncp_apply_weights(parsed, cupo=expected_questions)
             add_flash(
                 request,
-                f"Ponderaciones UNCP cargadas: {stats['inserted']} filas insertadas en "
-                f"{stats['areas']} áreas (se reemplazaron {stats['deleted']} filas previas).",
+                f"Ponderaciones de {expected_questions} preguntas cargadas: "
+                f"{stats['inserted']} filas insertadas en {stats['areas']} áreas "
+                f"(se reemplazaron {stats['deleted']} filas previas).",
                 "success",
             )
         except (ValueError, RuntimeError) as exc:
@@ -222,8 +220,22 @@ def init_weights_routes(academic_service):
         except Exception as exc:  # noqa: BLE001 — rollback ya hecho por apply_full/weights
             add_flash(request, f"Error inesperado: {exc}", "error")
 
-        return RedirectResponse(
-            url=str(request.url_for("academia_weights.index")), status_code=303
-        )
+        return RedirectResponse(url=redirect, status_code=303)
+
+    @router.post(
+        "/ponderaciones/cargar-uncp", name="academia_weights.cargar_uncp"
+    )
+    async def ponderaciones_cargar_uncp(
+        request: Request, _user_id: int = Depends(require_roles("administrador"))
+    ):
+        return await _cargar_excel(request, expected_questions=80)
+
+    @router.post(
+        "/ponderaciones/cargar-50", name="academia_weights.cargar_50"
+    )
+    async def ponderaciones_cargar_50(
+        request: Request, _user_id: int = Depends(require_roles("administrador"))
+    ):
+        return await _cargar_excel(request, expected_questions=50)
 
     return router

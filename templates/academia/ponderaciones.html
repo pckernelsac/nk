@@ -55,26 +55,50 @@
             </ul>
         </div>
 
-        <div class="p-6 border-b border-gray-100 bg-purple-50 text-purple-900 text-sm">
-            <p class="font-semibold mb-2">Cargar ponderaciones UNCP 2026 (Excel oficial)</p>
-            <p class="mb-3">
-                Sube el archivo <code>NUEVA PONDERACION CICLO UNCP 2026.xlsx</code>: el sistema reemplaza
-                las ponderaciones ACADEMIA de las 5 áreas con las del Excel (~85 filas, 80 preguntas por área).
-                Las ponderaciones de niveles escolares no se tocan.
-            </p>
-            <form method="post" action="{{ url_for('academia_weights.cargar_uncp') }}"
-                  enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="file" name="file_uncp" accept=".xlsx" required
-                       class="block text-sm text-purple-900 file:mr-3 file:px-3 file:py-2 file:rounded-md
-                              file:border-0 file:bg-purple-600 file:text-white file:font-semibold
-                              hover:file:bg-purple-700"/>
-                <button type="submit" class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow"
-                        style="background-color: #5F2A5D;"
-                        onclick="return confirm('Esto reemplazará las ponderaciones ACADEMIA de las 5 áreas. ¿Continuar?');">
-                    <i class="fas fa-upload mr-2"></i>Cargar y reemplazar
-                </button>
-            </form>
+        <div class="p-6 border-b border-gray-100 bg-purple-50 text-purple-900 text-sm space-y-5">
+            <div>
+                <p class="font-semibold mb-2">Cargar ponderaciones UNCP 2026 (80 preguntas)</p>
+                <p class="mb-3">
+                    Sube el archivo <code>NUEVA PONDERACION CICLO UNCP 2026.xlsx</code>: el sistema reemplaza
+                    el set <strong>cupo 80</strong> de las 5 áreas (~85 filas, 80 preguntas por área).
+                    Las ponderaciones de niveles escolares y los sets de 20/50 no se tocan.
+                </p>
+                <form method="post" action="{{ url_for('academia_weights.cargar_uncp') }}"
+                      enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="file" name="file_uncp" accept=".xlsx" required
+                           class="block text-sm text-purple-900 file:mr-3 file:px-3 file:py-2 file:rounded-md
+                                  file:border-0 file:bg-purple-600 file:text-white file:font-semibold
+                                  hover:file:bg-purple-700"/>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow"
+                            style="background-color: #5F2A5D;"
+                            onclick="return confirm('Esto reemplazará las ponderaciones ACADEMIA cupo=80 de las 5 áreas. ¿Continuar?');">
+                        <i class="fas fa-upload mr-2"></i>Cargar y reemplazar (80)
+                    </button>
+                </form>
+            </div>
+
+            <div class="border-t border-purple-200 pt-4">
+                <p class="font-semibold mb-2">Cargar ponderaciones de 50 preguntas</p>
+                <p class="mb-3">
+                    Sube el archivo <code>50PREGUNTAS.xlsx</code>: el sistema reemplaza el set
+                    <strong>cupo 50</strong> de las 5 áreas con sus asignaturas y pesos. Sólo afecta
+                    ese set; las ponderaciones de 20 y 80 preguntas quedan intactas.
+                </p>
+                <form method="post" action="{{ url_for('academia_weights.cargar_50') }}"
+                      enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="file" name="file_uncp" accept=".xlsx" required
+                           class="block text-sm text-purple-900 file:mr-3 file:px-3 file:py-2 file:rounded-md
+                                  file:border-0 file:bg-purple-600 file:text-white file:font-semibold
+                                  hover:file:bg-purple-700"/>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow"
+                            style="background-color: #5F2A5D;"
+                            onclick="return confirm('Esto reemplazará las ponderaciones ACADEMIA cupo=50 de las 5 áreas. ¿Continuar?');">
+                        <i class="fas fa-upload mr-2"></i>Cargar y reemplazar (50)
+                    </button>
+                </form>
+            </div>
         </div>
 
         <div class="p-6">

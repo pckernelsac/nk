@@ -43,8 +43,10 @@ SUBJECT_NORMALIZATION: Dict[str, str] = {
     "FILOSOFIA": "Filosofía",
     "APTITUD LOGICO MATEMATICO": "Aptitud Lógico Matemático",
     "APTITUD COMUNICATIVA": "Aptitud Comunicativa",
+    "APTITUD COMUNICATIVA (INGLES)": "Aptitud Comunicativa (Inglés)",
     # Typo en el Excel oficial UNCP 2026:
     "APTITUD COMUNICATICA": "Aptitud Comunicativa",
+    "APTITUD COMUNICATICA (INGLES)": "Aptitud Comunicativa (Inglés)",
 }
 
 LEVEL_NORMALIZATION: Dict[str, str] = {
@@ -63,6 +65,11 @@ def _strip_accents(s: str) -> str:
 
 def normalize_subject(raw: str) -> str:
     key = _strip_accents(raw or "").strip().upper()
+    # Compactar espacios y eliminar los pegados a paréntesis para tolerar
+    # variantes como "APTITUD COMUNICATICA ( INGLES )" vs "(INGLES)".
+    key = re.sub(r"\s+", " ", key)
+    key = re.sub(r"\(\s+", "(", key)
+    key = re.sub(r"\s+\)", ")", key)
     if key in SUBJECT_NORMALIZATION:
         return SUBJECT_NORMALIZATION[key]
     raise ValueError(f"Asignatura desconocida en Excel: {raw!r}")
@@ -85,14 +92,23 @@ def _parse_range(raw: str) -> Tuple[int, int]:
     return start, end
 
 
-def parse_workbook(source: Union[str, BinaryIO]) -> Dict[int, Dict[str, Any]]:
-    """Lee el .xlsx (path o file-like) y devuelve {area_id: {'name', 'rows'}}."""
+def parse_workbook(
+    source: Union[str, BinaryIO], sheet_name: Optional[str] = None
+) -> Dict[int, Dict[str, Any]]:
+    """Lee el .xlsx (path o file-like) y devuelve {area_id: {'name', 'rows'}}.
+
+    ``sheet_name`` por defecto intenta ``PONDERADO 26`` (Excel oficial UNCP 2026
+    de 80 preguntas) y si no existe usa la primera hoja del libro (caso del
+    archivo ``50PREGUNTAS.xlsx`` cuya hoja se llama ``Hoja1``).
+    """
     wb = load_workbook(source, data_only=True)
-    if SHEET_NAME not in wb.sheetnames:
+    if sheet_name is None:
+        sheet_name = SHEET_NAME if SHEET_NAME in wb.sheetnames else wb.sheetnames[0]
+    elif sheet_name not in wb.sheetnames:
         raise ValueError(
-            f"Hoja {SHEET_NAME!r} no encontrada. Hojas disponibles: {wb.sheetnames}"
+            f"Hoja {sheet_name!r} no encontrada. Hojas disponibles: {wb.sheetnames}"
         )
-    ws = wb[SHEET_NAME]
+    ws = wb[sheet_name]
 
     areas: Dict[int, Dict[str, Any]] = {}
     current_area_id: Optional[int] = None
@@ -156,12 +172,21 @@ def parse_workbook(source: Union[str, BinaryIO]) -> Dict[int, Dict[str, Any]]:
     return areas
 
 
-def validate_parsed(parsed: Dict[int, Dict[str, Any]]) -> None:
+def validate_parsed(
+    parsed: Dict[int, Dict[str, Any]], expected_questions: Optional[int] = None
+) -> int:
+    """Valida que las 5 áreas estén presentes y sus rangos sean contiguos 1..N.
+
+    Si ``expected_questions`` es ``None`` se autodetecta: cada área debe cubrir
+    el mismo total y ese total se devuelve. Si se pasa explícito, valida que
+    todas las áreas cubran 1..expected_questions. Retorna el total detectado.
+    """
     if len(parsed) != EXPECTED_AREAS:
         raise ValueError(
             f"Se esperaban {EXPECTED_AREAS} áreas en el Excel, se encontraron "
             f"{len(parsed)}: {sorted(parsed.keys())}."
         )
+    area_totals: Dict[int, int] = {}
     for area_id, info in parsed.items():
         rows_sorted = sorted(info["rows"], key=lambda x: (x["q_start"], x["q_end"]))
         expected = 1
@@ -172,15 +197,25 @@ def validate_parsed(parsed: Dict[int, Dict[str, Any]]) -> None:
                     f"{r['q_start']}-{r['q_end']} (esperado inicio en {expected})."
                 )
             expected = r["q_end"] + 1
-        if expected - 1 != EXPECTED_QUESTIONS_PER_AREA:
-            raise ValueError(
-                f"AREA {area_id}: cubre 1..{expected-1}, se esperaba "
-                f"1..{EXPECTED_QUESTIONS_PER_AREA}."
-            )
+        area_totals[area_id] = expected - 1
         # Pre-validar que las normalizaciones existan para todas las filas.
         for r in info["rows"]:
             normalize_subject(r["subject_raw"])
             normalize_level(r["level_raw"])
+
+    distinct_totals = set(area_totals.values())
+    if len(distinct_totals) != 1:
+        raise ValueError(
+            f"Áreas con totales de preguntas distintos: {area_totals}. "
+            "Cada área debe cubrir el mismo número de preguntas."
+        )
+    detected = next(iter(distinct_totals))
+    if expected_questions is not None and detected != expected_questions:
+        raise ValueError(
+            f"El Excel cubre 1..{detected} por área, se esperaba "
+            f"1..{expected_questions}."
+        )
+    return detected
 
 
 def match_db_areas(parsed: Dict[int, Dict[str, Any]]) -> Dict[int, AcademicArea]:
@@ -208,10 +243,15 @@ def match_db_areas(parsed: Dict[int, Dict[str, Any]]) -> Dict[int, AcademicArea]
 
 
 def apply_weights(
-    parsed: Dict[int, Dict[str, Any]], commit: bool = True
+    parsed: Dict[int, Dict[str, Any]],
+    commit: bool = True,
+    cupo: int = EXPECTED_QUESTIONS_PER_AREA,
 ) -> Dict[str, int]:
-    """Reemplaza ``question_weights`` ACADEMIA para las áreas del Excel.
+    """Reemplaza ``question_weights`` ACADEMIA del cupo dado para las áreas del Excel.
 
+    Sólo afecta el set ``cupo`` indicado: los demás cupos del área quedan
+    intactos. ``cupo`` por defecto es 80 (UNCP 2026); pasar 50 para el Excel
+    de 50 preguntas.
     Si ``commit=False`` el caller controla la transacción.
     """
     matched = match_db_areas(parsed)
@@ -222,7 +262,7 @@ def apply_weights(
             QuestionWeight.academic_area_id.in_(area_ids),
             or_(QuestionWeight.nivel == "ACADEMIA", QuestionWeight.nivel.is_(None)),
             or_(QuestionWeight.grado.is_(None), QuestionWeight.grado == ""),
-            QuestionWeight.cupo == EXPECTED_QUESTIONS_PER_AREA,
+            QuestionWeight.cupo == cupo,
         )
         .delete(synchronize_session=False)
     )
@@ -240,7 +280,7 @@ def apply_weights(
                     weight=row["weight"],
                     nivel="ACADEMIA",
                     grado=None,
-                    cupo=EXPECTED_QUESTIONS_PER_AREA,
+                    cupo=cupo,
                 )
             )
             inserted += 1
@@ -248,7 +288,12 @@ def apply_weights(
         db.session.commit()
     else:
         db.session.flush()
-    return {"deleted": int(deleted or 0), "inserted": inserted, "areas": len(area_ids)}
+    return {
+        "deleted": int(deleted or 0),
+        "inserted": inserted,
+        "areas": len(area_ids),
+        "cupo": cupo,
+    }
 
 
 def apply_cupo(
