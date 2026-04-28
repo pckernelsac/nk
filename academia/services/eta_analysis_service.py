@@ -404,15 +404,22 @@ class ETAAnalysisService:
     def search_students_for_eta_analysis(self, search_term: str = "") -> List[Dict[str, Any]]:
         """
         Busca estudiantes para análisis de ETA.
+
+        Devuelve una fila por (student_id, area). PostgreSQL exige que toda
+        columna no agregada esté en GROUP BY — por eso incluimos
+        first_name/last_name/area_id/area_name allí. Para el primer/último
+        nombre usamos MAX() de modo que el GROUP BY sea más simple y no
+        duplique a un mismo alumno por variaciones de capitalización entre
+        ETAs.
         """
         try:
             base_query = db.session.query(
-                AcademiaStudent.student_id,
-                AcademiaStudent.first_name,
-                AcademiaStudent.last_name,
-                AcademiaStudent.academic_area_id,
+                AcademiaStudent.student_id.label('student_id'),
+                db.func.max(AcademiaStudent.first_name).label('first_name'),
+                db.func.max(AcademiaStudent.last_name).label('last_name'),
+                AcademiaStudent.academic_area_id.label('academic_area_id'),
                 AcademicArea.name.label('academic_area_name'),
-                db.func.count(AcademiaStudent.id).label('total_etas')
+                db.func.count(AcademiaStudent.id).label('total_etas'),
             ).outerjoin(
                 AcademicArea, AcademiaStudent.academic_area_id == AcademicArea.id
             )
@@ -424,16 +431,20 @@ class ETAAnalysisService:
                         AcademiaStudent.student_id.like(pattern),
                         AcademiaStudent.first_name.ilike(pattern),
                         AcademiaStudent.last_name.ilike(pattern),
-                        AcademiaStudent.custom_id.ilike(pattern)
+                        AcademiaStudent.custom_id.ilike(pattern),
                     )
                 )
 
-            rows = base_query.group_by(
-                AcademiaStudent.student_id
-            ).order_by(
-                AcademiaStudent.last_name,
-                AcademiaStudent.first_name
-            ).limit(50).all()
+            rows = (
+                base_query.group_by(
+                    AcademiaStudent.student_id,
+                    AcademiaStudent.academic_area_id,
+                    AcademicArea.name,
+                )
+                .order_by(db.func.max(AcademiaStudent.last_name), db.func.max(AcademiaStudent.first_name))
+                .limit(50)
+                .all()
+            )
 
             return [{
                 'student_id': r.student_id,
@@ -441,7 +452,7 @@ class ETAAnalysisService:
                 'last_name': r.last_name,
                 'academic_area_id': r.academic_area_id,
                 'academic_area_name': r.academic_area_name,
-                'total_etas': r.total_etas
+                'total_etas': r.total_etas,
             } for r in rows]
 
         except Exception as e:
