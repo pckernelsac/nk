@@ -15,6 +15,8 @@ from config import Config
 from dependencies import get_current_user_id
 from models import Asistencia, Estudiante, db
 from models.aula import Aula
+from models.matricula import Matricula
+from services.aula_service import AulaService
 from template_helpers import add_flash, common_context, csrf_ok, templates
 from utils.carnet_generator import generar_carnet_imagen, generar_carnets_a4
 from utils.pagination import paginate_query
@@ -1194,6 +1196,7 @@ async def upload_excel(request: Request, _user_id: int = Depends(get_current_use
 
         estudiantes_creados = 0
         errores = []
+        creados_refs: list[tuple[int, Estudiante]] = []
 
         # Cargar todos los DNIs existentes en memoria (1 query en vez de N)
         dnis_existentes = set(
@@ -1251,6 +1254,7 @@ async def upload_excel(request: Request, _user_id: int = Depends(get_current_use
                 db.session.add(nuevo_estudiante)
                 num_codigo += 1
                 estudiantes_creados += 1
+                creados_refs.append((row_num, nuevo_estudiante))
 
             except Exception as e:
                 errores.append(f"Fila {row_num}: {str(e)}")
@@ -1261,19 +1265,73 @@ async def upload_excel(request: Request, _user_id: int = Depends(get_current_use
         print(f"Estudiantes creados: {estudiantes_creados}")
         print(f"Errores: {len(errores)}")
 
+        matriculados = 0
+        avisos: list[str] = []
         if estudiantes_creados > 0:
             print("Guardando cambios en la base de datos...")
             db.session.commit()
             print("✓ Cambios guardados")
 
+            # Auto-matriculación: por cada estudiante recién creado, buscar un aula
+            # activa cuyo (nivel, grado) coincida case-insensitive con el del Excel.
+            # Si hay exactamente una, se matricula. Si hay 0 o varias, se reporta y
+            # el usuario debe asignarlo manualmente desde /aulas.
+            usuario = request.session.get("username") or "SISTEMA_BULK_UPLOAD"
+            for row_num, est in creados_refs:
+                if not est.nivel or not est.grado:
+                    avisos.append(
+                        f"Fila {row_num}: estudiante creado sin nivel/grado, no se matriculó."
+                    )
+                    continue
+                aulas_match = (
+                    Aula.query.filter(
+                        Aula.activo.is_(True),
+                        func.upper(Aula.nivel) == est.nivel.strip().upper(),
+                        func.upper(Aula.grado) == est.grado.strip().upper(),
+                    ).all()
+                )
+                if not aulas_match:
+                    avisos.append(
+                        f"Fila {row_num}: no hay aula activa para "
+                        f"{est.nivel}/{est.grado}; estudiante creado sin matrícula."
+                    )
+                    continue
+                if len(aulas_match) > 1:
+                    avisos.append(
+                        f"Fila {row_num}: {len(aulas_match)} aulas coinciden con "
+                        f"{est.nivel}/{est.grado}; matricular manualmente."
+                    )
+                    continue
+                aula = aulas_match[0]
+                _, err = AulaService.matricular_estudiante(
+                    estudiante_id=est.id,
+                    aula_id=aula.id,
+                    anio_escolar=aula.anio_escolar,
+                    observaciones="Matrícula automática (carga masiva Excel)",
+                    usuario_registro=usuario,
+                )
+                if err:
+                    avisos.append(f"Fila {row_num}: {err}")
+                else:
+                    matriculados += 1
+
         # Preparar mensaje de respuesta
         if estudiantes_creados > 0 and len(errores) == 0:
-            mensaje = f"Se importaron exitosamente {estudiantes_creados} estudiante(s)"
-            return JSONResponse({"success": True, "message": mensaje}, status_code=200)
-        if estudiantes_creados > 0 and len(errores) > 0:
-            mensaje = f"Se importaron {estudiantes_creados} estudiante(s). {len(errores)} fila(s) con errores"
+            mensaje = (
+                f"Se importaron exitosamente {estudiantes_creados} estudiante(s); "
+                f"{matriculados} matriculado(s) automáticamente."
+            )
             return JSONResponse(
-                {"success": True, "message": mensaje, "errores": errores},
+                {"success": True, "message": mensaje, "avisos": avisos},
+                status_code=200,
+            )
+        if estudiantes_creados > 0 and len(errores) > 0:
+            mensaje = (
+                f"Se importaron {estudiantes_creados} estudiante(s) "
+                f"({matriculados} matriculado(s)). {len(errores)} fila(s) con errores"
+            )
+            return JSONResponse(
+                {"success": True, "message": mensaje, "errores": errores, "avisos": avisos},
                 status_code=200,
             )
         mensaje = f"No se pudo importar ningún estudiante. {len(errores)} error(es) encontrado(s)"
