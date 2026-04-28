@@ -23,6 +23,13 @@
             <p class="text-gray-600">Administra las aulas y matrículas del sistema</p>
         </div>
         <div class="flex gap-3">
+            <form method="post" action="{{ url_for('aulas.auto_matricular') }}"
+                  onsubmit="return confirm('Esto matricula estudiantes existentes (sin aula) en el aula activa cuyo nivel+grado coincida exactamente. ¿Continuar?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                    <i class="fas fa-user-check mr-2"></i>Auto-matricular
+                </button>
+            </form>
             <a href="{{ url_for('aulas.migrar_datos') }}" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
                 <i class="fas fa-database mr-2"></i>Migrar Datos
             </a>

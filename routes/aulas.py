@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 
 from config import Config
 from dependencies import get_current_user_id, require_roles
@@ -112,6 +112,91 @@ async def crear(
         )
 
     return templates.TemplateResponse("aulas/crear.html", common_context(request))
+
+
+@router.post("/auto-matricular", name="aulas.auto_matricular")
+async def auto_matricular(
+    request: Request,
+    _user_id: int = Depends(require_roles("administrador")),
+):
+    """Reconcilia estudiantes existentes contra aulas: matricula a quienes
+    no tienen matrícula activa y cuyo (nivel, grado) coincide con
+    exactamente un aula activa.
+    """
+    form = await request.form()
+    if getattr(Config, "WTF_CSRF_ENABLED", True) and not csrf_ok(request, form.get("csrf_token")):
+        add_flash(request, "Sesión de seguridad expirada. Intente de nuevo.", "error")
+        return RedirectResponse(url=str(request.url_for("aulas.lista")), status_code=303)
+
+    usuario = _username(request) or "SISTEMA_AUTO_MATRICULAR"
+
+    # IDs de estudiantes que YA tienen matrícula activa (en cualquier aula).
+    matriculados_ids = {
+        row[0]
+        for row in db.session.query(Matricula.estudiante_id)
+        .filter(Matricula.estado == "activo")
+        .distinct()
+        .all()
+    }
+
+    # Estudiantes con nivel+grado y sin matrícula activa.
+    candidatos = (
+        Estudiante.query.filter(
+            Estudiante.nivel.isnot(None),
+            Estudiante.nivel != "",
+            Estudiante.grado.isnot(None),
+            Estudiante.grado != "",
+        )
+        .all()
+    )
+
+    matriculados = 0
+    sin_aula = 0
+    ambiguos = 0
+    errores: list[str] = []
+    aulas_cache: dict[tuple[str, str], list] = {}
+
+    for est in candidatos:
+        if est.id in matriculados_ids:
+            continue
+        clave = (est.nivel.strip().upper(), est.grado.strip().upper())
+        if clave not in aulas_cache:
+            aulas_cache[clave] = (
+                Aula.query.filter(
+                    Aula.activo.is_(True),
+                    func.upper(func.trim(Aula.nivel)) == clave[0],
+                    func.upper(func.trim(Aula.grado)) == clave[1],
+                ).all()
+            )
+        aulas_match = aulas_cache[clave]
+        if not aulas_match:
+            sin_aula += 1
+            continue
+        if len(aulas_match) > 1:
+            ambiguos += 1
+            continue
+        aula = aulas_match[0]
+        _, err = get_aula_service().matricular_estudiante(
+            estudiante_id=est.id,
+            aula_id=aula.id,
+            anio_escolar=aula.anio_escolar,
+            observaciones="Auto-matrícula (reconciliación de estudiantes existentes)",
+            usuario_registro=usuario,
+        )
+        if err:
+            errores.append(f"{est.dni_est or est.id}: {err}")
+        else:
+            matriculados += 1
+
+    msg = f"Auto-matrícula completada: {matriculados} matriculado(s)"
+    if sin_aula:
+        msg += f", {sin_aula} sin aula coincidente"
+    if ambiguos:
+        msg += f", {ambiguos} con varias aulas posibles (asignar manualmente)"
+    add_flash(request, msg, "success" if matriculados else "warning")
+    for e in errores[:10]:
+        add_flash(request, e, "warning")
+    return RedirectResponse(url=str(request.url_for("aulas.lista")), status_code=303)
 
 
 @router.api_route("/migrar", methods=["GET", "POST"], name="aulas.migrar_datos")
