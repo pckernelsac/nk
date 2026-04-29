@@ -75,8 +75,8 @@ def generar_carnets_a4(estudiantes_list, logo_path=None, insignia_path=None, inc
         root_path = os.getcwd()
 
     MARGEN = 10 * mm
-    CARNET_W = 62 * mm
-    CARNET_H = 90 * mm
+    CARNET_W = 50 * mm
+    CARNET_H = 80 * mm
     ESPACIADO = 1 * mm
     COLOR_MORADO = (95 / 255, 42 / 255, 93 / 255)
     COLOR_MORADO_CLARO = (140 / 255, 80 / 255, 138 / 255)
@@ -157,7 +157,7 @@ def _dibujar_carnet_frente(c, estudiante, x, y, ancho, alto,
     c.rect(x, y, ancho, alto, fill=1, stroke=0)
 
     # 2) Header con gradiente ────────────────────────────────────────────
-    header_h = 24 * mm
+    header_h = 20 * mm
     _draw_vertical_gradient(
         c,
         x, y + alto - header_h,
@@ -203,9 +203,9 @@ def _dibujar_carnet_frente(c, estudiante, x, y, ancho, alto,
     c.rect(x, y + alto - header_h, ancho, 0.6 * mm, fill=1, stroke=0)
 
     # 4) Foto circular con anillo blanco (overlap con header) ─────────────
-    foto_size = 20 * mm
+    foto_size = 18 * mm
     foto_x = x + (ancho / 2) - (foto_size / 2)
-    foto_y = y + alto - header_h - 10 * mm  # overlap ~ mitad/mitad
+    foto_y = y + alto - header_h - 9 * mm  # overlap ~ mitad/mitad
 
     # Anillo blanco exterior (efecto tarjeta)
     c.setFillColorRGB(1, 1, 1)
@@ -281,9 +281,9 @@ def _dibujar_carnet_frente(c, estudiante, x, y, ancho, alto,
         )
 
     # 8) QR code con fondo suave ──────────────────────────────────────────
-    qr_size = 26 * mm
+    qr_size = 20 * mm
     qr_x = x + ancho / 2 - qr_size / 2
-    qr_y = y + 10 * mm  # deja 10mm para el footer + aire
+    qr_y = y + 8 * mm  # deja espacio para el footer + aire
 
     # Tarjeta tenue detrás del QR
     c.setFillColorRGB(0.965, 0.96, 0.97)
@@ -299,7 +299,7 @@ def _dibujar_carnet_frente(c, estudiante, x, y, ancho, alto,
     )
 
     # 9) Footer con código ───────────────────────────────────────────────
-    footer_h = 7 * mm
+    footer_h = 6 * mm
     c.setFillColorRGB(*color_primario)
     c.rect(x, y, ancho, footer_h, fill=1, stroke=0)
 
@@ -308,7 +308,7 @@ def _dibujar_carnet_frente(c, estudiante, x, y, ancho, alto,
         codigo = codigo[:22] + '...'
     c.setFont("Helvetica-Bold", 6.5)
     c.setFillColorRGB(1, 1, 1)
-    c.drawCentredString(x + ancho / 2, y + 3.1 * mm, f"CÓDIGO: {codigo}")
+    c.drawCentredString(x + ancho / 2, y + 2.6 * mm, f"CÓDIGO: {codigo}")
 
     c.restoreState()
 
@@ -339,7 +339,7 @@ def _dibujar_carnet_reverso(c, estudiante, x, y, ancho, alto,
     c.rect(x, y, ancho, alto, fill=1, stroke=0)
 
     # Header con gradiente (más compacto que el frente)
-    header_h = 12 * mm
+    header_h = 11 * mm
     _draw_vertical_gradient(
         c,
         x, y + alto - header_h,
@@ -355,7 +355,7 @@ def _dibujar_carnet_reverso(c, estudiante, x, y, ancho, alto,
     card_x = x + 3 * mm
     card_w = ancho - 6 * mm
     card_top = y + alto - header_h - 3 * mm
-    normas_card_h = 32 * mm
+    normas_card_h = 27 * mm
 
     c.setFillColorRGB(1, 1, 1)
     c.roundRect(card_x, card_top - normas_card_h, card_w, normas_card_h, 1.8 * mm, fill=1, stroke=0)
@@ -389,7 +389,7 @@ def _dibujar_carnet_reverso(c, estudiante, x, y, ancho, alto,
         norma_y -= 3.6 * mm
 
     # Tarjeta "Contacto de emergencia" ───────────────────────────────────
-    contacto_card_h = 16 * mm
+    contacto_card_h = 14 * mm
     contacto_top = card_top - normas_card_h - 2.5 * mm
 
     c.setFillColorRGB(*_mix(color_secundario, (1, 1, 1), 0.85))
@@ -554,8 +554,8 @@ def generar_carnet_imagen(estudiante, logo_path=None, insignia_path=None, format
         try:
             from reportlab.pdfgen import canvas as pdf_canvas
             mm = mm_unit
-            carnet_w = 62 * mm
-            carnet_h = 90 * mm
+            carnet_w = 50 * mm
+            carnet_h = 80 * mm
 
             buffer_pdf = BytesIO()
             c = pdf_canvas.Canvas(buffer_pdf, pagesize=(carnet_w, carnet_h))
