@@ -49,6 +49,23 @@ def _excel_upload_from_form(form) -> UploadFile | None:
     return None
 
 
+# Tokens que tratamos como "vacío" al leer celdas de Excel. Cubren el caso de
+# planillas exportadas con pandas/openpyxl donde NaN/None se serializan como
+# texto y luego se reimportan, contaminando la BD con strings literales.
+_EMPTY_CELL_TOKENS = {"", "none", "null", "nan", "n/a", "na", "#n/a"}
+
+
+def _clean_cell(value) -> str | None:
+    """Normaliza una celda: devuelve None si está vacía o contiene un token
+    placeholder ('None', 'NULL', 'nan', 'N/A', etc., case-insensitive)."""
+    if value is None:
+        return None
+    s = str(value).strip()
+    if s.lower() in _EMPTY_CELL_TOKENS:
+        return None
+    return s
+
+
 def allowed_file(filename: str | None) -> bool:
     if not filename or "." not in filename:
         return False
@@ -1211,17 +1228,17 @@ async def upload_excel(request: Request, _user_id: int = Depends(get_current_use
         print(f"Procesando filas desde la 2 hasta la {ws.max_row}...")
         for row_num in range(2, ws.max_row + 1):
             try:
-                apellido_paterno = ws.cell(row=row_num, column=1).value
-                apellido_materno = ws.cell(row=row_num, column=2).value
-                nombres = ws.cell(row=row_num, column=3).value
-                dni = str(ws.cell(row=row_num, column=4).value or '').strip()
-                nivel = ws.cell(row=row_num, column=5).value
-                grado = ws.cell(row=row_num, column=6).value
-                carrera_postula = ws.cell(row=row_num, column=7).value
-                celular_estudiante = str(ws.cell(row=row_num, column=8).value or '').strip()
-                celular_padre = str(ws.cell(row=row_num, column=9).value or '').strip()
-                correo_padre = ws.cell(row=row_num, column=10).value
-                area_postula = ws.cell(row=row_num, column=11).value
+                apellido_paterno = _clean_cell(ws.cell(row=row_num, column=1).value)
+                apellido_materno = _clean_cell(ws.cell(row=row_num, column=2).value)
+                nombres = _clean_cell(ws.cell(row=row_num, column=3).value)
+                dni = _clean_cell(ws.cell(row=row_num, column=4).value)
+                nivel = _clean_cell(ws.cell(row=row_num, column=5).value)
+                grado = _clean_cell(ws.cell(row=row_num, column=6).value)
+                carrera_postula = _clean_cell(ws.cell(row=row_num, column=7).value)
+                celular_estudiante = _clean_cell(ws.cell(row=row_num, column=8).value)
+                celular_padre = _clean_cell(ws.cell(row=row_num, column=9).value)
+                correo_padre = _clean_cell(ws.cell(row=row_num, column=10).value)
+                area_postula = _clean_cell(ws.cell(row=row_num, column=11).value)
 
                 # Validar datos obligatorios
                 if not all([apellido_paterno, apellido_materno, nombres, dni]):
@@ -1238,17 +1255,17 @@ async def upload_excel(request: Request, _user_id: int = Depends(get_current_use
 
                 nuevo_estudiante = Estudiante(
                     codigo_estudiante=f"{prefijo_cod}{num_codigo:05d}",
-                    apellido_paterno_est=str(apellido_paterno).strip(),
-                    apellido_materno_est=str(apellido_materno).strip(),
-                    nombres_est=str(nombres).strip(),
+                    apellido_paterno_est=apellido_paterno,
+                    apellido_materno_est=apellido_materno,
+                    nombres_est=nombres,
                     dni_est=dni,
-                    nivel=str(nivel).strip() if nivel else None,
-                    grado=str(grado).strip() if grado else None,
-                    carrera_postula=str(carrera_postula).strip() if carrera_postula else None,
-                    area_postula=str(area_postula).strip() if area_postula else None,
-                    numero_celular_est=celular_estudiante if celular_estudiante else None,
-                    celular_padre=celular_padre if celular_padre else None,
-                    correo_padre=str(correo_padre).strip() if correo_padre else None
+                    nivel=nivel,
+                    grado=grado,
+                    carrera_postula=carrera_postula,
+                    area_postula=area_postula,
+                    numero_celular_est=celular_estudiante,
+                    celular_padre=celular_padre,
+                    correo_padre=correo_padre,
                 )
 
                 db.session.add(nuevo_estudiante)

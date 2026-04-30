@@ -946,13 +946,14 @@
 
         nivelSelect.addEventListener('change', function() {
             const nivelSeleccionado = this.value;
+            const nivelKey = nivelSeleccionado.toLowerCase();
 
             // Limpiar opciones actuales
             gradoSelect.innerHTML = '<option value="">Seleccione...</option>';
 
             // Agregar nuevas opciones según el nivel
-            if (nivelSeleccionado && gradosPorNivel[nivelSeleccionado]) {
-                gradosPorNivel[nivelSeleccionado].forEach(function(grado) {
+            if (nivelKey && gradosPorNivel[nivelKey]) {
+                gradosPorNivel[nivelKey].forEach(function(grado) {
                     const option = document.createElement('option');
                     option.value = grado.value;
                     option.textContent = grado.text;

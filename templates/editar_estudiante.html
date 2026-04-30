@@ -774,6 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     nivelSelect.addEventListener('change', function() {
         const nivelSeleccionado = this.value;
+        const nivelKey = nivelSeleccionado.toLowerCase();
         const esAcademia = nivelSeleccionado.toUpperCase() === 'ACADEMIA';
 
         // Cambiar label Grado/Programa según nivel
@@ -785,8 +786,8 @@ document.addEventListener('DOMContentLoaded', function() {
         gradoSelect.innerHTML = '<option value="">Seleccionar ' + (esAcademia ? 'Programa' : 'Grado') + '</option>';
 
         // Agregar nuevas opciones según el nivel
-        if (nivelSeleccionado && gradosPorNivel[nivelSeleccionado]) {
-            gradosPorNivel[nivelSeleccionado].forEach(function(grado) {
+        if (nivelKey && gradosPorNivel[nivelKey]) {
+            gradosPorNivel[nivelKey].forEach(function(grado) {
                 const option = document.createElement('option');
                 option.value = grado.value;
                 option.textContent = grado.text;
