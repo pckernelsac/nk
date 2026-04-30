@@ -66,6 +66,33 @@ def _clean_cell(value) -> str | None:
     return s
 
 
+def _grados_activos_por_nivel() -> dict[str, list[str]]:
+    """{NIVEL_UPPER: [grado1, grado2, ...]} desde aulas activas.
+
+    Fuente única de verdad para los dropdowns de Grado/Programa en los
+    formularios de estudiantes — solo aparecen valores que existen en /aulas.
+    """
+    out: dict[str, list[str]] = {}
+    try:
+        filas = (
+            db.session.query(Aula.nivel, Aula.grado)
+            .filter_by(activo=True)
+            .order_by(Aula.nivel, Aula.grado)
+            .distinct()
+            .all()
+        )
+        for nivel, grado in filas:
+            if not nivel or not grado:
+                continue
+            key = nivel.upper()
+            out.setdefault(key, [])
+            if grado not in out[key]:
+                out[key].append(grado)
+    except Exception:
+        pass
+    return out
+
+
 def allowed_file(filename: str | None) -> bool:
     if not filename or "." not in filename:
         return False
@@ -303,7 +330,12 @@ async def editar(request: Request, id: int, _user_id: int = Depends(get_current_
             add_flash(request, "Error al actualizar estudiante. Intente nuevamente.", "error")
 
     return templates.TemplateResponse(
-        "editar_estudiante.html", common_context(request, estudiante=estudiante)
+        "editar_estudiante.html",
+        common_context(
+            request,
+            estudiante=estudiante,
+            grados_db=_grados_activos_por_nivel(),
+        ),
     )
 
 
@@ -455,24 +487,9 @@ async def form_estudiante(request: Request, _user_id: int = Depends(get_current_
             print(f"Error al registrar estudiante: {e}")
             add_flash(request, "Error al registrar estudiante. Intente nuevamente.", "error")
 
-    # Grados activos por nivel desde la BD (para incluir grados personalizados)
-    grados_db = {}
-    try:
-        filas = (db.session.query(Aula.nivel, Aula.grado)
-                 .filter_by(activo=True)
-                 .distinct()
-                 .order_by(Aula.nivel, Aula.grado)
-                 .all())
-        for nivel, grado in filas:
-            key = nivel.upper()
-            grados_db.setdefault(key, [])
-            if grado not in grados_db[key]:
-                grados_db[key].append(grado)
-    except Exception:
-        pass
-
     return templates.TemplateResponse(
-        "form_estudiante.html", common_context(request, grados_db=grados_db)
+        "form_estudiante.html",
+        common_context(request, grados_db=_grados_activos_por_nivel()),
     )
 
 
@@ -601,7 +618,10 @@ async def registro_publico(request: Request):
             print(f"Error al registrar: {e}")
             add_flash(request, "Error al procesar el registro. Por favor, intente nuevamente.", "error")
 
-    return templates.TemplateResponse("formulario.html", common_context(request))
+    return templates.TemplateResponse(
+        "formulario.html",
+        common_context(request, grados_db=_grados_activos_por_nivel()),
+    )
 
 
 @router.get("/registro_exitoso", name="estudiantes.registro_exitoso")
