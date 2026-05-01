@@ -168,7 +168,7 @@ class ETAAnalysisService:
                 
                 for row in consolidated_data:
                     subject, level, peso, correct, wrong, blank, total_q, points, performance = row
-                    if subject.startswith('Aptitud'):
+                    if (subject or "").strip().upper().startswith('APTITUD'):
                         aptitud_obtained += points
                     else:
                         conocimientos_obtained += points

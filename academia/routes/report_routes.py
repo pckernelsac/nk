@@ -194,7 +194,7 @@ def init_routes(student_service, pdf_service, academic_service):
                     for row in consolidated_data:
                         subject = row[0]
                         points = row[7]
-                        if subject.startswith("Aptitud"):
+                        if (subject or "").strip().upper().startswith("APTITUD"):
                             aptitud_puntos_brutos += points
                         else:
                             conocimientos_puntos_brutos += points
@@ -422,7 +422,7 @@ def _build_merit_data(academic_area_id, eta_number, programa=None, nivel=None, g
             aptitud_puntos_brutos = 0.0
             for row in consolidated_data:
                 subject, _level, _peso, _c2, _w, _bl, _tq, points, _perf = row
-                if subject.startswith("Aptitud"):
+                if (subject or "").strip().upper().startswith("APTITUD"):
                     aptitud_puntos_brutos += points
                 else:
                     conocimientos_puntos_brutos += points

@@ -327,7 +327,7 @@ class PDFService:
                         partial_score = self.calculate_partial_score(student, start, end)
                         
                         # Determinar si es conocimiento o aptitud basándose en el nombre de la asignatura
-                        if subject.startswith('Aptitud'):
+                        if (subject or "").strip().upper().startswith('APTITUD'):
                             aptitud_score += partial_score
                         else:
                             conocimientos_score += partial_score
@@ -812,7 +812,7 @@ class PDFService:
          
          for row in consolidated_data:
              subject, level, peso, correct, wrong, blank, total_q, points, performance = row
-             if subject.startswith('Aptitud'):
+             if (subject or "").strip().upper().startswith('APTITUD'):
                  aptitud_obtained += points
              else:
                  conocimientos_obtained += points
@@ -872,11 +872,11 @@ class PDFService:
          
          for row in consolidated_data:
              subject, level, peso, correct, wrong, blank, total_q, points, performance = row
-             if subject.startswith('Aptitud'):
+             if (subject or "").strip().upper().startswith('APTITUD'):
                  aptitud_obtained += points
              else:
                  conocimientos_obtained += points
-         
+
          # Usar el total de puntos de calculate_consolidated_data
          total_points_obtained = total_points_from_consolidated
          
