@@ -118,6 +118,8 @@ class Estudiante(db.Model):
     codigo_portal = db.Column(db.String(100))  # Código de acceso al portal (fecha_nacimiento hash)
     # Portal Academia (/academia/estudiante): si es NULL, la contraseña es el DNI (legado)
     academia_portal_password_hash = db.Column(db.String(255), nullable=True)
+    # Suspensión de acceso al portal (p. ej. por pensión pendiente): bloquea el login
+    acceso_suspendido = db.Column(db.Boolean, default=False, nullable=False, server_default="false")
 
     @staticmethod
     def siguiente_codigo_estudiante_inicial() -> tuple[str, int]:

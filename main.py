@@ -62,6 +62,13 @@ async def lifespan(app: FastAPI):
             )
         )
         db_facade.session.commit()
+    if "acceso_suspendido" not in columnas:
+        db_facade.session.execute(
+            text(
+                "ALTER TABLE estudiantes ADD COLUMN acceso_suspendido BOOLEAN NOT NULL DEFAULT FALSE"
+            )
+        )
+        db_facade.session.commit()
 
     if inspector.has_table("question_weights"):
         columnas_qw = [col["name"] for col in inspector.get_columns("question_weights")]

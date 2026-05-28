@@ -145,6 +145,19 @@
                                    title="Ver Detalle">
                                     <i class="fas fa-eye"></i>
                                 </a>
+                                {% if estudiante.acceso_suspendido %}
+                                <button onclick="toggleAcceso({{ estudiante.id }}, '{{ estudiante.nombres_est }} {{ estudiante.apellido_paterno_est }}', true)"
+                                        class="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow transition-all transform hover:scale-110"
+                                        title="Acceso suspendido — clic para reactivar">
+                                    <i class="fas fa-user-lock"></i>
+                                </button>
+                                {% else %}
+                                <button onclick="toggleAcceso({{ estudiante.id }}, '{{ estudiante.nombres_est }} {{ estudiante.apellido_paterno_est }}', false)"
+                                        class="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg shadow transition-all transform hover:scale-110"
+                                        title="Suspender acceso al portal (pensión pendiente)">
+                                    <i class="fas fa-user-slash"></i>
+                                </button>
+                                {% endif %}
                                 <a href="{{ url_for('estudiantes.editar', id=estudiante.id) }}"
                                    class="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow transition-all transform hover:scale-110"
                                    title="Editar">
@@ -391,6 +404,43 @@
         searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
     }
 })();
+
+// Estado de lista para preservar página y búsqueda al cambiar el acceso
+const LIST_PAGE = '{{ estudiantes.page }}';
+const LIST_Q = {{ (search or '')|tojson }};
+
+// Suspender / reactivar el acceso del estudiante al portal
+function toggleAcceso(id, nombre, suspendido) {
+    const msg = suspendido
+        ? `¿Reactivar el acceso al portal del estudiante ${nombre}?`
+        : `¿Suspender el acceso al portal del estudiante ${nombre} por pensión pendiente?\n\nNo podrá iniciar sesión hasta que lo reactives.`;
+    if (confirm(msg)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/estudiante/${id}/suspender-acceso`;
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
+
+        const pageInput = document.createElement('input');
+        pageInput.type = 'hidden';
+        pageInput.name = 'page';
+        pageInput.value = LIST_PAGE;
+        form.appendChild(pageInput);
+
+        const qInput = document.createElement('input');
+        qInput.type = 'hidden';
+        qInput.name = 'q';
+        qInput.value = LIST_Q;
+        form.appendChild(qInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 
 // Función para eliminar estudiante con confirmación
 function eliminarEstudiante(id, nombre) {

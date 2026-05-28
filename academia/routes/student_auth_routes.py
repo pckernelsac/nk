@@ -13,6 +13,21 @@ from fastapi.responses import FileResponse, RedirectResponse
 from config import Config
 from template_helpers import add_flash, common_context, csrf_ok, templates
 
+SUSPENDIDO_MSG = (
+    "Tu acceso al portal está suspendido por pensión pendiente. "
+    "Acércate a la administración para regularizar tu situación."
+)
+
+_SESSION_KEYS = (
+    "student_id",
+    "student_id_number",
+    "estudiante_id",
+    "student_name",
+    "student_authenticated",
+    "academic_area_id",
+    "has_academic_data",
+)
+
 
 def require_academia_student(request: Request) -> None:
     if not request.session.get("student_authenticated"):
@@ -22,6 +37,27 @@ def require_academia_student(request: Request) -> None:
             status_code=302,
             headers={"Location": str(request.url_for("academia_student_auth.login"))},
         )
+
+    # Corte inmediato de sesiones ya abiertas si la administración suspendió el
+    # acceso (p. ej. pensión pendiente). Best-effort: ante un error de BD no se
+    # bloquea al estudiante para no romper el portal por un fallo transitorio.
+    dni = request.session.get("student_id_number")
+    if dni:
+        try:
+            from models.estudiante import Estudiante
+
+            est = Estudiante.query.filter_by(dni_est=str(dni)).first()
+            suspendido = est is not None and bool(getattr(est, "acceso_suspendido", False))
+        except Exception:
+            suspendido = False
+        if suspendido:
+            for key in _SESSION_KEYS:
+                request.session.pop(key, None)
+            add_flash(request, SUSPENDIDO_MSG, "error")
+            raise HTTPException(
+                status_code=302,
+                headers={"Location": str(request.url_for("academia_student_auth.login"))},
+            )
 
 
 def init_routes(student_auth_service, student_service, pdf_service):
@@ -46,7 +82,8 @@ def init_routes(student_auth_service, student_service, pdf_service):
                 if next_url:
                     return RedirectResponse(url=next_url, status_code=303)
                 return RedirectResponse(url=str(request.url_for("academia_student_auth.dashboard")), status_code=303)
-            add_flash(request, "StudentID o contraseña incorrectos", "error")
+            motivo = sess.pop("login_error", None)
+            add_flash(request, motivo or "StudentID o contraseña incorrectos", "error")
 
         return templates.TemplateResponse("academia/student/login.html", common_context(request))
 

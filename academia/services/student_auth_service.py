@@ -49,6 +49,15 @@ class StudentAuthService:
         if not self._password_academia_ok(estudiante, sid, password):
             return False
 
+        # Acceso suspendido por la administración (p. ej. pensión pendiente):
+        # credenciales válidas pero el ingreso queda bloqueado.
+        if estudiante is not None and getattr(estudiante, "acceso_suspendido", False):
+            sess["login_error"] = (
+                "Tu acceso al portal está suspendido por pensión pendiente. "
+                "Acércate a la administración para regularizar tu situación."
+            )
+            return False
+
         student = AcademiaStudent.query.filter_by(student_id=sid).order_by(
             AcademiaStudent.quiz_created.asc(),
             AcademiaStudent.id.asc(),

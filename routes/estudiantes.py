@@ -5,6 +5,7 @@ import os
 from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import urlencode
 
 import openpyxl
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
@@ -364,6 +365,41 @@ async def eliminar(
         add_flash(request, "Error al eliminar estudiante. Intente nuevamente.", "error")
 
     return RedirectResponse(url=str(request.url_for("estudiantes.list")), status_code=303)
+
+
+@router.post("/estudiante/{id}/suspender-acceso", name="estudiantes.toggle_acceso")
+async def toggle_acceso(
+    request: Request, id: int, _user_id: int = Depends(get_current_user_id)
+):
+    """Suspende o reactiva el acceso del estudiante al portal (p. ej. por pensión)."""
+    form = await request.form()
+    page = (form.get("page") or "").strip()
+    q = (form.get("q") or "").strip()
+    list_url = str(request.url_for("estudiantes.list"))
+    params = {k: v for k, v in (("page", page), ("q", q)) if v}
+    if params:
+        list_url = f"{list_url}?{urlencode(params)}"
+
+    if getattr(Config, "WTF_CSRF_ENABLED", True) and not csrf_ok(request, form.get("csrf_token")):
+        add_flash(request, "Sesión de seguridad expirada. Intente de nuevo.", "error")
+        return RedirectResponse(url=list_url, status_code=303)
+    try:
+        estudiante = _get_estudiante_or_404(id)
+        estudiante.acceso_suspendido = not bool(estudiante.acceso_suspendido)
+        db.session.commit()
+        nombre = f"{estudiante.nombres_est} {estudiante.apellido_paterno_est}"
+        if estudiante.acceso_suspendido:
+            add_flash(request, f"Acceso al portal suspendido para {nombre}.", "success")
+        else:
+            add_flash(request, f"Acceso al portal reactivado para {nombre}.", "success")
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al cambiar el acceso del estudiante: {e}")
+        add_flash(request, "Error al cambiar el acceso del estudiante. Intente nuevamente.", "error")
+
+    return RedirectResponse(url=list_url, status_code=303)
 
 
 @router.api_route("/form_estudiante", methods=["GET", "POST"], name="estudiantes.form")
