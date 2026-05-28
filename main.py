@@ -63,12 +63,19 @@ async def lifespan(app: FastAPI):
         )
         db_facade.session.commit()
     if "acceso_suspendido" not in columnas:
-        db_facade.session.execute(
-            text(
-                "ALTER TABLE estudiantes ADD COLUMN acceso_suspendido BOOLEAN NOT NULL DEFAULT FALSE"
+        # IF NOT EXISTS + try/except: con varios workers de uvicorn, dos pueden
+        # ejecutar el ALTER a la vez en el primer arranque; así ninguno crashea.
+        try:
+            db_facade.session.execute(
+                text(
+                    "ALTER TABLE estudiantes ADD COLUMN IF NOT EXISTS "
+                    "acceso_suspendido BOOLEAN NOT NULL DEFAULT FALSE"
+                )
             )
-        )
-        db_facade.session.commit()
+            db_facade.session.commit()
+        except Exception as exc:  # noqa: BLE001
+            db_facade.session.rollback()
+            logger.warning("No se pudo agregar columna acceso_suspendido: %s", exc)
 
     if inspector.has_table("question_weights"):
         columnas_qw = [col["name"] for col in inspector.get_columns("question_weights")]
