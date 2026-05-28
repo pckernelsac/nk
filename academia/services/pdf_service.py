@@ -491,6 +491,117 @@ class PDFService:
         return filtered_consolidated_data, total_correct, total_wrong, total_blank, round(total_points_obtained, 3)
 
     # ==========================================================================
+    # Orden de mérito (posición del estudiante dentro de su grupo + ETA)
+    # ==========================================================================
+
+    def _score_student_for_merit(self, student: Dict[str, Any]) -> Optional[float]:
+        """Calcula la nota vigesimal final (conocimientos + aptitud) de un estudiante.
+
+        Usa exactamente la misma fórmula que ``_build_merit_data`` y la boleta
+        (``_draw_final_summary``) para que la posición sea consistente con la
+        nota mostrada. Devuelve ``None`` si el estudiante no tiene preguntas
+        (se excluye del ranking), o ``0.0`` si no es calculable (igual que el
+        ranking, que lo incluye con nota 0).
+        """
+        try:
+            num_questions_total = 0
+            pri_keys_str = student.get("pri_keys", "")
+            if pri_keys_str and pri_keys_str != [""]:
+                num_questions_total = len(pri_keys_str.split(","))
+            if num_questions_total == 0:
+                marks_str = student.get("marks", "")
+                responses_str = student.get("responses", "")
+                num_questions_total = max(
+                    len(marks_str.split(",")) if marks_str and marks_str != [""] else 0,
+                    len(responses_str.split(",")) if responses_str and responses_str != [""] else 0,
+                    0,
+                )
+            if num_questions_total == 0:
+                return None
+
+            consolidated_data, _a, _b, _c, _d = self.calculate_consolidated_data(student)
+            conocimientos_brutos = 0.0
+            aptitud_brutos = 0.0
+            for row in consolidated_data:
+                subject = row[0]
+                points = row[7]
+                if (subject or "").strip().upper().startswith("APTITUD"):
+                    aptitud_brutos += points
+                else:
+                    conocimientos_brutos += points
+
+            total_possible = self._calculate_total_possible_for_student(student, num_questions_total)
+            if total_possible > 0:
+                conocimientos_vig = round(max(0, min(20, (conocimientos_brutos / total_possible) * 20)), 3)
+                aptitud_vig = round(max(0, min(20, (aptitud_brutos / total_possible) * 20)), 3)
+                return conocimientos_vig + aptitud_vig
+            return 0.0
+        except Exception as e:
+            print(f"_score_student_for_merit error (id={student.get('id')}): {e}")
+            return None
+
+    def compute_merit_position(self, student: Dict[str, Any], student_service: object) -> Tuple[Optional[int], Optional[int]]:
+        """Calcula la posición del estudiante en el orden de mérito de su grupo + ETA.
+
+        Agrupamiento automático (misma lógica que ``/merit_ranking``):
+        - ``nivel`` != 'ACADEMIA'  -> Nivel + grado (``quiz_class``).
+        - tiene ``programa``       -> Programa/aula.
+        - en otro caso             -> Área académica.
+
+        Siempre se rankea dentro de la ETA del propio ``quiz_name``. Si no se
+        puede determinar la ETA, devuelve ``(None, None)`` para no mostrar una
+        posición que mezcle exámenes distintos.
+
+        Es totalmente a prueba de fallos: ante cualquier problema devuelve
+        ``(None, None)`` y la boleta se genera igual sin la posición.
+        """
+        try:
+            quiz_name = student.get("quiz_name") or ""
+            eta_number = None
+            extractor = getattr(student_service, "_extract_eta_number_from_name", None)
+            if callable(extractor):
+                eta_number = extractor(quiz_name)
+            if eta_number is None:
+                return None, None
+
+            nivel = student.get("nivel") or "ACADEMIA"
+            programa = student.get("programa")
+            if nivel != "ACADEMIA":
+                grado = student.get("quiz_class")
+                group = student_service.get_students_by_nivel_grado_ranked(nivel, grado, eta_number=eta_number)
+            elif programa:
+                group = student_service.get_students_by_programa_ranked(programa, eta_number=eta_number)
+            else:
+                area_id = student.get("academic_area_id")
+                if area_id is None:
+                    return None, None
+                group = student_service.get_students_by_area_ranked(int(area_id), eta_number=eta_number)
+
+            if not group:
+                return None, None
+
+            # El grupo ya viene ordenado por percent_correct (desempate estable);
+            # re-ordenamos por nota vigesimal desc igual que _build_merit_data.
+            scored = []
+            for member in group:
+                nota = self._score_student_for_merit(member)
+                if nota is None:
+                    continue
+                scored.append((member.get("id"), nota))
+            if not scored:
+                return None, None
+            scored.sort(key=lambda x: x[1], reverse=True)
+
+            sid = student.get("id")
+            for position, (member_id, _nota) in enumerate(scored, 1):
+                if member_id == sid:
+                    return position, len(scored)
+            return None, None
+        except Exception as e:
+            print(f"compute_merit_position error (id={student.get('id')}): {e}")
+            return None, None
+
+    # ==========================================================================
     # Métodos de Dibujo en PDF (Privados)
     # ==========================================================================
 
@@ -952,6 +1063,29 @@ class PDFService:
          pdf.set_line_width(0.2)
          pdf.set_y(box_y + box_h) # Mover cursor debajo del cuadro
 
+    def _draw_merit_position(self, pdf: fpdf.FPDF, position: int, total: int):
+        """ Dibuja un cuadro con el puesto de orden de mérito del estudiante. """
+        box_w = 90
+        box_h = 16
+        box_x = (pdf.w - box_w) / 2
+        page_bottom = pdf.h - BASE_MARGIN_BOTTOM_CONTENT
+        pdf.ln(4)
+        if pdf.get_y() + box_h > page_bottom:
+            pdf.add_page()
+        box_y = pdf.get_y()
+
+        pdf.set_fill_color(*PURPLE_RGB)
+        pdf.rect(box_x, box_y, box_w, box_h, 'F')
+        pdf.set_text_color(*WHITE_RGB)
+        pdf.set_xy(box_x, box_y + 2)
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(box_w, 5, self._encode_text("ORDEN DE MÉRITO"), 0, 1, 'C')
+        pdf.set_xy(box_x, pdf.get_y())
+        pdf.set_font("Arial", "B", 13)
+        pdf.cell(box_w, 7, self._encode_text(f"N° {position} de {total}"), 0, 1, 'C')
+        pdf.set_text_color(*BLACK_RGB)
+        pdf.set_y(box_y + box_h)
+
     def _draw_final_message(self, pdf: fpdf.FPDF):
         """ Dibuja el mensaje motivacional final. """
         pdf.ln(5) # Espacio antes
@@ -1015,13 +1149,18 @@ class PDFService:
     # Método Público Principal
     # ==========================================================================
 
-    def generate_pdf(self, student: Dict[str, Any]) -> str:
+    def generate_pdf(self, student: Dict[str, Any],
+                     merit_position: Optional[int] = None,
+                     merit_total: Optional[int] = None) -> str:
         """
         Genera el informe PDF completo para un estudiante dado.
 
         Args:
             student (Dict[str, Any]): Diccionario con todos los datos del estudiante
                                       y los resultados del examen.
+            merit_position (Optional[int]): Puesto de orden de mérito a mostrar.
+                                      Si es ``None`` no se dibuja el cuadro.
+            merit_total (Optional[int]): Total de estudiantes del grupo/ETA.
 
         Returns:
             str: La ruta absoluta al archivo PDF generado.
@@ -1100,6 +1239,8 @@ class PDFService:
              # Calcular totales una vez para pasar a _draw_final_summary
             totals = self.calculate_consolidated_data(student)
             self._draw_final_summary(pdf, student, totals)
+            if merit_position is not None and merit_total is not None:
+                self._draw_merit_position(pdf, merit_position, merit_total)
             self._draw_final_message(pdf)
 
         except Exception as draw_error:

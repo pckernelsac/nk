@@ -48,7 +48,10 @@ def init_routes(student_service, pdf_service, academic_service):
             if student:
                 logger.info("Estudiante %s encontrado. Generando PDF...", student_id)
                 try:
-                    pdf_path = _pdf_service.generate_pdf(student)
+                    merit_position, merit_total = _pdf_service.compute_merit_position(student, _student_service)
+                    pdf_path = _pdf_service.generate_pdf(
+                        student, merit_position=merit_position, merit_total=merit_total
+                    )
                     first_name = student.get("first_name", "Estudiante")
                     last_name = student.get("last_name", f"ID_{student_id}")
                     download_filename = f"Boleta_{first_name}_{last_name}.pdf"

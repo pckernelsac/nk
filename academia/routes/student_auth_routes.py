@@ -156,7 +156,10 @@ def init_routes(student_auth_service, student_service, pdf_service):
             return RedirectResponse(url=str(request.url_for("academia_student_auth.dashboard")), status_code=303)
 
         stu = student_record.to_dict()
-        pdf_path = pdf_service.generate_pdf(stu)
+        merit_position, merit_total = pdf_service.compute_merit_position(stu, student_service)
+        pdf_path = pdf_service.generate_pdf(
+            stu, merit_position=merit_position, merit_total=merit_total
+        )
         return FileResponse(
             pdf_path,
             filename=f"Boleta_{stu['first_name']}_{stu['last_name']}.pdf",
