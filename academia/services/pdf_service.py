@@ -753,9 +753,14 @@ class PDFService:
         cell_w = available_width / max_q_per_row if max_q_per_row > 0 else 3.5
         cell_w = max(3.5, cell_w) # Asegurar mínimo
 
+        # Geometría del espacio libre a la derecha del último bloque, para
+        # encajar ahí el cuadro de orden de mérito sin consumir alto extra.
+        free_space = {"x": None, "y": None, "w": 0.0, "h": 0.0}
+
         def draw_single_row(start_q, end_q):
             if start_q > num_questions_total: return
             actual_end_q = min(end_q, num_questions_total)
+            block_top_y = pdf.get_y()
 
             pdf.set_font("Arial", "B", 6)
             pdf.set_fill_color(*PURPLE_RGB)
@@ -797,12 +802,24 @@ class PDFService:
                 pdf.set_fill_color(*fill_c)
                 pdf.set_text_color(*text_c)
                 pdf.cell(cell_w, 4, self._encode_text(resp), 1, 0, 'C', 1)
+
+            n_cells = actual_end_q - start_q + 1
+            x_end = current_x + n_cells * cell_w
+            free_space["x"] = x_end
+            free_space["y"] = block_top_y
+            free_space["w"] = max(0.0, (pdf.w - BASE_MARGIN_LR) - x_end)
+            free_space["h"] = 12.0  # 3 filas de 4 mm (N°, Clave, Resp)
+
             pdf.ln(5) # Espacio después de cada bloque de respuestas
             pdf.set_text_color(*BLACK_RGB) # Restaurar color de texto
 
         # Dibujar en bloques según cuántas caben por fila
         for block_start in range(1, num_questions_total + 1, max_q_per_row):
             draw_single_row(block_start, block_start + max_q_per_row - 1)
+
+        if free_space["x"] is None:
+            return None
+        return (free_space["x"], free_space["y"], free_space["w"], free_space["h"])
 
     def _draw_consolidated_table(self, pdf: fpdf.FPDF, student: Dict[str, Any]):
         """ Dibuja la tabla consolidada de rendimiento por asignatura. """
@@ -1063,27 +1080,49 @@ class PDFService:
          pdf.set_line_width(0.2)
          pdf.set_y(box_y + box_h) # Mover cursor debajo del cuadro
 
-    def _draw_merit_position(self, pdf: fpdf.FPDF, position: int, total: int):
-        """ Dibuja un cuadro con el puesto de orden de mérito del estudiante. """
-        box_w = 90
-        box_h = 16
-        box_x = (pdf.w - box_w) / 2
+    def _render_merit_box(self, pdf: fpdf.FPDF, x: float, y: float, w: float, h: float,
+                          position: int, total: int):
+        """Dibuja el cuadro compacto de mérito en coords absolutas y restaura el cursor."""
+        save_x, save_y = pdf.get_x(), pdf.get_y()
+        pdf.set_fill_color(*PURPLE_RGB)
+        pdf.rect(x, y, w, h, 'F')
+        pdf.set_text_color(*WHITE_RGB)
+        pdf.set_xy(x, y + 1)
+        pdf.set_font("Arial", "B", 6)
+        pdf.cell(w, 3.5, self._encode_text("ORDEN DE MÉRITO"), 0, 2, 'C')
+        pdf.set_xy(x, y + h - 7.5)
+        pdf.set_font("Arial", "B", 11)
+        pdf.cell(w, 6, self._encode_text(f"N° {position} de {total}"), 0, 0, 'C')
+        pdf.set_text_color(*BLACK_RGB)
+        pdf.set_xy(save_x, save_y)
+
+    def _draw_merit_position(self, pdf: fpdf.FPDF, position: int, total: int, free_space=None):
+        """Dibuja el cuadro de orden de mérito.
+
+        Si ``free_space`` (x, y, w, h del hueco a la derecha de la tabla de
+        claves/respuestas) tiene ancho suficiente, lo encaja ahí sin consumir
+        alto extra (mantiene el cursor). Si no, cae a un cuadro compacto centrado.
+        """
         page_bottom = pdf.h - BASE_MARGIN_BOTTOM_CONTENT
-        pdf.ln(4)
+        if free_space is not None:
+            fx, fy, fw, fh = free_space
+            if fx is not None and fw >= 38 and fy is not None and (fy + fh) <= page_bottom:
+                box_w = min(fw - 3, 60)
+                box_h = min(fh, 13)
+                box_x = fx + (fw - box_w) - 1  # pegado al borde derecho
+                box_y = fy + max(0.0, (fh - box_h) / 2)
+                self._render_merit_box(pdf, box_x, box_y, box_w, box_h, position, total)
+                return
+
+        # Fallback: cuadro compacto centrado debajo del contenido.
+        box_w = 70
+        box_h = 14
+        box_x = (pdf.w - box_w) / 2
+        pdf.ln(3)
         if pdf.get_y() + box_h > page_bottom:
             pdf.add_page()
         box_y = pdf.get_y()
-
-        pdf.set_fill_color(*PURPLE_RGB)
-        pdf.rect(box_x, box_y, box_w, box_h, 'F')
-        pdf.set_text_color(*WHITE_RGB)
-        pdf.set_xy(box_x, box_y + 2)
-        pdf.set_font("Arial", "B", 10)
-        pdf.cell(box_w, 5, self._encode_text("ORDEN DE MÉRITO"), 0, 1, 'C')
-        pdf.set_xy(box_x, pdf.get_y())
-        pdf.set_font("Arial", "B", 13)
-        pdf.cell(box_w, 7, self._encode_text(f"N° {position} de {total}"), 0, 1, 'C')
-        pdf.set_text_color(*BLACK_RGB)
+        self._render_merit_box(pdf, box_x, box_y, box_w, box_h, position, total)
         pdf.set_y(box_y + box_h)
 
     def _draw_final_message(self, pdf: fpdf.FPDF):
@@ -1233,9 +1272,9 @@ class PDFService:
             self._draw_titles(pdf)
             self._draw_exam_info_header(pdf, student)
             self._draw_student_info_table(pdf, student)
-            self._draw_response_table(pdf, student)
+            free_space = self._draw_response_table(pdf, student)
             if merit_position is not None and merit_total is not None:
-                self._draw_merit_position(pdf, merit_position, merit_total)
+                self._draw_merit_position(pdf, merit_position, merit_total, free_space)
             self._draw_consolidated_table(pdf, student)
             self._draw_partial_scores(pdf, student)
              # Calcular totales una vez para pasar a _draw_final_summary
