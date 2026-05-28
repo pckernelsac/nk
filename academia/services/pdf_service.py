@@ -1234,13 +1234,13 @@ class PDFService:
             self._draw_exam_info_header(pdf, student)
             self._draw_student_info_table(pdf, student)
             self._draw_response_table(pdf, student)
+            if merit_position is not None and merit_total is not None:
+                self._draw_merit_position(pdf, merit_position, merit_total)
             self._draw_consolidated_table(pdf, student)
             self._draw_partial_scores(pdf, student)
              # Calcular totales una vez para pasar a _draw_final_summary
             totals = self.calculate_consolidated_data(student)
             self._draw_final_summary(pdf, student, totals)
-            if merit_position is not None and merit_total is not None:
-                self._draw_merit_position(pdf, merit_position, merit_total)
             self._draw_final_message(pdf)
 
         except Exception as draw_error:
