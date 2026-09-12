@@ -43,17 +43,27 @@ def require_academia_student(request: Request) -> None:
     # bloquea al estudiante para no romper el portal por un fallo transitorio.
     dni = request.session.get("student_id_number")
     if dni:
+        from services.acceso_portal import mensaje_sin_matricula, sin_matricula_vigente
+
         try:
             from models.estudiante import Estudiante
 
             est = Estudiante.query.filter_by(dni_est=str(dni)).first()
             suspendido = est is not None and bool(getattr(est, "acceso_suspendido", False))
         except Exception:
+            est = None
             suspendido = False
+        motivo = None
         if suspendido:
+            motivo = SUSPENDIDO_MSG
+        elif sin_matricula_vigente(est):
+            # Misma lógica que en el login: la matrícula puede vencerse o
+            # retirarse con la sesión ya abierta.
+            motivo = mensaje_sin_matricula()
+        if motivo:
             for key in _SESSION_KEYS:
                 request.session.pop(key, None)
-            add_flash(request, SUSPENDIDO_MSG, "error")
+            add_flash(request, motivo, "error")
             raise HTTPException(
                 status_code=302,
                 headers={"Location": str(request.url_for("academia_student_auth.login"))},

@@ -58,6 +58,14 @@ class StudentAuthService:
             )
             return False
 
+        # Matrícula que ya no corresponde al ciclo en curso (retirado, trasladado
+        # o matriculado sólo en años anteriores): credenciales válidas, sin ingreso.
+        from services.acceso_portal import mensaje_sin_matricula, sin_matricula_vigente
+
+        if sin_matricula_vigente(estudiante):
+            sess["login_error"] = mensaje_sin_matricula()
+            return False
+
         student = AcademiaStudent.query.filter_by(student_id=sid).order_by(
             AcademiaStudent.quiz_created.asc(),
             AcademiaStudent.id.asc(),

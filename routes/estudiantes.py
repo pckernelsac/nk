@@ -17,6 +17,7 @@ from dependencies import get_current_user_id
 from models import Asistencia, Estudiante, db
 from models.aula import Aula
 from models.matricula import Matricula
+from services.acceso_portal import anio_academico_actual, ids_sin_matricula_vigente
 from services.aula_service import AulaService
 from template_helpers import add_flash, common_context, csrf_ok, templates
 from utils.carnet_generator import generar_carnet_imagen, generar_carnets_a4
@@ -122,14 +123,33 @@ def _get_estudiante_or_404(estudiante_id: int) -> Estudiante:
     return e
 
 
+def _query_sin_matricula_vigente(query, anio: str):
+    """Restringe la consulta a quienes tienen matrícula pero ninguna del ciclo."""
+    con_alguna = db.session.query(Matricula.estudiante_id).distinct()
+    vigentes = (
+        db.session.query(Matricula.estudiante_id)
+        .filter(Matricula.estado == "activo", Matricula.anio_escolar == anio)
+        .distinct()
+    )
+    return query.filter(
+        Estudiante.id.in_(con_alguna.subquery().select()),
+        ~Estudiante.id.in_(vigentes.subquery().select()),
+    )
+
+
 @router.get("/estudiantes", name="estudiantes.list")
 def list_estudiantes(request: Request, _user_id: int = Depends(get_current_user_id)):
     """Lista de estudiantes con paginación y búsqueda"""
     page = int(request.query_params.get("page") or 1)
     per_page = 20
     search = (request.query_params.get("q") or "").strip()
+    filtro = (request.query_params.get("filtro") or "").strip()
+    anio_ciclo = anio_academico_actual()
 
     query = Estudiante.query
+
+    if filtro == "sin_matricula":
+        query = _query_sin_matricula_vigente(query, anio_ciclo)
 
     if search:
         search_filter = f"%{search}%"
@@ -147,8 +167,31 @@ def list_estudiantes(request: Request, _user_id: int = Depends(get_current_user_
     query = query.order_by(Estudiante.apellido_paterno_est, Estudiante.nombres_est)
     estudiantes = paginate_query(query, page=page, per_page=per_page, error_out=False)
 
+    # Marca en la página actual a quién le tocaría quedarse fuera del portal, y
+    # cuántos son en toda la base (para el botón de suspensión en lote).
+    try:
+        sin_matricula_ids = ids_sin_matricula_vigente(
+            [e.id for e in estudiantes.items], anio_ciclo
+        )
+        total_sin_matricula = _query_sin_matricula_vigente(
+            db.session.query(Estudiante.id), anio_ciclo
+        ).count()
+    except Exception as e:  # noqa: BLE001
+        print(f"Error al calcular matrículas vigentes: {e}")
+        sin_matricula_ids = set()
+        total_sin_matricula = 0
+
     return templates.TemplateResponse(
-        "estudiantes.html", common_context(request, estudiantes=estudiantes, search=search)
+        "estudiantes.html",
+        common_context(
+            request,
+            estudiantes=estudiantes,
+            search=search,
+            filtro=filtro,
+            anio_ciclo=anio_ciclo,
+            sin_matricula_ids=sin_matricula_ids,
+            total_sin_matricula=total_sin_matricula,
+        ),
     )
 
 
@@ -375,8 +418,9 @@ async def toggle_acceso(
     form = await request.form()
     page = (form.get("page") or "").strip()
     q = (form.get("q") or "").strip()
+    filtro = (form.get("filtro") or "").strip()
     list_url = str(request.url_for("estudiantes.list"))
-    params = {k: v for k, v in (("page", page), ("q", q)) if v}
+    params = {k: v for k, v in (("page", page), ("q", q), ("filtro", filtro)) if v}
     if params:
         list_url = f"{list_url}?{urlencode(params)}"
 
@@ -398,6 +442,76 @@ async def toggle_acceso(
         db.session.rollback()
         print(f"Error al cambiar el acceso del estudiante: {e}")
         add_flash(request, "Error al cambiar el acceso del estudiante. Intente nuevamente.", "error")
+
+    return RedirectResponse(url=list_url, status_code=303)
+
+
+@router.post("/estudiantes/acceso-lote", name="estudiantes.acceso_lote")
+async def acceso_lote(request: Request, _user_id: int = Depends(get_current_user_id)):
+    """Suspende o reactiva el acceso al portal de varios estudiantes a la vez.
+
+    ``alcance=seleccion`` usa las casillas marcadas; ``alcance=sin_matricula``
+    abarca a todos los que tienen matrícula pero ninguna del ciclo en curso,
+    sin depender de la paginación.
+    """
+    form = await request.form()
+    page = (form.get("page") or "").strip()
+    q = (form.get("q") or "").strip()
+    filtro = (form.get("filtro") or "").strip()
+    list_url = str(request.url_for("estudiantes.list"))
+    params = {k: v for k, v in (("page", page), ("q", q), ("filtro", filtro)) if v}
+    if params:
+        list_url = f"{list_url}?{urlencode(params)}"
+
+    if getattr(Config, "WTF_CSRF_ENABLED", True) and not csrf_ok(request, form.get("csrf_token")):
+        add_flash(request, "Sesión de seguridad expirada. Intente de nuevo.", "error")
+        return RedirectResponse(url=list_url, status_code=303)
+
+    accion = (form.get("accion") or "").strip()
+    if accion not in ("suspender", "reactivar"):
+        add_flash(request, "Acción no válida.", "error")
+        return RedirectResponse(url=list_url, status_code=303)
+    suspender = accion == "suspender"
+    alcance = (form.get("alcance") or "seleccion").strip()
+
+    try:
+        anio_ciclo = anio_academico_actual()
+        if alcance == "sin_matricula":
+            query = _query_sin_matricula_vigente(Estudiante.query, anio_ciclo)
+            detalle = f"sin matrícula vigente del ciclo {anio_ciclo}"
+        else:
+            ids = []
+            for raw in form.getlist("estudiante_ids"):
+                try:
+                    ids.append(int(raw))
+                except (TypeError, ValueError):
+                    continue
+            if not ids:
+                add_flash(request, "No seleccionaste ningún estudiante.", "warning")
+                return RedirectResponse(url=list_url, status_code=303)
+            query = Estudiante.query.filter(Estudiante.id.in_(ids))
+            detalle = "seleccionado(s)"
+
+        cambiados = 0
+        for estudiante in query.all():
+            if bool(estudiante.acceso_suspendido) != suspender:
+                estudiante.acceso_suspendido = suspender
+                cambiados += 1
+        db.session.commit()
+
+        if cambiados:
+            verbo = "suspendido" if suspender else "reactivado"
+            add_flash(
+                request,
+                f"Acceso al portal {verbo} para {cambiados} estudiante(s) {detalle}.",
+                "success",
+            )
+        else:
+            add_flash(request, "Ningún estudiante cambió de estado.", "warning")
+    except Exception as e:  # noqa: BLE001
+        db.session.rollback()
+        print(f"Error al cambiar accesos en lote: {e}")
+        add_flash(request, "Error al cambiar los accesos. Intente nuevamente.", "error")
 
     return RedirectResponse(url=list_url, status_code=303)
 

@@ -75,6 +75,19 @@ class PortalEstudianteService:
             if codigo != codigo_valido:
                 return None, "Código de acceso incorrecto"
 
+            # Mismas puertas que el portal de Academia: acceso suspendido por la
+            # administración y matrícula que ya no corresponde al ciclo en curso.
+            from services.acceso_portal import mensaje_sin_matricula, sin_matricula_vigente
+
+            if getattr(estudiante, "acceso_suspendido", False):
+                return None, (
+                    "Tu acceso al portal está suspendido por pensión pendiente. "
+                    "Acércate a la administración para regularizar tu situación."
+                )
+
+            if sin_matricula_vigente(estudiante):
+                return None, mensaje_sin_matricula()
+
             # Registrar acceso en auditoría
             AuditLog.registrar(
                 tabla='estudiantes',
