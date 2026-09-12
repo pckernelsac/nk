@@ -213,8 +213,39 @@ class StudentService:
             return None
         return quiz_name, programa, nivel
 
+    @staticmethod
+    def _fecha_lote_ordenable(lote: Dict[str, Any]) -> float:
+        """Timestamp de la fecha mostrada en la columna 'Importado' del lote.
+
+        ``data_exported`` se guarda tal cual viene del Excel, así que el texto no
+        siempre es ISO y ordenarlo alfabéticamente daría un orden falso: aquí se
+        parsea a fecha real. Los lotes sin fecha legible devuelven ``-inf`` para
+        que queden al final.
+        """
+        valor = lote.get('ultimo_import') or lote.get('quiz_created')
+        if isinstance(valor, datetime.datetime):
+            return valor.timestamp()
+        if isinstance(valor, datetime.date):
+            return datetime.datetime.combine(valor, datetime.time.min).timestamp()
+        if not valor:
+            return float('-inf')
+        texto = str(valor).strip().replace('T', ' ')
+        for fmt in (
+            '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d',
+            '%Y/%m/%d %H:%M:%S', '%Y/%m/%d %H:%M', '%Y/%m/%d',
+            '%d/%m/%Y %H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%Y',
+            '%d-%m-%Y %H:%M:%S', '%d-%m-%Y %H:%M', '%d-%m-%Y',
+        ):
+            try:
+                return datetime.datetime.strptime(texto, fmt).timestamp()
+            except ValueError:
+                continue
+        return float('-inf')
+
     def list_upload_batches(self, search: str = '') -> List[Dict[str, Any]]:
         """Resumen de archivos cargados, agrupados por (quiz_name, programa, nivel).
+
+        Ordenado por fecha de importación descendente: lo último cargado primero.
 
         Returns:
             list[{key, quiz_name, programa, nivel, eta_number, filas, alumnos,
@@ -264,9 +295,10 @@ class StudentService:
                     'quiz_created': row.quiz_created,
                 })
             out.sort(key=lambda r: (
+                -self._fecha_lote_ordenable(r),
+                -(r['eta_number'] or 0),
                 r['nivel'],
                 r['programa'],
-                -(r['eta_number'] or 0),
                 r['quiz_name'],
             ))
         except Exception as e:
