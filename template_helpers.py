@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import secrets
 from datetime import datetime
+from itertools import combinations
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -80,11 +81,17 @@ def _iter_named_routes(app):
         seen.add(rid)
         if getattr(r, "name", None):
             yield r
-        sub_app = getattr(r, "app", None)
-        if sub_app is not None and hasattr(sub_app, "routes") and sub_app is not r:
-            stack.extend(getattr(sub_app, "routes", []) or [])
-        elif hasattr(r, "routes"):
-            stack.extend(getattr(r, "routes", []) or [])
+        # Versiones nuevas de FastAPI no aplanan los routers incluidos: los dejan
+        # anidados detrás de ``router``/``original_router``, así que hay que bajar
+        # por cualquiera de esos atributos y no sólo por ``app``/``routes``.
+        for attr in ("routes", "app", "router", "original_router"):
+            sub = getattr(r, attr, None)
+            if sub is None or sub is r:
+                continue
+            if attr == "routes":
+                stack.extend(sub or [])
+            elif hasattr(sub, "routes"):
+                stack.extend(getattr(sub, "routes", []) or [])
 
 
 def _route_path_param_keys(app, name: str) -> set[str] | None:
@@ -96,6 +103,46 @@ def _route_path_param_keys(app, name: str) -> set[str] | None:
         if isinstance(pc, dict):
             return set(pc.keys())
         return set()
+    return None
+
+
+def _url_for_con_query(request: Request, name: str, path_params: dict) -> str | None:
+    """Construye la URL repartiendo ``path_params`` entre path y query string.
+
+    Se prueba primero el reparto que declara la propia ruta y, si el escaneo de
+    rutas no la encuentra (la estructura interna de ``app.routes`` cambia entre
+    versiones de FastAPI), se prueban subconjuntos de mayor a menor tamaño. Así
+    sólo se depende de ``request.url_for``, que funciona en cualquier versión.
+    Devuelve ``None`` si ninguna combinación resuelve.
+    """
+    nombres = list(path_params)
+    candidatos: list[tuple[str, ...]] = []
+    keys = _route_path_param_keys(request.app, name)
+    if keys is not None:
+        candidatos.append(tuple(k for k in nombres if k in keys))
+    for tam in range(len(nombres) - 1, -1, -1):
+        for combo in combinations(nombres, tam):
+            if combo not in candidatos:
+                candidatos.append(combo)
+
+    for combo in candidatos:
+        en_path = set(combo)
+        try:
+            base = str(
+                request.url_for(
+                    name, **{k: v for k, v in path_params.items() if k in en_path}
+                )
+            )
+        except NoMatchFound:
+            continue
+        extra = {
+            k: v
+            for k, v in path_params.items()
+            if k not in en_path and v is not None and str(v) != ""
+        }
+        if extra:
+            base += ("&" if "?" in base else "?") + urlencode(extra, doseq=True)
+        return base
     return None
 
 
@@ -120,30 +167,10 @@ def url_for(request: Request, name: str, **path_params: str | int) -> str:
     except NoMatchFound:
         # La ruta existe pero sobran kwargs: los que no sean parámetros de path
         # deben ir como query string (p. ej. ``aula_id`` en boleta_fast_test).
-        keys = _route_path_param_keys(request.app, name)
-        if keys is not None:
-            path_kwargs = {k: v for k, v in path_params.items() if k in keys}
-            extra = {
-                k: v
-                for k, v in path_params.items()
-                if k not in keys and v is not None and str(v) != ""
-            }
-            try:
-                base = str(request.url_for(name, **path_kwargs))
-            except NoMatchFound:
-                base = None
-            if base is not None:
-                if extra:
-                    sep = "&" if "?" in base else "?"
-                    base = base + sep + urlencode(extra, doseq=True)
-                return base
-        if not path_params:
+        resuelto = _url_for_con_query(request, name, path_params)
+        if resuelto is None:
             raise
-        base = str(request.url_for(name))
-        q = {k: v for k, v in path_params.items() if v is not None and str(v) != ""}
-        if not q:
-            return base
-        return base + "?" + urlencode(q, doseq=True)
+        return resuelto
 
 
 class _TemplateG:
