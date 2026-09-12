@@ -4,12 +4,14 @@ Rutas de resultados de estudiantes (Academia) — FastAPI.
 
 from __future__ import annotations
 
+from urllib.parse import quote_plus
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import or_
 
 from config import Config
-from dependencies import get_current_user_id
+from dependencies import get_current_user_id, require_roles
 from models.aula import Aula
 from template_helpers import add_flash, common_context, csrf_ok, templates
 from utils.pagination import paginate_query
@@ -102,6 +104,79 @@ def init_routes(student_service, academic_service):
         student_service.delete_student(student_id)
         add_flash(request, "Estudiante eliminado correctamente", "success")
         return RedirectResponse(url=str(request.url_for("academia_student.results")), status_code=303)
+
+    @router.get("/lotes", name="academia_student.batches")
+    def batches(
+        request: Request, _user_id: int = Depends(require_roles("administrador"))
+    ):
+        """Panel de archivos cargados: permite borrar un Excel concreto."""
+        search = (request.query_params.get("search") or "").strip()
+        try:
+            page = int(request.query_params.get("page") or 1)
+        except ValueError:
+            page = 1
+        per_page = 50
+
+        todos = student_service.list_upload_batches(search)
+        total_lotes = len(todos)
+        total_filas = sum(lote["filas"] for lote in todos)
+        total_pages = (total_lotes + per_page - 1) // per_page if per_page else 0
+        # Tras borrar lotes la página actual puede quedar fuera de rango.
+        page = max(1, min(page, total_pages or 1))
+        lotes = todos[(page - 1) * per_page: page * per_page]
+
+        return templates.TemplateResponse(
+            "academia/batches.html",
+            common_context(
+                request,
+                lotes=lotes,
+                search=search,
+                page=page,
+                per_page=per_page,
+                total_pages=total_pages,
+                total_lotes=total_lotes,
+                total_filas=total_filas,
+            ),
+        )
+
+    @router.post("/lotes/delete", name="academia_student.delete_batches")
+    async def delete_batches(
+        request: Request, _user_id: int = Depends(require_roles("administrador"))
+    ):
+        form = await request.form()
+        search = (form.get("search") or "").strip()
+        page = (form.get("page") or "").strip()
+        back_url = str(request.url_for("academia_student.batches"))
+        params = []
+        if search:
+            params.append(f"search={quote_plus(search)}")
+        if page:
+            params.append(f"page={quote_plus(page)}")
+        if params:
+            back_url = f"{back_url}?{'&'.join(params)}"
+
+        if not csrf_ok(request, form.get("csrf_token")) and getattr(Config, "WTF_CSRF_ENABLED", True):
+            add_flash(request, "Sesión de seguridad expirada. Intente de nuevo.", "error")
+            return RedirectResponse(url=back_url, status_code=303)
+
+        keys = [k for k in form.getlist("lote") if k]
+        if not keys:
+            add_flash(request, "No seleccionó ningún archivo para eliminar.", "warning")
+            return RedirectResponse(url=back_url, status_code=303)
+
+        result = student_service.delete_batches_by_keys(keys)
+        if result.get("error"):
+            add_flash(request, f"Error al eliminar los archivos: {result['error']}", "error")
+        elif result.get("deleted"):
+            add_flash(
+                request,
+                f"Se eliminaron {result['deleted']} registro(s) de "
+                f"{result['lotes']} archivo(s) cargado(s).",
+                "success",
+            )
+        else:
+            add_flash(request, "No se encontraron registros para lo seleccionado.", "warning")
+        return RedirectResponse(url=back_url, status_code=303)
 
     @router.post("/clear_all", name="academia_student.clear_all")
     async def clear_all(request: Request, _user_id: int = Depends(get_current_user_id)):

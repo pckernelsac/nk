@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+
+{% block title %}Archivos cargados - Academia{% endblock %}
+
+{% block page_title %}Archivos cargados (ETAs){% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+        <div class="bg-gradient-to-r from-purple-600 to-purple-800 px-6 py-6">
+            <h2 class="text-2xl text-white font-bold">Archivos cargados</h2>
+            <p class="text-purple-100 text-sm mt-1">
+                Cada fila es un Excel/CSV procesado (ETA + programa). Puede eliminar solo el archivo equivocado sin borrar todo.
+            </p>
+        </div>
+
+        <div class="p-6 sm:p-8">
+            <div aria-live="polite" aria-atomic="true">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="mb-4 p-4 rounded-md text-sm
+                                {% if category == 'success' %} bg-green-100 text-green-800 border-l-4 border-green-500
+                                {% elif category == 'error' %} bg-red-100 text-red-800 border-l-4 border-red-500
+                                {% elif category == 'warning' %} bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500
+                                {% else %} bg-purple-100 text-purple-800 border-l-4 border-purple-500 {% endif %}"
+                                 role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
+                    <p class="text-xs uppercase tracking-wide text-purple-700 font-semibold">Archivos</p>
+                    <p class="text-2xl font-bold text-purple-900">{{ total_lotes }}</p>
+                </div>
+                <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
+                    <p class="text-xs uppercase tracking-wide text-purple-700 font-semibold">Registros</p>
+                    <p class="text-2xl font-bold text-purple-900">{{ total_filas }}</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center">
+                    <a href="{{ url_for('academia_student.results') }}" class="text-sm font-medium text-purple-700 hover:text-purple-900">
+                        <i class="fas fa-arrow-left mr-1"></i> Volver a Resultados
+                    </a>
+                </div>
+            </div>
+
+            <form method="GET" action="{{ url_for('academia_student.batches') }}" class="flex flex-col sm:flex-row gap-2 mb-6">
+                <input type="search" name="search" value="{{ search|default('') }}"
+                       class="block w-full sm:max-w-md p-2.5 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
+                       placeholder="Buscar por QuizName, programa o nivel...">
+                <button type="submit" class="px-4 py-2.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 shadow-sm">
+                    Buscar
+                </button>
+                {% if search %}
+                <a href="{{ url_for('academia_student.batches') }}" class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 text-center">
+                    Limpiar
+                </a>
+                {% endif %}
+            </form>
+
+            {% if not lotes %}
+            <div class="p-6 text-center bg-gray-50 border border-dashed border-gray-300 rounded-lg">
+                <p class="text-gray-600">
+                    {% if search %}
+                        No hay archivos que coincidan con "<strong>{{ search }}</strong>".
+                    {% else %}
+                        Todavía no hay archivos cargados.
+                    {% endif %}
+                </p>
+            </div>
+            {% else %}
+            <form id="batches-form" action="{{ url_for('academia_student.delete_batches') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="search" value="{{ search|default('') }}"/>
+                <input type="hidden" name="page" value="{{ page|default(1) }}"/>
+
+                <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                    <table class="w-full text-sm text-left text-gray-700">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <tr>
+                                <th scope="col" class="p-4">
+                                    <input type="checkbox" id="select-all" class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500" aria-label="Seleccionar todos">
+                                </th>
+                                <th scope="col" class="py-3 px-4">Archivo (QuizName)</th>
+                                <th scope="col" class="py-3 px-4">ETA</th>
+                                <th scope="col" class="py-3 px-4">Programa</th>
+                                <th scope="col" class="py-3 px-4">Nivel</th>
+                                <th scope="col" class="py-3 px-4 text-right">Registros</th>
+                                <th scope="col" class="py-3 px-4 text-right">Alumnos</th>
+                                <th scope="col" class="py-3 px-4 text-right">Preguntas</th>
+                                <th scope="col" class="py-3 px-4">Importado</th>
+                                <th scope="col" class="py-3 px-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lote in lotes %}
+                            <tr class="bg-white border-b hover:bg-purple-50/40">
+                                <td class="p-4">
+                                    <input type="checkbox" name="lote" value="{{ lote.key }}"
+                                           class="lote-check w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                                           aria-label="Seleccionar {{ lote.quiz_name }}">
+                                </td>
+                                <td class="py-3 px-4 font-medium text-gray-900 break-all">{{ lote.quiz_name }}</td>
+                                <td class="py-3 px-4">
+                                    {% if lote.eta_number %}
+                                        <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">ETA {{ "%02d"|format(lote.eta_number) }}</span>
+                                    {% else %}
+                                        <span class="text-gray-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4">{{ lote.programa or '(sin programa)' }}</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-0.5 rounded-full">{{ lote.nivel }}</span>
+                                </td>
+                                <td class="py-3 px-4 text-right font-semibold">{{ lote.filas }}</td>
+                                <td class="py-3 px-4 text-right">{{ lote.alumnos }}</td>
+                                <td class="py-3 px-4 text-right">{{ lote.preg_count or '-' }}</td>
+                                <td class="py-3 px-4 text-xs text-gray-500">{{ lote.ultimo_import or lote.quiz_created or '-' }}</td>
+                                <td class="py-3 px-4">
+                                    <button type="button"
+                                            class="lote-delete-btn text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-md text-xs px-3 py-1.5 inline-flex items-center shadow-sm"
+                                            data-lote-key="{{ lote.key }}"
+                                            data-lote-nombre="{{ lote.quiz_name }}"
+                                            data-lote-contexto="{{ lote.programa or '(sin programa)' }} — {{ lote.nivel }}"
+                                            data-lote-filas="{{ lote.filas }}">
+                                        <i class="fas fa-trash-alt mr-1"></i> Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if total_pages and total_pages > 1 %}
+                <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
+                    <span class="text-gray-600">
+                        Página <strong>{{ page }}</strong> de <strong>{{ total_pages }}</strong>
+                        ({{ total_lotes }} archivos)
+                    </span>
+                    <div class="flex gap-2">
+                        {% if page > 1 %}
+                        <a href="{{ url_for('academia_student.batches') }}?page={{ page - 1 }}&search={{ search|default('')|urlencode }}"
+                           class="px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Anterior</a>
+                        {% endif %}
+                        {% if page < total_pages %}
+                        <a href="{{ url_for('academia_student.batches') }}?page={{ page + 1 }}&search={{ search|default('')|urlencode }}"
+                           class="px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Siguiente</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p class="text-sm text-gray-600">
+                        Seleccionados en esta página: <span id="selected-count" class="font-semibold text-gray-900">0</span>
+                    </p>
+                    <button type="button" id="delete-selected-btn" data-modal-toggle="lotes-seleccionados-modal" disabled
+                            class="text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex items-center justify-center shadow-md">
+                        <i class="fas fa-trash-alt mr-2"></i> Eliminar seleccionados
+                    </button>
+                </div>
+            </form>
+
+            {# Un solo modal de confirmación individual: se rellena por JS con los
+               datos del archivo elegido (evita generar un modal por fila). #}
+            <div id="lote-individual-modal" tabindex="-1" class="fixed top-0 left-0 right-0 z-50 hidden p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+                <div class="relative w-full max-w-md max-h-full mx-auto">
+                    <div class="relative bg-white rounded-lg shadow-2xl">
+                        <button type="button" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center" data-modal-hide="lote-individual-modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Cerrar</span>
+                        </button>
+                        <div class="p-6 text-center">
+                            <svg class="mx-auto mb-4 text-gray-400 w-12 h-12" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                            </svg>
+                            <h3 class="mb-2 text-lg font-normal text-gray-600">
+                                ¿Eliminar los <strong id="lote-modal-filas">0</strong> registro(s) de este archivo?
+                            </h3>
+                            <p class="mb-5 text-sm text-gray-500 break-all">
+                                <strong id="lote-modal-nombre"></strong><br>
+                                <span id="lote-modal-contexto"></span>
+                            </p>
+                            <form action="{{ url_for('academia_student.delete_batches') }}" method="POST" class="inline-block">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <input type="hidden" name="search" value="{{ search|default('') }}"/>
+                                <input type="hidden" name="page" value="{{ page|default(1) }}"/>
+                                <input type="hidden" name="lote" id="lote-modal-key" value=""/>
+                                <button type="submit" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 mr-2">
+                                    Sí, eliminar este archivo
+                                </button>
+                            </form>
+                            <button data-modal-hide="lote-individual-modal" type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900">
+                                No, cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Modal de confirmación para la selección múltiple #}
+            <div id="lotes-seleccionados-modal" tabindex="-1" class="fixed top-0 left-0 right-0 z-50 hidden p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+                <div class="relative w-full max-w-md max-h-full mx-auto">
+                    <div class="relative bg-white rounded-lg shadow-2xl">
+                        <button type="button" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center" data-modal-hide="lotes-seleccionados-modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Cerrar</span>
+                        </button>
+                        <div class="p-6 text-center">
+                            <svg class="mx-auto mb-4 text-gray-400 w-12 h-12" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                            </svg>
+                            <h3 class="mb-5 text-lg font-normal text-gray-600">
+                                ¿Eliminar los <span id="modal-selected-count" class="font-semibold">0</span> archivo(s) seleccionado(s)?
+                                Esta acción no se puede deshacer.
+                            </h3>
+                            <button type="submit" form="batches-form" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 mr-2">
+                                Sí, eliminar seleccionados
+                            </button>
+                            <button data-modal-hide="lotes-seleccionados-modal" type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900">
+                                No, cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAll = document.getElementById('select-all');
+        const checks = Array.from(document.querySelectorAll('.lote-check'));
+        const countEl = document.getElementById('selected-count');
+        const modalCountEl = document.getElementById('modal-selected-count');
+        const deleteBtn = document.getElementById('delete-selected-btn');
+
+        function refresh() {
+            const selected = checks.filter(c => c.checked).length;
+            if (countEl) countEl.textContent = selected;
+            if (modalCountEl) modalCountEl.textContent = selected;
+            if (deleteBtn) deleteBtn.disabled = selected === 0;
+            if (selectAll) {
+                selectAll.checked = selected > 0 && selected === checks.length;
+                selectAll.indeterminate = selected > 0 && selected < checks.length;
+            }
+        }
+
+        document.querySelectorAll('.lote-delete-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('lote-modal-key').value = btn.dataset.loteKey || '';
+                document.getElementById('lote-modal-nombre').textContent = btn.dataset.loteNombre || '';
+                document.getElementById('lote-modal-contexto').textContent = btn.dataset.loteContexto || '';
+                document.getElementById('lote-modal-filas').textContent = btn.dataset.loteFilas || '0';
+                openModal('lote-individual-modal');
+            });
+        });
+
+        checks.forEach(c => c.addEventListener('change', refresh));
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                checks.forEach(c => { c.checked = selectAll.checked; });
+                refresh();
+            });
+        }
+        refresh();
+    });
+
+    /* ── Modales (mismo reemplazo de Flowbite que en results.html) ── */
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex', 'items-center', 'justify-center');
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    }
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex', 'items-center', 'justify-center');
+        modal.style.backgroundColor = '';
+    }
+    document.addEventListener('click', function (e) {
+        const toggleBtn = e.target.closest('[data-modal-toggle]');
+        if (toggleBtn) {
+            if (toggleBtn.disabled) return;
+            e.preventDefault();
+            openModal(toggleBtn.getAttribute('data-modal-toggle'));
+            return;
+        }
+        const hideBtn = e.target.closest('[data-modal-hide]');
+        if (hideBtn) {
+            e.preventDefault();
+            closeModal(hideBtn.getAttribute('data-modal-hide'));
+            return;
+        }
+        document.querySelectorAll('[id$="-modal"]:not(.hidden)').forEach(function (modal) {
+            if (e.target === modal) closeModal(modal.id);
+        });
+    });
+</script>
+{% endblock %}

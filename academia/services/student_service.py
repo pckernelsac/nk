@@ -4,9 +4,13 @@ Servicio para la gestión de estudiantes.
 Usa SQLAlchemy ORM (models/academia.py).
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
+import base64
 import datetime
+import json
 import re
+
+from sqlalchemy import distinct
 
 from models import db
 from models.academia import AcademiaStudent, AcademicArea
@@ -169,6 +173,165 @@ class StudentService:
                 db.session.rollback()
             print(f"Error al eliminar registros del quiz '{quiz_name}': {e}")
             return 0
+
+    # ------------------------------------------------------------------
+    # Lotes de carga (un "Excel" = quiz_name + programa + nivel)
+    # ------------------------------------------------------------------
+    # No existe una tabla de subidas: cada fila de ``students`` solo guarda el
+    # QuizName del archivo, el programa elegido y el nivel. Esa terna identifica
+    # de forma estable el archivo cargado, asi que sirve como clave de lote
+    # tambien para los registros historicos (sin necesidad de migracion).
+
+    @staticmethod
+    def _batch_filters(quiz_name: str, programa: str, nivel: str) -> list:
+        return [
+            db.func.coalesce(AcademiaStudent.quiz_name, '') == (quiz_name or ''),
+            db.func.coalesce(AcademiaStudent.programa, '') == (programa or ''),
+            db.func.coalesce(AcademiaStudent.nivel, 'ACADEMIA') == (nivel or 'ACADEMIA'),
+        ]
+
+    @staticmethod
+    def encode_batch_key(quiz_name: str, programa: str, nivel: str) -> str:
+        """Clave opaca (base64) para identificar un lote en formularios HTML."""
+        payload = json.dumps(
+            [quiz_name or '', programa or '', nivel or 'ACADEMIA'], ensure_ascii=False
+        )
+        return base64.urlsafe_b64encode(payload.encode('utf-8')).decode('ascii')
+
+    @staticmethod
+    def decode_batch_key(key: str) -> Optional[Tuple[str, str, str]]:
+        """Inversa de :meth:`encode_batch_key`; ``None`` si la clave es invalida."""
+        if not key:
+            return None
+        try:
+            raw = base64.urlsafe_b64decode(key.encode('ascii'))
+            quiz_name, programa, nivel = json.loads(raw.decode('utf-8'))
+        except Exception:
+            return None
+        if not (isinstance(quiz_name, str) and isinstance(programa, str)
+                and isinstance(nivel, str)):
+            return None
+        return quiz_name, programa, nivel
+
+    def list_upload_batches(self, search: str = '') -> List[Dict[str, Any]]:
+        """Resumen de archivos cargados, agrupados por (quiz_name, programa, nivel).
+
+        Returns:
+            list[{key, quiz_name, programa, nivel, eta_number, filas, alumnos,
+                  preg_count, primer_import, ultimo_import, quiz_created}].
+        """
+        out: List[Dict[str, Any]] = []
+        quiz_col = db.func.coalesce(AcademiaStudent.quiz_name, '')
+        programa_col = db.func.coalesce(AcademiaStudent.programa, '')
+        nivel_col = db.func.coalesce(AcademiaStudent.nivel, 'ACADEMIA')
+        try:
+            query = db.session.query(
+                quiz_col.label('quiz_name'),
+                programa_col.label('programa'),
+                nivel_col.label('nivel'),
+                db.func.count(AcademiaStudent.id).label('filas'),
+                db.func.count(distinct(AcademiaStudent.student_id)).label('alumnos'),
+                db.func.max(
+                    db.func.array_length(
+                        db.func.string_to_array(AcademiaStudent.pri_keys, ','), 1
+                    )
+                ).label('preg_count'),
+                db.func.min(AcademiaStudent.data_exported).label('primer'),
+                db.func.max(AcademiaStudent.data_exported).label('ultimo'),
+                db.func.min(AcademiaStudent.quiz_created).label('quiz_created'),
+            )
+            term = (search or '').strip()
+            if term:
+                pattern = f'%{term}%'
+                query = query.filter(
+                    quiz_col.ilike(pattern)
+                    | programa_col.ilike(pattern)
+                    | nivel_col.ilike(pattern)
+                )
+            rows = query.group_by(quiz_col, programa_col, nivel_col).all()
+            for row in rows:
+                out.append({
+                    'key': self.encode_batch_key(row.quiz_name, row.programa, row.nivel),
+                    'quiz_name': row.quiz_name or '(sin QuizName)',
+                    'programa': row.programa or '',
+                    'nivel': row.nivel or 'ACADEMIA',
+                    'eta_number': self._extract_eta_number_from_name(row.quiz_name),
+                    'filas': int(row.filas or 0),
+                    'alumnos': int(row.alumnos or 0),
+                    'preg_count': int(row.preg_count or 0),
+                    'primer_import': row.primer,
+                    'ultimo_import': row.ultimo,
+                    'quiz_created': row.quiz_created,
+                })
+            out.sort(key=lambda r: (
+                r['nivel'],
+                r['programa'],
+                -(r['eta_number'] or 0),
+                r['quiz_name'],
+            ))
+        except Exception as e:
+            print(f'list_upload_batches: {e}')
+        return out
+
+    def count_batch_rows(self, quiz_name: str, programa: str, nivel: str) -> int:
+        try:
+            return int(
+                AcademiaStudent.query.filter(
+                    *self._batch_filters(quiz_name, programa, nivel)
+                ).count()
+            )
+        except Exception as e:
+            print(f'count_batch_rows: {e}')
+            return 0
+
+    def delete_batch(self, quiz_name: str, programa: str, nivel: str,
+                     commit: bool = True) -> int:
+        """Borra los registros de un lote y retorna cuantas filas se eliminaron."""
+        try:
+            deleted = AcademiaStudent.query.filter(
+                *self._batch_filters(quiz_name, programa, nivel)
+            ).delete(synchronize_session=False)
+            if commit:
+                db.session.commit()
+            return int(deleted or 0)
+        except Exception as e:
+            if commit:
+                db.session.rollback()
+            print(
+                f"Error al eliminar el lote '{quiz_name}' / '{programa}' "
+                f"({nivel}): {e}"
+            )
+            return 0
+
+    def delete_batches_by_keys(self, keys: List[str]) -> Dict[str, Any]:
+        """Borra varios lotes a partir de sus claves opacas.
+
+        Returns:
+            dict con ``deleted`` (filas borradas), ``lotes`` (lotes afectados)
+            y ``invalid`` (claves que no se pudieron decodificar).
+        """
+        deleted = 0
+        lotes = 0
+        invalid = 0
+        try:
+            for key in keys or []:
+                decoded = self.decode_batch_key(key)
+                if decoded is None:
+                    invalid += 1
+                    continue
+                quiz_name, programa, nivel = decoded
+                removed = AcademiaStudent.query.filter(
+                    *self._batch_filters(quiz_name, programa, nivel)
+                ).delete(synchronize_session=False)
+                if removed:
+                    deleted += int(removed)
+                    lotes += 1
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f'delete_batches_by_keys: {e}')
+            return {'deleted': 0, 'lotes': 0, 'invalid': invalid, 'error': str(e)}
+        return {'deleted': deleted, 'lotes': lotes, 'invalid': invalid}
 
     def list_quiz_names_with_question_count(self) -> List[Dict[str, Any]]:
         """Resumen por (quiz_name, nivel, número de preguntas guardadas).

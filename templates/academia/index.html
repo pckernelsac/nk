@@ -129,6 +129,24 @@
                 <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                     <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div>
+                            <h3 class="text-lg font-bold text-gray-800">Archivos cargados</h3>
+                            <p class="text-sm text-gray-600">Panel de ETAs subidas: elimine solo el archivo equivocado sin borrar todos los registros.</p>
+                        </div>
+                        <a href="{{ url_for('academia_student.batches') }}"
+                           class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-white text-sm font-semibold shadow shrink-0"
+                           style="background-color: #5F2A5D;">
+                            <i class="fas fa-folder-open mr-2"></i>Gestionar archivos
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if session.get('rol') == 'administrador' %}
+            <div class="mt-6">
+                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
                             <h3 class="text-lg font-bold text-gray-800">Ponderaciones (PDFs)</h3>
                             <p class="text-sm text-gray-600">Pesos por rango: asignaturas y nivel (20 / 50 / 80 preguntas por área).</p>
                         </div>
