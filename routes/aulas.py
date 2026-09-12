@@ -443,7 +443,10 @@ def detalle(
 
     matriculas = get_aula_service().obtener_estudiantes_aula(aula_id, estado="activo")
     total_matriculados = len(matriculas)
-    disponible = aula.capacidad_maxima - total_matriculados
+    # Aulas antiguas/migradas pueden tener capacidad_maxima en NULL: sin este
+    # fallback la resta y las comparaciones de la plantilla revientan (500).
+    capacidad_maxima = aula.capacidad_maxima or 0
+    disponible = capacidad_maxima - total_matriculados
 
     return templates.TemplateResponse(
         "aulas/detalle.html",
@@ -452,6 +455,7 @@ def detalle(
             aula=aula,
             matriculas=matriculas,
             total_matriculados=total_matriculados,
+            capacidad_maxima=capacidad_maxima,
             disponible=disponible,
         ),
     )

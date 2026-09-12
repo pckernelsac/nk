@@ -1,6 +1,7 @@
 """FastAPI application factory (replaces Flask create_app)."""
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -76,6 +77,21 @@ async def lifespan(app: FastAPI):
         except Exception as exc:  # noqa: BLE001
             db_facade.session.rollback()
             logger.warning("No se pudo agregar columna acceso_suspendido: %s", exc)
+
+    if inspector.has_table("aulas"):
+        # Aulas con capacidad_maxima NULL rompían el detalle del aula (500).
+        try:
+            res = db_facade.session.execute(
+                text("UPDATE aulas SET capacidad_maxima = 30 WHERE capacidad_maxima IS NULL")
+            )
+            if res.rowcount:
+                logger.warning(
+                    "Normalizadas %s aulas con capacidad_maxima NULL -> 30", res.rowcount
+                )
+            db_facade.session.commit()
+        except Exception as exc:  # noqa: BLE001
+            db_facade.session.rollback()
+            logger.warning("No se pudo normalizar capacidad_maxima de aulas: %s", exc)
 
     if inspector.has_table("question_weights"):
         columnas_qw = [col["name"] for col in inspector.get_columns("question_weights")]
@@ -273,6 +289,10 @@ def create_app(config_class: type | None = None) -> FastAPI:
     async def unhandled_exception_handler(request: Request, exc: Exception):
         if isinstance(exc, HTTPException):
             return await http_exception_handler(request, exc)
+        # Sin esto el 500 se devolvía en silencio y no quedaba rastro en los logs.
+        logging.getLogger("uvicorn.error").exception(
+            "Error no controlado en %s %s", request.method, request.url.path
+        )
         try:
             db_facade.session.rollback()
         except Exception:
