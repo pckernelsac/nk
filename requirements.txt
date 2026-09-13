@@ -1,25 +1,38 @@
-# fastapi y starlette van fijas y juntas: el 500 de /aulas/<id> salió de que
-# producción construía una FastAPI más nueva que la del entorno local, con otra
-# estructura interna de rutas. fastapi declara starlette>=0.46 sin tope, así que
-# sin fijar ambas el par vuelve a separarse en el próximo build.
+# Versiones fijas a propósito: el 500 de /aulas/<id> salió de que producción
+# construía una FastAPI más nueva que la del entorno local, con otra estructura
+# interna de rutas. Con todo fijo, lo que se prueba en local es lo que se
+# despliega. Para subir alguna versión: cámbiala aquí, instala en local
+# (pip install -r requirements.txt), prueba, y recién entonces despliega.
+
+# Web — fastapi y starlette van juntas: fastapi declara starlette>=0.46 sin
+# tope, así que fijar sólo una deja que el par se vuelva a separar.
 fastapi==0.136.0
 starlette==1.0.0
-uvicorn[standard]
-python-multipart
-a2wsgi
+pydantic==2.13.2
+uvicorn[standard]==0.44.0
+python-multipart==0.0.26
+a2wsgi==1.10.10
+jinja2==3.1.2
+itsdangerous==2.1.2
 Werkzeug==3.0.1
-SQLAlchemy>=2.0
-psycopg[binary]>=3.1
+
+# Base de datos
+SQLAlchemy==2.0.45
+psycopg[binary]==3.3.3
+
+# Utilidades
 python-dotenv==1.0.0
+python-dateutil==2.9.0.post0
+pytz==2025.2
+
+# Documentos y datos
 reportlab==4.0.7
 Pillow==10.1.0
 openpyxl==3.1.2
 fpdf==1.7.2
 numpy==1.26.4
 pandas==2.2.0
-python-dateutil==2.9.0.post0
-pytz==2025.2
-jinja2
-itsdangerous
-httpx
-pytest
+
+# Pruebas
+httpx==0.28.1
+pytest==9.0.2
