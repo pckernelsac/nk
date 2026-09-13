@@ -1,4 +1,9 @@
-fastapi
+# fastapi y starlette van fijas y juntas: el 500 de /aulas/<id> salió de que
+# producción construía una FastAPI más nueva que la del entorno local, con otra
+# estructura interna de rutas. fastapi declara starlette>=0.46 sin tope, así que
+# sin fijar ambas el par vuelve a separarse en el próximo build.
+fastapi==0.136.0
+starlette==1.0.0
 uvicorn[standard]
 python-multipart
 a2wsgi
@@ -16,6 +21,5 @@ python-dateutil==2.9.0.post0
 pytz==2025.2
 jinja2
 itsdangerous
-starlette
 httpx
 pytest
